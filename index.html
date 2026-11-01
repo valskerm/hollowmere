@@ -117,7 +117,7 @@ legend{font-family:var(--sans);font-weight:700;margin-bottom:8px}
 .cls em{display:block;font-style:normal;color:var(--muted)}
 
 /* battle map */
-.board{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;width:100%;max-width:440px;margin:22px auto 12px;background:var(--line);border:2px solid var(--line);border-radius:6px}
+.board{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:100%;max-width:440px;margin:22px auto 12px;background:var(--line);border:2px solid var(--line);border-radius:6px}
 .cell{aspect-ratio:1;background:var(--surface);border:0;padding:0;display:grid;place-items:center;min-width:0}
 .cell.reach{background:var(--lantern-soft);cursor:pointer}
 .cell.rock{background:var(--sunk)}
@@ -194,6 +194,10 @@ details.group summary{font-family:var(--sans);font-weight:700;cursor:pointer;pad
 .plot.sel .plotring{fill:var(--lantern);fill-opacity:.18;stroke:var(--lantern)}
 .smoke circle{fill:var(--m-stone);opacity:.5}
 @media (prefers-reduced-motion:no-preference){.smoke{animation:drift 3.5s ease-in-out infinite}@keyframes drift{0%,100%{transform:translateY(0);opacity:.9}50%{transform:translateY(-3px);opacity:.5}}}
+.lvlrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}
+.split{display:inline-flex;align-items:center;gap:10px}
+.split b{min-width:1.2em;text-align:center;font-family:var(--sans)}
+.pickrow{margin-top:10px;padding:10px 12px;border:2px solid var(--lantern);border-radius:10px;background:var(--surface)}
 .plotpanel{margin-top:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:56px}
 /* act 2 bits */
 .guardian{width:62%;aspect-ratio:1;border-radius:6px;background:var(--lantern-soft);box-shadow:0 0 0 2px var(--lantern),0 0 14px 4px var(--lantern);opacity:.85}
@@ -233,8 +237,9 @@ details.group summary{font-family:var(--sans);font-weight:700;cursor:pointer;pad
 const SAVE_KEY='hollowmere-save-v1';
 const SEASONS=['Spring','Summer','Fall','Winter'];
 const WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const XP_AT=[0,300,900,2700,6500,14000,23000,34000,48000,64000,85000];
+const XP_AT=[0,300,900,2700,6500,14000,23000,34000,48000,64000,85000,100000,120000,140000,165000,195000,225000,265000,305000,355000,999999];
 const MAX_LEVEL=10;
+const maxLevel=()=>S&&S.flags&&S.flags.sequel?14:MAX_LEVEL;
 const ABIL=['str','dex','con','int','wis','cha'];
 const ABIL_NAME={str:'Strength',dex:'Dexterity',con:'Constitution',int:'Intelligence',wis:'Wisdom',cha:'Charisma'};
 const ABIL_SHORT={str:'STR',dex:'DEX',con:'CON',int:'INT',wis:'WIS',cha:'CHA'};
@@ -245,9 +250,27 @@ const SKILLS={acrobatics:['Acrobatics','dex'],animal:['Animal Handling','wis'],a
   stealth:['Stealth','dex'],survival:['Survival','wis']};
 const SKILL=Object.fromEntries(Object.entries(SKILLS).map(([k,v])=>[k,v[0]]));
 const STANDARD=[15,14,13,12,10,8];
-const SLOTS=[[],[2],[3],[4,2],[4,3],[4,3,2],[4,3,3],[4,3,3,1],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,2]];
+const HALF=[[],[2],[2],[3],[3],[4,2],[4,2],[4,3],[4,3],[4,3,2],[4,3,2],[4,3,3],[4,3,3],[4,3,3,1],[4,3,3,1],[4,3,3,2],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2]];
+const SLOTS=[[],[2],[3],[4,2],[4,3],[4,3,2],[4,3,3],[4,3,3,1],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2,1],[4,3,3,3,2,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1,1],[4,3,3,3,3,1,1,1,1],[4,3,3,3,3,2,1,1,1],[4,3,3,3,3,2,2,1,1]];
 
 const WEAPONS={
+  unarmed:{name:'Unarmed strike',kind:'melee',dmg:'1d4',abil:'finesse',monk:true,type:'bludgeoning',verb:'strike'},
+  spear:{name:'Spear',kind:'melee',dmg:'1d6',abil:'finesse',monk:true,type:'piercing',verb:'thrust your spear at'},
+  throwdagger:{name:'Thrown dagger',kind:'ranged',range:4,long:12,dmg:'1d4',abil:'finesse',monk:true,type:'piercing',verb:'throw a dagger at'},
+  longsword:{name:'Longsword',kind:'melee',dmg:'1d8',abil:'str',mastery:'sap',type:'slashing',verb:'swing your longsword at'},
+  longbow:{name:'Longbow',kind:'ranged',range:30,long:120,dmg:'1d8',abil:'dex',mastery:'slow',type:'piercing',verb:'loose an arrow at'},
+  greataxe:{name:'Greataxe',kind:'melee',dmg:'1d12',abil:'str',mastery:'cleave',twoHanded:true,type:'slashing',verb:'swing your greataxe at'},
+  handaxe:{name:'Handaxe',kind:'ranged',range:4,long:12,dmg:'1d6',abil:'str',mastery:'vex',type:'slashing',verb:'hurl a handaxe at'},
+  quarterstaff:{name:'Quarterstaff',kind:'melee',dmg:'1d6',abil:'str',type:'bludgeoning',verb:'swing your staff at'},
+  rapier:{name:'Rapier',kind:'melee',dmg:'1d8',abil:'finesse',type:'piercing',verb:'thrust your rapier at'},
+  wolfbite:{name:'Wolf bite',kind:'melee',dmg:'1d6',fixedAtk:4,fixedDmg:2,knock:11,type:'piercing',verb:'bite'},
+  bearbite:{name:'Bear bite',kind:'melee',dmg:'1d8',fixedAtk:6,fixedDmg:4,type:'piercing',verb:'bite'},
+  bearclaws:{name:'Bear claws',kind:'melee',dmg:'2d6',fixedAtk:6,fixedDmg:4,type:'slashing',verb:'rake'},
+  direbite:{name:'Dire wolf bite',kind:'melee',dmg:'2d6',fixedAtk:5,fixedDmg:3,knock:13,type:'piercing',verb:'bite'},
+  elegore:{name:'Elephant gore',kind:'melee',dmg:'3d8',fixedAtk:8,fixedDmg:6,knock:16,type:'piercing',verb:'gore'},
+  elestomp:{name:'Elephant stomp',kind:'melee',dmg:'3d10',fixedAtk:8,fixedDmg:6,type:'bludgeoning',verb:'stomp on'},
+  polarbite:{name:'Polar bear bite',kind:'melee',dmg:'1d8',fixedAtk:7,fixedDmg:5,type:'piercing',verb:'bite'},
+  polarclaws:{name:'Polar bear claws',kind:'melee',dmg:'2d6',fixedAtk:7,fixedDmg:5,type:'slashing',verb:'rake'},
   greatsword:{name:'Greatsword',kind:'melee',dmg:'2d6',abil:'str',mastery:'graze',twoHanded:true,type:'slashing',verb:'swing your greatsword at'},
   flail:{name:'Flail',kind:'melee',dmg:'1d8',abil:'str',mastery:'sap',type:'bludgeoning',verb:'swing your flail at'},
   javelin:{name:'Javelin',kind:'ranged',range:6,long:24,dmg:'1d6',abil:'str',mastery:'slow',type:'piercing',verb:'hurl a javelin at'},
@@ -256,7 +279,7 @@ const WEAPONS={
   dagger:{name:'Dagger',kind:'melee',dmg:'1d4',abil:'finesse',mastery:'nick',type:'piercing',verb:'slash at'},
   mace:{name:'Mace',kind:'melee',dmg:'1d6',abil:'str',mastery:'sap',type:'bludgeoning',verb:'swing your mace at'}
 };
-const MASTERY={graze:'Graze: on a miss, deal damage equal to your ability modifier.',sap:'Sap: on a hit, the target has disadvantage on its next attack roll.',
+const MASTERY={cleave:'Cleave: on a hit, make one more attack against another enemy next to it (no ability bonus to damage), once per turn.',graze:'Graze: on a miss, deal damage equal to your ability modifier.',sap:'Sap: on a hit, the target has disadvantage on its next attack roll.',
   slow:'Slow: on a hit, the target’s speed drops by 10 ft until your next turn.',vex:'Vex: on a hit, you have advantage on your next attack roll against that target.',nick:'Nick: an extra light-weapon attack (not used here).'};
 
 const CLASSES={
@@ -273,7 +296,7 @@ const CLASSES={
       [3,'Champion: Remarkable Athlete','Advantage on initiative and Athletics checks.'],
       [4,'Ability Score Improvement','+2 Strength.'],[5,'Extra Attack','Attack twice when you take the Attack action.'],
       [6,'Ability Score Improvement','+2 Strength (or +1 Strength and +1 Constitution).'],[7,'Champion: Defense style','+1 AC while wearing armor.'],
-      [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],[9,'Indomitable','Once a day, reroll a failed saving throw with a bonus equal to your level. Used automatically.'],[10,'Champion: Heroic Warrior','In combat, you regain Heroic Inspiration at the start of each turn if you don’t have it.']]},
+      [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],[9,'Indomitable','Once a day, reroll a failed saving throw with a bonus equal to your level. Used automatically.'],[10,'Champion: Heroic Warrior','In combat, you regain Heroic Inspiration at the start of each turn if you don’t have it.'],[11,'Two Extra Attacks','Attack three times when you take the Attack action.'],[13,'Studied Attacks','When you miss, your next attack against that target has advantage.'],[13,'Indomitable','Two uses a day.'],[14,'Ability Score Improvement','Another +2.']]},
   rogue:{name:'Rogue',blurb:'Light on your feet. Vex a target, then land a Sneak Attack.',hd:8,primary:'dex',saves:['dex','int'],
     skillPool:['stealth','perception','acrobatics','persuasion','investigation','deception','insight','sleight','athletics'],skillCount:4,
     array:{dex:15,con:14,wis:13,cha:12,int:10,str:8},priority:['dex','con','wis','cha','int','str'],
@@ -286,12 +309,12 @@ const CLASSES={
       [3,'Steady Aim','Bonus action if you haven’t moved: advantage on your next attack, but you can’t move this turn.'],
       [4,'Ability Score Improvement','+2 Dexterity.'],[5,'Uncanny Dodge','Reaction: halve the damage of an attack that hits you. Sneak Attack rises to 3d6.'],
       [6,'Expertise','Two more skills with double proficiency.'],[7,'Evasion','On a Dexterity save against area damage, take none on a success and half on a failure. Sneak Attack rises to 4d6.'],
-      [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],[9,'Sneak Attack 5d6','Your Sneak Attack rises to 5d6.'],[10,'Ability Score Improvement','Another +2.']]},
+      [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],[9,'Sneak Attack 5d6','Your Sneak Attack rises to 5d6.'],[10,'Ability Score Improvement','Another +2.'],[11,'Reliable Talent','Any skill you’re proficient in: a d20 roll below 10 counts as 10.'],[11,'Sneak Attack 6d6','7d6 at level 13.'],[12,'Ability Score Improvement','Another +2.']]},
   wizard:{name:'Wizard',blurb:'Fragile, brilliant, and the only one who can drop a Fireball.',hd:6,primary:'int',saves:['int','wis'],
     skillPool:['arcana','investigation','history','insight','medicine','nature','religion'],skillCount:2,
     array:{int:15,con:14,dex:13,wis:12,cha:10,str:8},priority:['int','con','dex','wis','cha','str'],
     weapons:['dagger'],masteries:[],caster:'int',
-    cantrips:['firebolt','rayoffrost','shockinggrasp'],spells:['magicmissile','shield','thunderwave','magearmor','mistystep','scorchingray','fireball','icestorm','coneofcold'],
+    cantrips:['firebolt','rayoffrost','shockinggrasp'],spells:['magicmissile','shield','thunderwave','magearmor','mistystep','scorchingray','fireball','icestorm','coneofcold','chainlightning','disintegrate','fingerofdeath','prismaticspray'],
     features:[[1,'Spellcasting','Intelligence is your spellcasting ability.'],
       [1,'Arcane Recovery','Once a day on a short rest, recover spell slots totaling half your level (rounded up).'],
       [1,'Mage Armor','You cast it each morning: AC 13 + Dexterity, at the cost of one level 1 slot.'],
@@ -299,19 +322,139 @@ const CLASSES={
       [3,'Evoker: Potent Cantrip','Your damaging cantrips still deal half damage on a miss or a successful save.'],
       [4,'Ability Score Improvement','+2 Intelligence.'],[5,'Level 3 spells','Fireball. Cantrips deal 2 dice.'],
       [6,'Evoker: Sculpt Spells','Your Fireball and Ice Storm never hurt you.'],[7,'Level 4 spells','Ice Storm.'],
-      [8,'Ability Score Improvement','+2 Intelligence, or Constitution once Intelligence is 20.'],[9,'Level 5 spells','Cone of Cold.'],[10,'Evoker: Empowered Evocation','Add your Intelligence modifier to the damage of your evocation spells.']]},
+      [8,'Ability Score Improvement','+2 Intelligence, or Constitution once Intelligence is 20.'],[9,'Level 5 spells','Cone of Cold.'],[10,'Evoker: Empowered Evocation','Add your Intelligence modifier to the damage of your evocation spells.'],[11,'Level 6 spells','Chain Lightning, Disintegrate.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Finger of Death, Prismatic Spray.'],[14,'Evoker: Overchannel','Once a day: your next damaging spell of level 5 or lower deals maximum damage.']]},
   cleric:{name:'Cleric',blurb:'Heavy armor, a shield and a god’s attention. Heal, smite and turn the dead.',hd:8,primary:'wis',saves:['wis','cha'],
     skillPool:['insight','medicine','persuasion','religion','history'],skillCount:2,
     array:{wis:15,str:14,con:13,cha:12,int:10,dex:8},priority:['wis','str','con','cha','int','dex'],
     weapons:['mace'],masteries:[],caster:'wis',
-    cantrips:['sacredflame','tollthedead'],spells:['curewounds','healingword','guidingbolt','bless','shieldoffaith','spiritualweapon','spiritguardians','guardianoffaith','flamestrike'],
+    cantrips:['sacredflame','tollthedead'],spells:['curewounds','healingword','guidingbolt','bless','shieldoffaith','spiritualweapon','spiritguardians','guardianoffaith','flamestrike','heal','harm','firestorm'],
     features:[[1,'Spellcasting','Wisdom is your spellcasting ability.'],
       [1,'Divine Order: Protector','Heavy armor and a shield: AC 18.'],
       [2,'Channel Divinity','2 uses: Divine Spark (heal or harm 1d8 + Wisdom) or Turn Undead. One use returns on a short rest.'],
       [3,'Life Domain: Disciple of Life','Healing spells restore an extra 2 + the slot’s level.'],
       [4,'Ability Score Improvement','+2 Wisdom.'],[5,'Sear Undead','Turn Undead also deals Wisdom-modifier d8s of radiant damage.'],
       [6,'Channel Divinity','Three uses a day.'],[7,'Blessed Strikes: Potent Spellcasting','Add your Wisdom modifier to cantrip damage.'],[7,'Level 4 spells','Guardian of Faith.'],
-      [8,'Ability Score Improvement','+2 Wisdom, or Constitution once Wisdom is 20.'],[9,'Level 5 spells','Flame Strike.'],[10,'Divine Intervention','Once a day, cast any of your spells without spending a slot.']]}
+      [8,'Ability Score Improvement','+2 Wisdom, or Constitution once Wisdom is 20.'],[9,'Level 5 spells','Flame Strike.'],[10,'Divine Intervention','Once a day, cast any of your spells without spending a slot.'],[11,'Level 6 spells','Heal, Harm.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Fire Storm.'],[14,'Improved Blessed Strikes','When a cantrip deals damage, gain temporary HP equal to twice your Wisdom modifier.']]},
+  sorcerer:{name:'Sorcerer',blurb:'Magic in your blood. Bend spells with Metamagic and burn hot with draconic fire.',hd:6,primary:'cha',saves:['con','cha'],
+    skillPool:['arcana','persuasion','insight','intimidation','deception','religion'],skillCount:2,
+    array:{cha:15,con:14,dex:13,wis:12,int:10,str:8},priority:['cha','con','dex','wis','int','str'],
+    weapons:['dagger'],masteries:[],caster:'cha',
+    cantrips:['sorcburst','firebolt','rayoffrost','shockinggrasp'],spells:['magicmissile','shield','chromaticorb','thunderwave','magearmor','mistystep','scorchingray','fireball','icestorm','coneofcold','chainlightning','disintegrate','fingerofdeath','prismaticspray'],
+    features:[[1,'Spellcasting','Charisma is your spellcasting ability.'],
+      [1,'Innate Sorcery','Bonus action, twice a day: for the rest of the fight your spell save DC rises by 1 and you have advantage on spell attacks.'],
+      [1,'Mage Armor','Until level 3 you cast it each morning (AC 13 + Dexterity) for one level 1 slot.'],
+      [2,'Font of Magic','Sorcery Points equal to your level. Bonus action: turn them into spell slots (2 points for level 1, 3 for level 2, 5 for level 3).'],
+      [2,'Metamagic','Quickened Spell (2 points: cast an action spell as a bonus action) and Careful Spell (1 point: your next area spell can’t hurt you).'],
+      [3,'Draconic Sorcery: Draconic Resilience','Red dragon blood. AC 10 + Dexterity + Charisma, and +1 HP per level.'],
+      [4,'Ability Score Improvement','+2 Charisma.'],
+      [5,'Sorcerous Restoration','Once a day on a short rest, regain Sorcery Points equal to half your level.'],
+      [6,'Elemental Affinity','Add your Charisma modifier to fire spell damage, and resist fire.'],
+      [7,'Sorcery Incarnate','When Innate Sorcery is used up, spend 2 Sorcery Points to use it again.'],
+      [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Level 5 spells','Cone of Cold.'],[11,'Level 6 spells','Chain Lightning, Disintegrate.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Finger of Death, Prismatic Spray.']]},
+  warlock:{name:'Warlock',blurb:'A pact with a fiend. Eldritch Blast at will, Hex your foes, and slots that return on a short rest.',hd:8,primary:'cha',saves:['wis','cha'],
+    skillPool:['arcana','deception','intimidation','investigation','history','nature','religion'],skillCount:2,
+    array:{cha:15,con:14,dex:13,wis:12,int:10,str:8},priority:['cha','con','dex','wis','int','str'],
+    weapons:['dagger'],masteries:[],caster:'cha',pact:true,
+    cantrips:['eldritchblast'],spellsAt:{11:['circleofdeath'],13:['fingerofdeath']},spells:['hex','armorofagathys','hellishrebuke','mistystep','scorchingray','shatter','fireball','blight','synapticstatic'],
+    features:[[1,'Pact Magic','A few spell slots, always cast at your highest slot level, and they all return on a short rest.'],
+      [1,'Eldritch Invocation: Armor of Shadows','Mage Armor at will: AC 13 + Dexterity.'],
+      [2,'Eldritch Invocations: Agonizing and Repelling Blast','Eldritch Blast adds your Charisma modifier to damage and pushes targets 10 ft.'],
+      [2,'Magical Cunning','Once a day, during a quest, regain half your pact slots with a short ritual.'],
+      [3,'Fiend Patron: Dark One’s Blessing','When you drop an enemy to 0 HP, gain temporary HP equal to your Charisma modifier + warlock level.'],
+      [4,'Ability Score Improvement','+2 Charisma.'],
+      [5,'Eldritch Invocation: Fiendish Vigor','False Life at will: 12 temporary HP. Eldritch Blast now fires two beams.'],
+      [6,'Dark One’s Own Luck','Add a d10 to a failed saving throw, Charisma-modifier times a day. Used automatically.'],
+      [7,'Level 4 pact slots','Blight.'],
+      [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Level 5 pact slots','Synaptic Static.'],
+      [10,'Fiendish Resilience','Resistance to necrotic damage.'],[11,'Mystic Arcanum (6)','Circle of Death, once a day. Eldritch Blast fires three beams.'],[12,'Ability Score Improvement','Another +2.'],[13,'Mystic Arcanum (7)','Finger of Death, once a day.'],[14,'Fiend: Hurl Through Hell','Once a day, an Eldritch Blast hit can hurl the target through the Lower Planes: Charisma save or 8d10 psychic and stunned.']]},
+  monk:{name:'Monk',blurb:'Fists, speed and focus. Flurries of blows, stunning strikes, and you can knock arrows out of the air.',hd:8,primary:'dex',saves:['str','dex'],
+    skillPool:['acrobatics','athletics','insight','stealth','religion','history'],skillCount:2,
+    array:{dex:15,wis:14,con:13,str:12,int:10,cha:8},priority:['dex','wis','con','str','int','cha'],
+    weapons:['unarmed','spear','throwdagger'],masteries:[],
+    features:[[1,'Martial Arts','Unarmed strikes and monk weapons use Dexterity and your Martial Arts die (d6, d8 at level 5). Bonus action: one extra unarmed strike.'],
+      [1,'Unarmored Defense','AC 10 + Dexterity + Wisdom.'],
+      [2,'Monk’s Focus','Focus Points equal to your level, back on a short rest. Flurry of Blows (1 point: two bonus strikes), Patient Defense and Step of the Wind.'],
+      [2,'Unarmored Movement','+10 ft speed (+15 at level 6, +20 at level 10).'],
+      [2,'Uncanny Metabolism','Once a day when a fight starts, regain all Focus Points and heal.'],
+      [3,'Deflect Attacks','Reaction: reduce an attack’s damage by 1d10 + Dexterity + level.'],
+      [3,'Open Hand: Open Hand Technique','Flurry of Blows hits can knock the target prone (Dexterity save).'],
+      [4,'Ability Score Improvement','+2 Dexterity.'],[5,'Extra Attack','Attack twice when you take the Attack action.'],
+      [5,'Stunning Strike','Once per turn on a hit, 1 Focus Point: Constitution save or the target is stunned until your next turn.'],
+      [6,'Empowered Strikes','Your unarmed strikes deal force damage.'],
+      [6,'Open Hand: Wholeness of Body','Bonus action: heal a Martial Arts die + Wisdom, Wisdom-modifier times a day.'],
+      [7,'Evasion','Take no damage on a successful Dexterity save against area damage, half on a failure.'],
+      [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],
+      [10,'Heightened Focus','Flurry of Blows makes three strikes.'],[10,'Self-Restoration','Poison wears off at the start of your turn.'],[11,'Martial Arts d10','Your Martial Arts die grows to a d10.'],[12,'Ability Score Improvement','Another +2.'],[14,'Disciplined Survivor','Proficiency in every saving throw.']]},
+  paladin:{name:'Paladin',blurb:'Plate, a shield and a holy oath. Smite with radiant fire and heal with a touch.',hd:10,primary:'str',saves:['wis','cha'],
+    skillPool:['athletics','persuasion','insight','religion','intimidation','medicine'],skillCount:2,
+    array:{str:15,cha:14,con:13,wis:12,dex:10,int:8},priority:['str','cha','con','wis','dex','int'],
+    weapons:['longsword','javelin'],masteries:['longsword','javelin'],caster:'cha',half:true,
+    cantrips:[],spells:['bless','curewounds','shieldoffaith','aid','magicweapon','crusadersmantle','deathward'],
+    features:[[1,'Lay on Hands','A pool of healing equal to 5 × your level. Bonus action: heal yourself from it, or cure poison for 5 points.'],
+      [1,'Spellcasting','Charisma. A half caster: fewer, lower slots than a cleric.'],[1,'Weapon Mastery','Longsword (Sap), Javelin (Slow).'],
+      [2,'Fighting Style: Dueling','+2 damage with a one-handed melee weapon.'],
+      [2,'Divine Smite','When you hit with a melee weapon, spend a spell slot as a bonus action: 2d8 radiant (+1d8 per higher slot, +1d8 against undead). Free once a day.'],
+      [3,'Channel Divinity','Two uses a day; one returns on a short rest.'],
+      [3,'Oath of Devotion: Sacred Weapon','Channel Divinity: for the rest of the fight, add your Charisma modifier to weapon attack rolls.'],
+      [4,'Ability Score Improvement','+2 Strength.'],[5,'Extra Attack','Attack twice when you take the Attack action.'],[5,'Level 2 spells','Aid and Magic Weapon.'],
+      [6,'Aura of Protection','Add your Charisma modifier to all your saving throws.'],
+      [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],
+      [9,'Abjure Foes','Channel Divinity: up to your Charisma modifier in enemies within 60 ft make a Wisdom save or flee.'],[9,'Level 3 spells','Crusader’s Mantle.'],
+      [10,'Aura of Courage','You can’t be frightened.'],[11,'Radiant Strikes','Your melee weapon hits deal an extra 1d8 radiant.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 4 spells','Death Ward.']]},
+  ranger:{name:'Ranger',blurb:'A longbow, a hunter’s eye and a little nature magic. Mark your prey and bring it down.',hd:10,primary:'dex',saves:['str','dex'],
+    skillPool:['survival','perception','stealth','nature','athletics','insight','investigation','animal'],skillCount:3,
+    array:{dex:15,wis:14,con:13,str:12,int:10,cha:8},priority:['dex','wis','con','str','int','cha'],
+    weapons:['longbow','shortsword'],masteries:['longbow','shortsword'],caster:'wis',half:true,
+    cantrips:[],spells:['huntersmark','curewounds','ensnaringstrike','barkskin','conjurebarrage','conjurewoodland'],
+    features:[[1,'Favored Enemy','Hunter’s Mark is always ready, and you can cast it without a slot twice a day (3 at level 5, 4 at level 9).'],
+      [1,'Spellcasting','Wisdom. A half caster.'],[1,'Weapon Mastery','Longbow (Slow), Shortsword (Vex).'],
+      [2,'Fighting Style: Archery','+2 to ranged weapon attack rolls.'],[2,'Deft Explorer','Expertise in Survival.'],
+      [3,'Hunter: Colossus Slayer','Once per turn, +1d8 damage against a creature that’s already hurt.'],
+      [4,'Ability Score Improvement','+2 Dexterity.'],[5,'Extra Attack','Attack twice when you take the Attack action.'],[5,'Level 2 spells','Barkskin.'],
+      [6,'Roving','+10 ft speed.'],[7,'Hunter: Escape the Horde','Opportunity attacks against you have disadvantage.'],
+      [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],[9,'Expertise','Perception.'],[9,'Level 3 spells','Conjure Barrage.'],
+      [10,'Tireless','Action: gain 1d8 + Wisdom temporary HP, Wisdom-modifier times a day.'],[11,'Hunter: Superior Hunter’s Prey','Once per turn, Hunter’s Mark damage also leaps 1d6 force to another enemy nearby.'],[12,'Ability Score Improvement','Another +2.'],[13,'Relentless Hunter','Taking damage can’t break your concentration on Hunter’s Mark. Level 4 spells: Conjure Woodland Beings.'],[14,'Nature’s Veil','Bonus action: become invisible, Wisdom-modifier times a day.']]},
+  barbarian:{name:'Barbarian',blurb:'Rage, a greataxe and a body that shrugs off blades. Hit first, hit hard, keep standing.',hd:12,primary:'str',saves:['str','con'],
+    skillPool:['athletics','intimidation','perception','survival','nature','animal'],skillCount:2,
+    array:{str:15,con:14,dex:13,wis:12,cha:10,int:8},priority:['str','con','dex','wis','cha','int'],
+    weapons:['greataxe','handaxe'],masteries:['greataxe','handaxe'],
+    features:[[1,'Rage','Bonus action, a few times a day: resistance to bludgeoning, piercing and slashing damage, +2 damage with Strength attacks (+3 at level 9), and advantage on Strength checks and saves. Lasts the fight. One use returns on a short rest.'],
+      [1,'Unarmored Defense','AC 10 + Dexterity + Constitution.'],[1,'Weapon Mastery','Greataxe (Cleave), Handaxe (Vex).'],
+      [2,'Reckless Attack','On your turn: advantage on Strength attacks, but attacks against you have advantage until your next turn.'],
+      [2,'Danger Sense','Advantage on Dexterity saving throws.'],
+      [3,'Berserker: Frenzy','When you attack recklessly while raging, your first hit each turn deals extra d6s equal to your Rage damage.'],
+      [4,'Ability Score Improvement','+2 Strength.'],[5,'Extra Attack','Attack twice when you take the Attack action.'],[5,'Fast Movement','+10 ft speed.'],
+      [6,'Berserker: Mindless Rage','You can’t be charmed or frightened while raging.'],
+      [7,'Feral Instinct','Advantage on initiative.'],[7,'Instinctive Pounce','When you rage, you can move up to half your speed.'],
+      [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],
+      [9,'Brutal Strike','Give up Reckless Attack’s advantage on one attack: if it hits, +1d10 damage and the target is knocked back 15 ft.'],
+      [10,'Berserker: Retaliation','Reaction: when a creature next to you damages you, attack it back.'],[11,'Relentless Rage','While raging, if you drop to 0 HP, make a Constitution save (DC 10, +5 each time) to stay up with HP equal to twice your level.'],[12,'Ability Score Improvement','Another +2. Five rages a day.'],[14,'Berserker: Intimidating Presence','Bonus action, once a day: enemies within 30 ft make a Wisdom save or flee.']]},
+  druid:{name:'Druid',blurb:'Storms, moonlight and the shapes of beasts. Turn into a bear, or call lightning down on your foes.',hd:8,primary:'wis',saves:['int','wis'],
+    skillPool:['nature','perception','insight','medicine','survival','animal','arcana','religion'],skillCount:2,
+    array:{wis:15,con:14,dex:13,str:12,int:10,cha:8},priority:['wis','con','dex','str','int','cha'],
+    weapons:['quarterstaff'],masteries:[],caster:'wis',
+    cantrips:['shillelagh','produceflame','thornwhip'],spells:['healingword','curewounds','entangle','thunderwave','moonbeam','calllightning','icestorm','insectplague','heal','firestorm'],
+    features:[[1,'Spellcasting','Wisdom. Primal Order: Magician gives you an extra cantrip.'],[1,'Armor','Leather and a shield: AC 13 + Dexterity.'],
+      [2,'Wild Shape','Bonus action, twice a day (three times at level 6): become a beast. You keep your HP and gain temporary HP; one use returns on a short rest. You can’t cast spells in beast form.'],
+      [3,'Circle of the Moon: Circle Forms','Stronger forms (brown bear, dire wolf), AC at least 13 + Wisdom, and temporary HP equal to 3 × your level.'],
+      [4,'Ability Score Improvement','+2 Wisdom.'],[5,'Wild Resurgence','When you’re out of Wild Shape, spend a spell slot to regain a use.'],
+      [6,'Moon: Improved Circle Forms','Polar bear form. Your beast attacks deal radiant damage, and you add Wisdom to Constitution saves.'],
+      [7,'Elemental Fury: Potent Spellcasting','Add your Wisdom modifier to cantrip damage.'],
+      [8,'Ability Score Improvement','+2 Wisdom, or Constitution once Wisdom is 20.'],[9,'Level 5 spells','Insect Plague.'],
+      [10,'Moon: Moonlight Step','Bonus action: teleport 30 ft, Wisdom-modifier times a day.'],[11,'Level 6 spells','Heal.'],[12,'Ability Score Improvement','Another +2.'],[12,'Elephant form','Wild Shape into an elephant.'],[13,'Level 7 spells','Fire Storm.'],[14,'Moon: Lunar Form','Once per turn in beast form, a hit deals an extra 2d10 radiant.']]},
+  bard:{name:'Bard',blurb:'Words with teeth. Mock, charm and inspire, cut enemies down with a whisper, and learn magic from anywhere.',hd:8,primary:'cha',saves:['dex','cha'],
+    skillPool:['persuasion','performance','deception','insight','perception','acrobatics','stealth','history','investigation'],skillCount:3,
+    array:{cha:15,dex:14,con:13,wis:12,int:10,str:8},priority:['cha','dex','con','wis','int','str'],
+    weapons:['rapier','dagger'],masteries:[],caster:'cha',
+    cantrips:['viciousmockery','starrywisp'],spells:['healingword','dissonantwhispers','thunderwave','curewounds','shatter','hypnoticpattern','greaterinvisibility','synapticstatic'],
+    spellsAt:{6:['fireball','spiritguardians'],10:['coneofcold'],11:['ottosdance'],13:['prismaticspray']},
+    features:[[1,'Bardic Inspiration','d6 (d8 at level 5, d10 at level 10), Charisma-modifier times a day. Solo rule: you can inspire yourself, adding the die to a failed save or ability check.'],
+      [1,'Spellcasting','Charisma.'],[1,'Armor','Leather: AC 11 + Dexterity.'],
+      [2,'Expertise','Double proficiency in two skills.'],[2,'Jack of All Trades','Add half your proficiency bonus to ability checks you aren’t proficient in, including initiative.'],
+      [3,'College of Lore: Cutting Words','Reaction: subtract a Bardic Inspiration die from an attack roll against you, possibly turning a hit into a miss.'],
+      [4,'Ability Score Improvement','+2 Charisma.'],[5,'Font of Inspiration','Bardic Inspiration returns on a short rest.'],
+      [6,'Lore: Magical Discoveries','You learn Fireball and Spirit Guardians.'],[7,'Countercharm','You and your allies resist charm and fear.'],
+      [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Expertise','Two more skills.'],[10,'Magical Secrets','You learn Cone of Cold.'],[11,'Level 6 spells','Otto’s Irresistible Dance.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Prismatic Spray.']]}
 };
 
 const SPECIES={
@@ -333,6 +476,48 @@ const FEATS={tough:['Tough','+2 max HP per level.'],savage:['Savage Attacker','O
 
 /* range in squares; lvl 0 = cantrip */
 const SPELLS={
+  sorcburst:{name:'Sorcerous Burst',lvl:0,cast:'action',form:'attack',kind:'ranged',range:24,dmg:'d8',type:'fire',explode:true,desc:'Ranged spell attack, 120 ft, 1d8 fire. Each 8 rolled adds another d8, up to your Charisma modifier.'},
+  eldritchblast:{name:'Eldritch Blast',lvl:0,cast:'action',form:'blast',kind:'ranged',range:24,type:'force',desc:'Ranged spell attack, 120 ft, 1d10 force per beam. Two beams from level 5.'},
+  chromaticorb:{name:'Chromatic Orb',lvl:1,cast:'action',form:'attack',kind:'ranged',range:18,dmg:'3d8',type:'fire',bounce:true,desc:'Ranged spell attack, 90 ft, 3d8 fire (+1d8 per higher slot). If two damage dice match, the orb leaps to another enemy.'},
+  hex:{name:'Hex',lvl:1,cast:'bonus',form:'hex',conc:true,range:18,desc:'Bonus action, concentration. Your hits on the target deal an extra 1d6 necrotic. Move it to a new target when it drops.'},
+  armorofagathys:{name:'Armor of Agathys',lvl:1,cast:'bonus',form:'agathys',desc:'Bonus action. 5 temporary HP per slot level, and while they last, anything that hits you in melee takes that much cold damage.'},
+  hellishrebuke:{name:'Hellish Rebuke',lvl:1,cast:'reaction',form:'reaction',desc:'Reaction when a creature damages you: Dexterity save or 2d10 fire (+1d10 per higher slot), half on a save. Cast automatically.'},
+  shatter:{name:'Shatter',lvl:2,cast:'action',form:'point',range:12,radius:2,save:'con',dmg:'3d8',upcast:true,type:'thunder',desc:'Tap a square up to 60 ft away. Everything within 10 ft makes a Constitution save: 3d8 thunder (+1d8 per higher slot), half on a save.'},
+  blight:{name:'Blight',lvl:4,cast:'action',form:'save',save:'con',range:6,dmg:'8d8',type:'necrotic',desc:'30 ft. Constitution save or 8d8 necrotic, half on a save. Plants take maximum damage.'},
+  synapticstatic:{name:'Synaptic Static',lvl:5,cast:'action',form:'point',range:24,radius:4,save:'int',dmg:'8d6',type:'psychic',desc:'Tap a square up to 120 ft away. Everything within 20 ft makes an Intelligence save: 8d6 psychic, half on a save.'},
+  huntersmark:{name:'Hunter’s Mark',lvl:1,cast:'bonus',form:'mark',conc:true,range:18,desc:'Bonus action, concentration. Your weapon hits on the target deal an extra 1d6 force. Move it when the target drops. Rangers get free casts each day.'},
+  ensnaringstrike:{name:'Ensnaring Strike',lvl:1,cast:'bonus',form:'ensnare',conc:true,desc:'Bonus action, concentration. Your next weapon hit makes the target save (Strength) or be restrained by thorny vines, taking 1d6 piercing each turn.'},
+  barkskin:{name:'Barkskin',lvl:2,cast:'bonus',form:'barkskin',desc:'Bonus action. For the quest, your AC can’t be lower than 17.'},
+  conjurebarrage:{name:'Conjure Barrage',lvl:3,cast:'action',form:'cone',range:12,save:'dex',dmg:'5d8',type:'piercing',desc:'Tap a square to aim. A 60-ft cone of arrows: Dexterity save, 5d8 piercing, half on a save.'},
+  aid:{name:'Aid',lvl:2,cast:'action',form:'aid',desc:'Your maximum and current HP rise by 5 (5 more per higher slot) until your next long rest.'},
+  magicweapon:{name:'Magic Weapon',lvl:2,cast:'bonus',form:'magicweapon',desc:'Bonus action. For the quest, your weapon gets +1 to attack and damage rolls.'},
+  crusadersmantle:{name:'Crusader’s Mantle',lvl:3,cast:'action',form:'buff',conc:true,desc:'Concentration. Your weapon hits deal an extra 1d4 radiant.'},
+  shillelagh:{name:'Shillelagh',lvl:0,cast:'bonus',form:'shillelagh',desc:'Bonus action. For the fight, your quarterstaff uses Wisdom and deals 1d8 force (1d10 at level 5).'},
+  produceflame:{name:'Produce Flame',lvl:0,cast:'action',form:'attack',kind:'ranged',range:12,dmg:'d8',type:'fire',desc:'Ranged spell attack, 60 ft, 1d8 fire.'},
+  thornwhip:{name:'Thorn Whip',lvl:0,cast:'action',form:'attack',kind:'ranged',range:6,dmg:'d6',type:'piercing',effect:'pull',desc:'Spell attack, 30 ft, 1d6 piercing, and you pull the target up to 10 ft toward you.'},
+  viciousmockery:{name:'Vicious Mockery',lvl:0,cast:'action',form:'save',save:'wis',range:12,dmg:'d6',type:'psychic',effect:'mock',desc:'60 ft. Wisdom save or 1d6 psychic, and disadvantage on its next attack roll.'},
+  starrywisp:{name:'Starry Wisp',lvl:0,cast:'action',form:'attack',kind:'ranged',range:12,dmg:'d8',type:'radiant',desc:'Ranged spell attack, 60 ft, 1d8 radiant.'},
+  dissonantwhispers:{name:'Dissonant Whispers',lvl:1,cast:'action',form:'save',save:'wis',range:12,dmg:'3d6',upcast:true,type:'psychic',effect:'flee',desc:'60 ft. Wisdom save or 3d6 psychic (+1d6 per higher slot) and it flees from you. Half damage on a save.'},
+  entangle:{name:'Entangle',lvl:1,cast:'action',form:'point',range:18,radius:2,save:'str',dmg:'0d1',type:'none',conc:true,effect:'entangle',desc:'Concentration. Tap a square up to 90 ft away. Enemies in a 20-ft area make a Strength save or are restrained by grasping weeds.'},
+  moonbeam:{name:'Moonbeam',lvl:2,cast:'action',form:'point',range:24,radius:1,save:'con',dmg:'2d10',upcast:true,type:'radiant',conc:true,effect:'zone',desc:'Concentration. A beam of moonlight: Constitution save, 2d10 radiant (+1d10 per higher slot), half on a save. Enemies that end a turn in it take it again. Move it as an action.'},
+  calllightning:{name:'Call Lightning',lvl:3,cast:'action',form:'point',range:24,radius:1,save:'dex',dmg:'3d10',upcast:true,type:'lightning',conc:true,effect:'storm',desc:'Concentration. A storm cloud gathers: a bolt strikes now, and you can call another bolt as an action each turn. Dexterity save, 3d10 lightning, half on a save.'},
+  insectplague:{name:'Insect Plague',lvl:5,cast:'action',form:'point',range:24,radius:4,save:'con',dmg:'4d10',type:'piercing',conc:true,effect:'zone',desc:'Concentration. A 20-ft swarm of locusts: Constitution save, 4d10 piercing, half on a save. Enemies that end a turn in it take it again.'},
+  hypnoticpattern:{name:'Hypnotic Pattern',lvl:3,cast:'action',form:'point',range:24,radius:2,save:'wis',dmg:'0d1',type:'none',conc:true,effect:'charm',desc:'Concentration. Tap a square. Enemies in a 25-ft area make a Wisdom save or stand entranced, doing nothing, until they’re damaged.'},
+  greaterinvisibility:{name:'Greater Invisibility',lvl:4,cast:'action',form:'buff',conc:true,desc:'Concentration. You turn invisible: advantage on your attacks, and attacks against you have disadvantage.'},
+  lightningbolt2:{name:'Call Lightning bolt',lvl:0,cast:'action',form:'point',range:24,radius:1,save:'dex',dmg:'3d10',type:'lightning',internal:true,desc:''},
+  movebeam:{name:'Move Moonbeam',lvl:0,cast:'action',form:'point',range:24,radius:1,save:'con',dmg:'2d10',type:'radiant',internal:true,desc:''},
+  moonstep:{name:'Moonlight Step',lvl:0,cast:'bonus',form:'teleport',range:6,internal:true,desc:''},
+  chainlightning:{name:'Chain Lightning',lvl:6,cast:'action',form:'chain',range:30,save:'dex',dmg:'10d8',type:'lightning',desc:'A bolt hits your target and arcs to up to three more enemies within 30 ft of it. Dexterity save each: 10d8 lightning, half on a save.'},
+  disintegrate:{name:'Disintegrate',lvl:6,cast:'action',form:'save',save:'dex',range:12,dmg:'10d6+40',type:'force',nohalf:true,desc:'60 ft. Dexterity save or 10d6 + 40 force. Nothing on a save.'},
+  heal:{name:'Heal',lvl:6,cast:'action',form:'healflat',desc:'You regain 70 HP (+10 per higher slot) and shake off poison.'},
+  harm:{name:'Harm',lvl:6,cast:'action',form:'save',save:'con',range:12,dmg:'14d6',type:'necrotic',desc:'60 ft. Constitution save or 14d6 necrotic, half on a save.'},
+  circleofdeath:{name:'Circle of Death',lvl:6,cast:'action',form:'point',range:30,radius:6,save:'con',dmg:'8d8',type:'necrotic',desc:'Tap a square. Everything within 30 ft makes a Constitution save: 8d8 necrotic, half on a save. Mystic Arcanum: once a day.'},
+  ottosdance:{name:'Otto’s Irresistible Dance',lvl:6,cast:'action',form:'dance',conc:true,range:6,desc:'Concentration. 30 ft. Wisdom save or the target dances helplessly: it can’t move, attacks against it have advantage, and its attacks have disadvantage.'},
+  fingerofdeath:{name:'Finger of Death',lvl:7,cast:'action',form:'save',save:'con',range:12,dmg:'7d8+30',type:'necrotic',desc:'60 ft. Constitution save or 7d8 + 30 necrotic, half on a save.'},
+  firestorm:{name:'Fire Storm',lvl:7,cast:'action',form:'point',range:30,radius:2,save:'dex',dmg:'7d10',type:'fire',safe:true,desc:'Tap a square. A roaring storm of fire, 25 ft across, that never touches you: Dexterity save, 7d10 fire, half on a save.'},
+  prismaticspray:{name:'Prismatic Spray',lvl:7,cast:'action',form:'cone',range:12,save:'dex',dmg:'12d6',type:'radiant',desc:'Tap a square to aim. A 60-ft cone of rainbow light: Dexterity save, 12d6 damage, half on a save.'},
+  deathward:{name:'Death Ward',lvl:4,cast:'action',form:'deathward',desc:'The next time you would drop to 0 HP this quest, you drop to 1 instead.'},
+  conjurewoodland:{name:'Conjure Woodland Beings',lvl:4,cast:'action',form:'woodland',conc:true,desc:'Concentration. Nature spirits swirl within 10 ft of you. Enemies that end their turn there make a Wisdom save: 5d8 force, half on a save.'},
   firebolt:{name:'Fire Bolt',lvl:0,cast:'action',form:'attack',kind:'ranged',range:24,dmg:'d10',type:'fire',desc:'Ranged spell attack, 120 ft, 1d10 fire.'},
   rayoffrost:{name:'Ray of Frost',lvl:0,cast:'action',form:'attack',kind:'ranged',range:12,dmg:'d8',type:'cold',effect:'slow',desc:'Ranged spell attack, 60 ft, 1d8 cold. The target loses 10 ft of speed.'},
   shockinggrasp:{name:'Shocking Grasp',lvl:0,cast:'action',form:'attack',kind:'melee',range:1,dmg:'d8',type:'lightning',effect:'noreact',desc:'Melee spell attack, 1d8 lightning. The target can’t take opportunity attacks until its turn.'},
@@ -403,6 +588,23 @@ const ENEMIES={
     attacks:[{name:'bite',atk:7,dmg:'1d6+4',dtype:'piercing'},{name:'claw',atk:7,dmg:'2d6+4',dtype:'slashing'},{name:'claw',atk:7,dmg:'2d6+4',dtype:'slashing'}]},
   hillgiant:{name:'Hill giant',type:'giant',ac:13,hp:'10d12+40',atk:8,dmg:'3d8+5',dtype:'bludgeoning',xp:1800,speed:8,reach:2,mods:{str:5,dex:-1,con:4,int:-3,wis:-1,cha:-2},
     attacks:[{name:'greatclub',atk:8,dmg:'3d8+5',dtype:'bludgeoning'},{name:'greatclub',atk:8,dmg:'3d8+5',dtype:'bludgeoning'}],ranged:{name:'rock',range:12,long:48,atk:8,dmg:'3d10+5'}},
+  frostgiant:{name:'Frost giant',type:'giant',ac:15,hp:'12d12+60',atk:9,dmg:'3d12+6',dtype:'slashing',xp:3900,speed:8,reach:2,immune:['cold'],mods:{str:6,dex:-1,con:5,int:-1,wis:0,cha:1},
+    attacks:[{name:'greataxe',atk:9,dmg:'3d12+6',dtype:'slashing'},{name:'greataxe',atk:9,dmg:'3d12+6',dtype:'slashing'}],ranged:{name:'rock',range:12,long:48,atk:9,dmg:'4d10+6'}},
+  winterwolf:{name:'Winter wolf',type:'monstrosity',ac:13,hp:'10d10+20',atk:6,dmg:'2d6+4',dtype:'piercing',xp:700,speed:10,pack:true,knock:14,immune:['cold'],mods:{str:4,dex:1,con:2,int:-2,wis:1,cha:-1},
+    burst:{name:'Cold Breath',dc:12,dmg:'4d8',dtype:'cold',range:3}},
+  yeti:{name:'Yeti',type:'monstrosity',ac:12,hp:'6d10+18',atk:6,dmg:'2d6+4',dtype:'slashing',xp:700,speed:8,immune:['cold'],mods:{str:4,dex:1,con:3,int:-1,wis:1,cha:-2},
+    attacks:[{name:'claws',atk:6,dmg:'2d6+4',dtype:'slashing'},{name:'claws',atk:6,dmg:'2d6+4',dtype:'slashing'}]},
+  jarl:{name:'Jarl Hrimgar',type:'giant',ac:16,hp:'13d12+65',atk:9,dmg:'3d12+6',dtype:'slashing',xp:5000,speed:8,reach:2,immune:['cold'],mods:{str:7,dex:0,con:5,int:1,wis:3,cha:3},
+    attacks:[{name:'greataxe',atk:9,dmg:'3d12+6',dtype:'slashing'},{name:'greataxe',atk:9,dmg:'3d12+6',dtype:'slashing'}],ranged:{name:'rock',range:12,long:48,atk:9,dmg:'4d10+6'},
+    burst:{name:'Winter’s Howl',dc:16,dmg:'6d8',dtype:'cold',range:6}},
+  ghast:{name:'Ghast',type:'undead',ac:13,hp:'8d8',atk:5,dmg:'2d6+3',dtype:'slashing',xp:450,speed:6,immune:['poison'],mods:{str:3,dex:3,con:0,int:0,wis:1,cha:-1},
+    attacks:[{name:'bite',atk:3,dmg:'2d8+3',dtype:'piercing'},{name:'claws',atk:5,dmg:'2d6+3',dtype:'slashing',paralyze:10}]},
+  wraith:{name:'Wraith',type:'undead',ac:13,hp:'9d8+27',atk:6,dmg:'4d8+3',dtype:'necrotic',xp:1800,speed:12,resistMundane:true,immune:['poison'],mods:{str:-2,dex:3,con:3,int:1,wis:2,cha:2},
+    attacks:[{name:'life drain',atk:6,dmg:'4d8+3',dtype:'necrotic',drain:true}]},
+  youngblack:{name:'Young black dragon',type:'dragon',ac:18,hp:'15d10+45',atk:7,dmg:'2d10+4',dtype:'piercing',xp:2900,speed:8,immune:['acid'],mods:{str:4,dex:2,con:3,int:1,wis:0,cha:2},
+    attacks:[{name:'bite',atk:7,dmg:'2d10+4',dtype:'piercing'},{name:'claw',atk:7,dmg:'2d6+4',dtype:'slashing'},{name:'claw',atk:7,dmg:'2d6+4',dtype:'slashing'}],burst:{name:'Acid Breath',dc:14,dmg:'11d8',dtype:'acid',range:6}},
+  morvath:{name:'Morvath the Drowner',type:'dragon',ac:18,hp:'14d12+56',atk:10,dmg:'2d10+5',dtype:'piercing',xp:7000,speed:8,reach:2,immune:['acid'],mods:{str:6,dex:2,con:5,int:2,wis:1,cha:3},
+    attacks:[{name:'bite',atk:10,dmg:'2d10+5',dtype:'piercing'},{name:'claw',atk:10,dmg:'2d6+5',dtype:'slashing'}],burst:{name:'Acid Breath',dc:17,dmg:'10d8',dtype:'acid',range:12}},
   warden:{name:'The Rot-Warden',type:'undead',ac:14,hp:'5d10',atk:5,dmg:'1d10+2',dtype:'necrotic',xp:300,speed:6,mods:{str:3,dex:0,con:3,int:-2,wis:1,cha:-1}}
 };
 
@@ -730,6 +932,7 @@ function sleep(){
   if(S.weather==='rain')lines.push('It’s raining. Your crops are watered for you.');
   dailyEvent(lines);
   if(S.flags.bruised){S.flags.bruised--;S.used.morning=true;lines.push('You’re still recovering. No morning chore today.')}
+  if(S.hero.level>=5&&!S.flags.mystic){S.flags.mystic=S.day;lines.push('A woman in a moth-grey cloak has taken a room at the Flagon. She calls herself Sable, a mystic, and says she has come for you. Find her on the Folk tab.')}
   merchantTick(lines);
   raidTick(lines);
   if(di.dow===5&&!built('market'))lines.push('Corwin’s cart is in the square. It’s market day.');
@@ -741,8 +944,10 @@ function sleep(){
 function weekRollover(lines){
   S.bounties=genBounties();lines.push('New bounties are posted on the notice board.');
   for(const w of S.workers){
+    if(w.assign==='salvage'){const r=S.res.timber<=S.res.stone&&S.salvage.timber>0||!S.salvage.stone?'timber':'stone',n=Math.min(S.salvage[r],d(w.die)+(w.kind==='kobold'?1:0));
+      if(n>0){S.salvage[r]-=n;S.res[r]+=n;lines.push(`${w.name} scavenged ${n} ${r} from the ruins.`)}else{w.assign='build';lines.push(`The ruins are picked clean. ${w.name} goes back to construction.`)}}
     if(w.assign==='lumber'&&built('lumber')){const n=d(w.die)+(lvl('lumber')>=2?2:0)+(lvl('lumber')>=3?3:0);S.res.timber+=n;lines.push(`${w.name} cut ${n} timber this week.`)}
-    if(w.assign==='quarry'&&built('quarry')){const n=d(w.die)+(lvl('quarry')>=2?2:0)+(lvl('quarry')>=3?3:0);S.res.stone+=n;lines.push(`${w.name} cut ${n} stone this week.`)}
+    if(w.assign==='quarry'&&built('quarry')){const n=d(w.die)+(w.kind==='kobold'?1:0)+(lvl('quarry')>=2?2:0)+(lvl('quarry')>=3?3:0);S.res.stone+=n;lines.push(`${w.name} cut ${n} stone this week.`)}
     if(w.assign==='mine'&&S.flags.warren&&S.flags.ending!=='reseal'){const r=d(w.die)+(w.kind==='kobold'?1:0);if(r>=4){S.res.moonsilver++;lines.push(`${w.name} dug up a lump of moonsilver.`)}else lines.push(`${w.name} found no moonsilver this week.`)}
   }
   if(built('flagon')){if(S.flags.flagonShut&&S.day<S.flags.flagonShut)lines.push('The Flagon stayed shut this week.');else{const inc=5+(hasPerk('bram3')?3:0)+(hasPerk('bram6')?5:0)+(lvl('flagon')>=2?8:0)+(lvl('flagon')>=3?15:0);S.res.gold+=inc;lines.push(`The Flagon took in ${inc} gp.`)}}
@@ -786,7 +991,7 @@ function checkAct(){if(!S.flags.act1&&act1Ready()){S.flags.act1=true;S.flags.act
 /* ---- adventures ---- */
 function makePatrol(){
   const L=S.hero.level;
-  const opts=L<2?[['rat','rat'],['wolf'],['kobold','rat'],['bandit']]:L<3?[['wolf','wolf'],['kobold','kobold'],['blightrat','rat'],['bandit','bandit']]:L<5?[['madwolf'],['wolf','wolf','rat'],['blightspawn','blightspawn'],['bandit','bandit','kobold'],['ghoul']]:L<6?[['ghoul','blightspawn'],['thug','thug'],['spider'],['wolf','wolf','madwolf'],['blightkobold','blightkobold','kobold']]:L<7?[['ghoul','ghoul'],['thug','thug','bandit'],['spider','spider'],['madwolf','madwolf','wolf']]:L<9?[['wight'],['ghoul','ghoul','ghoul'],['ogrezombie'],['needleblight','needleblight','vineblight'],['skeleton','skeleton','skeleton']]:[['wight','wight'],['ogrezombie','ghoul'],['vineblight','vineblight','needleblight'],['wight','skeleton','skeleton']];
+  const opts=L<2?[['rat','rat'],['wolf'],['kobold','rat'],['bandit']]:L<3?[['wolf','wolf'],['kobold','kobold'],['blightrat','rat'],['bandit','bandit']]:L<5?[['madwolf'],['wolf','wolf','rat'],['blightspawn','blightspawn'],['bandit','bandit','kobold'],['ghoul']]:L<6?[['ghoul','blightspawn'],['thug','thug'],['spider'],['wolf','wolf','madwolf'],['blightkobold','blightkobold','kobold']]:L<7?[['ghoul','ghoul'],['thug','thug','bandit'],['spider','spider'],['madwolf','madwolf','wolf']]:L<9?[['wight'],['ghoul','ghoul','ghoul'],['ogrezombie'],['needleblight','needleblight','vineblight'],['skeleton','skeleton','skeleton']]:L<11?[['wight','wight'],['ogrezombie','ghoul'],['vineblight','vineblight','needleblight'],['wight','skeleton','skeleton']]:L<13?[['winterwolf','winterwolf'],['yeti','ghast'],['frostgiant'],['wraith']]:[['frostgiant'],['wraith','ghast'],['youngblack'],['troll','ghast']];
   if(d(6)===1)return{name:'Valley patrol',reward:{gold:d(6)+4,xp:25},done:'A quiet day. The valley feels a little safer.',stages:[{t:'text',text:pick(PATROL_INTROS)+' No trouble, but you find a forgotten satchel with a few coins inside.'}]};
   return{name:'Valley patrol',reward:{gold:d(6)+2+(L>=5?d(10)+5:0),xp:0},done:'You head home as the sun sets. The valley feels a little safer.',stages:[{t:'text',text:pick(PATROL_INTROS)},{t:'fight',foes:pick(opts),text:'Trouble finds you.'}]};
 }
@@ -817,6 +1022,9 @@ function enterStage(){
   if(st.effect==='ysoldeYields')S.flags.ysoldeYields=true;
   if(st.effect==='endReseal'||st.effect==='endDestroy'||st.effect==='endBloom'){S.flags.ending=st.effect==='endReseal'?'reseal':st.effect==='endDestroy'?'destroy':'bloom';S.flags.act3=true;S.blight=0;
     if(S.flags.ending==='reseal')S.workers.forEach(w=>{if(w.assign==='mine')w.assign=built('quarry')?'quarry':'build'});addLog('The Sleeper’s story is over.','good')}
+  if(st.effect==='frostSealed'){S.flags.frostSealed=true}
+  if(st.effect==='takeShard'){S.flags.rimeShard=true;S.hero.items=S.hero.items||[];S.hero.items.push({id:'rimeshard',attuned:false});addLog('You took the rime shard.','bad')}
+  if(st.effect==='ch2end'){S.flags.ch2=true;S.flags.ch2Modal=true}
   if(st.effect==='act2end'){S.flags.act2=true;S.flags.act2Modal=true;S.blight=Math.min(8,S.blight+3);addLog('The second seal is broken. The Blight Clock jumps by 3.','bad')}
   if(st.effect==='kobolds')S.flags.koboldsAllied=true;
   if(st.effect==='kobolds'){for(let i=0;i<2;i++)S.workers.push({id:S.nextId++,name:i?'Snik':'Tikka’s cousin Vreb',kind:'kobold',die:4,wage:3,assign:'build',days:0});addLog('Two kobold diggers join your workforce.','good')}
@@ -1102,16 +1310,17 @@ const MAGIC={
   weapon2:{name:'Weapon +2',rarity:'rare',price:600,kind:'weapon',wb:2,desc:'Your weapon gains +2 to attack and damage rolls.'},
   flametongue:{name:'Flame Tongue',rarity:'rare',price:650,attune:true,kind:'weapon',fire:'2d6',desc:'Your melee weapon burns: +2d6 fire damage on a hit.'},
   warning:{name:'Weapon of Warning',rarity:'uncommon',price:180,attune:true,kind:'weapon',warn:true,desc:'Advantage on initiative, and you can’t be caught by surprise.'},
-  armor1:{name:'Armor +1',rarity:'rare',price:550,attune:false,ac:1,who:h=>h.cls!=='wizard',desc:'+1 AC while you wear armor.'},
-  shield1:{name:'Shield +1',rarity:'uncommon',price:180,ac:1,who:h=>h.cls==='cleric',desc:'+1 AC while you carry a shield.'},
+  armor1:{name:'Armor +1',rarity:'rare',price:550,attune:false,ac:1,who:h=>['fighter','rogue','cleric','paladin','ranger','druid','bard'].includes(h.cls),desc:'+1 AC while you wear armor.'},
+  shield1:{name:'Shield +1',rarity:'uncommon',price:180,ac:1,who:h=>['cleric','paladin','druid'].includes(h.cls),desc:'+1 AC while you carry a shield.'},
   cloak:{name:'Cloak of Protection',rarity:'uncommon',price:250,attune:true,ac:1,saves:1,desc:'+1 AC and +1 to saving throws.'},
   ring:{name:'Ring of Protection',rarity:'rare',price:600,attune:true,ac:1,saves:1,desc:'+1 AC and +1 to saving throws.'},
   luckstone:{name:'Stone of Good Luck',rarity:'uncommon',price:220,attune:true,saves:1,checks:1,desc:'+1 to ability checks and saving throws.'},
   amulet:{name:'Amulet of Health',rarity:'rare',price:650,attune:true,set:{con:19},desc:'Your Constitution becomes 19.'},
-  gauntlets:{name:'Gauntlets of Ogre Power',rarity:'uncommon',price:250,attune:true,set:{str:19},who:h=>h.cls==='fighter'||h.cls==='cleric',desc:'Your Strength becomes 19.'},
+  gauntlets:{name:'Gauntlets of Ogre Power',rarity:'uncommon',price:250,attune:true,set:{str:19},who:h=>['fighter','cleric','paladin','barbarian'].includes(h.cls),desc:'Your Strength becomes 19.'},
   headband:{name:'Headband of Intellect',rarity:'uncommon',price:250,attune:true,set:{int:19},who:h=>h.cls==='wizard',desc:'Your Intelligence becomes 19.'},
   periapt:{name:'Periapt of Wound Closure',rarity:'uncommon',price:200,attune:true,desc:'You stabilize automatically when dying, and Hit Dice heal double.'},
-  bracers:{name:'Bracers of Defense',rarity:'rare',price:550,attune:true,ac:2,who:h=>h.cls==='wizard',desc:'+2 AC while you wear no armor and carry no shield.'},
+  bracers:{name:'Bracers of Defense',rarity:'rare',price:550,attune:true,ac:2,who:h=>['wizard','sorcerer','monk','warlock','barbarian'].includes(h.cls),desc:'+2 AC while you wear no armor and carry no shield.'},
+  rimeshard:{name:'Rime shard',rarity:'legendary',price:0,attune:true,saves:1,set:{con:21},desc:'A splinter of the frozen Sleeper’s heart. Your Constitution becomes 21 and you gain +1 to saving throws. It whispers to you at night.'},
   wandmm:{name:'Wand of Magic Missiles',rarity:'uncommon',price:220,charges:7,desc:'7 charges. Action: spend 1 to fire three darts of 1d4 + 1. Regains 1d6 + 1 charges each dawn.'},
   warmage:{name:'Wand of the War Mage +1',rarity:'uncommon',price:250,attune:true,spellAtk:1,who:h=>!!CLASSES[h.cls].caster,desc:'+1 to spell attack rolls.'},
   superior:{name:'Potion of Superior Healing',rarity:'rare',price:180,consumable:true,desc:'Heals 8d4 + 8. Bonus action to drink.'},
@@ -1284,6 +1493,8 @@ const RAIDS={
     groups:L=>L<8?[['ogre','goblin','goblin'],['ogre'],['goblin','goblin','worg']]:[['ogre','ogre'],['ogre','worg'],['ogre','goblin','goblin']]},
   troll:{name:'The river troll',text:'Something huge has crawled out of the river and is tearing through the farms on the south bank.',minL:8,
     groups:L=>[['troll'],['worg','worg'],['ogre']]},
+  frost:{name:'Frost giant raiders',text:'Drums in the hills. Frost giants have come down from the White Pass, and they want Hollowmere’s grain.',minL:11,
+    groups:L=>[['frostgiant','winterwolf'],['yeti','yeti','winterwolf'],['frostgiant']]},
   giant:{name:'A hill giant',text:'A hill giant is stomping up the valley, pulling up fences and smashing barns as it comes.',minL:9,
     groups:L=>[['hillgiant'],['ogre','ogre'],['worg','worg','goblin']]},
   dead:{name:'The restless dead',text:'Grey shapes are stumbling out of the hills. The blight hasn’t finished with Hollowmere.',blight:true,
@@ -1337,44 +1548,222 @@ function townRank(){
   return{name:'Ruin',next:'Hamlet: finish Act 1.'};
 }
 
+
+/* ---- sorcerer, warlock and monk helpers ---- */
+const PACT=[[0,0],[1,1],[2,1],[2,2],[2,2],[2,3],[2,3],[2,4],[2,4],[2,5],[2,5],[3,5],[3,5],[3,5],[3,5],[3,5],[3,5],[4,5],[4,5],[4,5],[4,5]];
+const isWarlock=(h=S.hero)=>!!CLASSES[h.cls].pact;
+const maDie=(h=S.hero)=>h.level>=17?12:h.level>=11?10:h.level>=5?8:6;
+const addDice=(expr,n)=>{const [a,b]=expr.split('d');return `${+a+n}d${b}`};
+function upcastLevels(id){
+  const h=S.hero,c=S.run&&S.run.combat,sp=SPELLS[id];
+  if(!sp||!sp.lvl||isWarlock(h)||(c&&c.freeCast)||(id==='huntersmark'&&h.pools.favored>0))return[];
+  const out=[];for(let l=sp.lvl;l<=9;l++)if(h.pools['slot'+l]>0)out.push(l);return out;
+}
+const castLvl=()=>S.flags.castLvl||0;
+function plannedSlot(id){const sp=SPELLS[id],h=S.hero;if(!sp||!sp.lvl)return 0;if(isWarlock(h))return slotFor(sp.lvl);return pickSlot(sp.lvl,castLvl())}
+const MULTI={magicmissile:'darts',scorchingray:'rays',eldritchblast:'beams'};
+function multiCount(id,slot){const h=S.hero;if(id==='magicmissile')return 3+(slot-1);if(id==='scorchingray')return 3+(slot-2);if(id==='eldritchblast')return h.level>=17?4:h.level>=11?3:h.level>=5?2:1;return 1}
+function multiTargets(id){const sp=SPELLS[id],c=S.run.combat;return c.foes.map((f,i)=>i).filter(i=>{const f=c.foes[i];return f.hp>0&&!rangeIssue('ranged',sp.range,sp.range,f)})}
+function pickSlot(base,want){const h=S.hero;if(!isWarlock(h)&&want&&want>=base&&h.pools['slot'+want]>0)return want;return slotFor(base)}
+function useSlot(l){const h=S.hero;if(isWarlock(h)){if(l>5)h.pools['arc'+l]--;else h.pools.pact--}else h.pools['slot'+l]--}
+function slotSummary(h=S.hero,long){
+  if(isWarlock(h))return `${long?'Pact slots':'pact'} ${h.pools.pact||0}/${PACT[h.level][0]} (level ${PACT[h.level][1]})${[6,7].filter(l=>maxPools(h)['arc'+l]).map(l=>`, arcanum ${l}: ${h.pools['arc'+l]}`).join('')}`;
+  const mp=maxPools(h);return [1,2,3,4,5,6,7,8,9].filter(l=>mp['slot'+l]).map(l=>long?`level ${l}: ${h.pools['slot'+l]}/${mp['slot'+l]}`:`L${l} ${h.pools['slot'+l]}`).join(', ');
+}
+const affinity=type=>S.hero.cls==='sorcerer'&&S.hero.level>=6&&type==='fire'?am('cha'):0;
+function hexBonus(t,crit){const c=S.run.combat,h=S.hero;if(h.conc!=='hex'||c.hexTarget==null||c.foes[c.hexTarget]!==t)return 0;return rollDice(crit?2:1,6).reduce((a,b)=>a+b,0)}
+const kiDC=()=>8+pb()+am('wis');
+function monkStrikes(n,flurry){
+  for(let i=0;i<n;i++){const c=S.run.combat,t=curTarget();if(c.over||!t||rangeIssue('melee',1,1,t))break;weaponAttack('unarmed',true,{flurry})}
+}
+function eldritchBlast(alloc){
+  const c=S.run.combat,h=S.hero,beams=h.level>=17?4:h.level>=11?3:h.level>=5?2:1,seq=alloc?Object.entries(alloc).flatMap(([i,k])=>Array(k).fill(+i)):[];
+  for(let i=0;i<beams;i++){
+    let t=c.foes[seq[i]];if(!t||t.hp<=0)t=curTarget();if(!t||rangeIssue('ranged',24,24,t))break;
+    const dist=cheb(c.hero,t),m=attackMods(t,'ranged',dist,24),r=heroD20(m.adv,m.dis);let total=r.nat+spellAtk(),b='';if(blessed()){const x=d(4);total+=x;b=` + Bless ${x}`}
+    const crit=r.nat===20,hit=crit||(r.nat!==1&&total>=t.ac),why=m.why.length?` (${m.why.join(', ')})`:'';
+    const head=`Eldritch Blast${beams>1?` beam ${i+1}`:''} at ${fn(t)}${why}: ${r.txt} ${sgn(spellAtk())}${b} = ${total} vs AC ${t.ac}.`;
+    if(hit){const dice=rollDice(crit?2:1,10),ag=h.level>=2?am('cha'):0,hx=hexBonus(t,crit),dmg=dice.reduce((a,b)=>a+b,0)+ag+hx;
+      clog(`${head} ${crit?'Critical! ':'Hit. '}${dmg} force [${dice.join(', ')}]${ag?` ${sgn(ag)} Agonizing`:''}${hx?` + Hex ${hx}`:''}.`,'good');
+      if(h.level>=2&&t.hp>0)pushAway(t,2);hurt(t,dmg,'force',crit);
+      if(c.hurlNext&&t.hp>0&&h.pools.hurl){c.hurlNext=false;h.pools.hurl--;const s2=d(20),tt=s2+t.mods.cha;if(tt<spellDC()){const r2=roll('8d10');clog(`Hurl Through Hell: ${fn(t)} vanishes screaming through the Lower Planes. ${r2.total} psychic, and it’s stunned.`,'good');t.stunned=true;hurt(t,r2.total,'psychic',false)}else clog(`Hurl Through Hell: ${fn(t)} resists (CHA ${tt} vs ${spellDC()}).`,'info')}
+    }else{clog(`${head} Miss.`);fxMiss('f'+c.foes.indexOf(t))}
+  }
+}
+
+
+/* ---- barbarian, druid and bard helpers ---- */
+const FORMS={
+  wolf:{name:'Wolf',minL:2,ac:12,speed:8,attacks:['wolfbite'],multi:1},
+  brownbear:{name:'Brown bear',minL:3,ac:11,speed:8,attacks:['bearbite','bearclaws'],multi:2},
+  direwolf:{name:'Dire wolf',minL:3,ac:14,speed:10,attacks:['direbite'],multi:1},
+  polarbear:{name:'Polar bear',minL:6,ac:12,speed:8,attacks:['polarbite','polarclaws'],multi:2},
+  elephant:{name:'Elephant',minL:12,ac:12,speed:8,attacks:['elegore','elestomp'],multi:2}
+};
+const shape=(h=S.hero)=>h.conds&&h.conds.shape?FORMS[h.conds.shape]:null;
+const rageDmg=(h=S.hero)=>h.level>=16?4:h.level>=9?3:2;
+const biDie=(h=S.hero)=>h.level>=15?12:h.level>=10?10:h.level>=5?8:6;
+function heroWeapons(h=S.hero){const f=shape(h);return f?f.attacks:CLASSES[h.cls].weapons}
+function wildShape(id){
+  const c=S.run.combat,h=S.hero,f=FORMS[id];if(!c.bonus||!h.pools.ws||!f||h.level<f.minL)return;
+  h.pools.ws--;c.bonus=false;h.conds.shape=id;const tmp=h.level>=3?3*h.level:h.level;h.temp=Math.max(h.temp,tmp);
+  c.move=Math.max(0,c.move+(f.speed-heroSpeed({...h,conds:{}})));
+  clog(`Wild Shape: you become a ${f.name.toLowerCase()}. ${tmp} temporary HP.`,'good');
+}
+
+/* ===== Sequel: The Seven Seals (levels 10-20) ===== */
+Object.assign(COND,{shard:()=>!!S.flags.rimeShard,noShard:()=>!S.flags.rimeShard,ysoldeAlly:()=>!!S.flags.ysoldeYields,noYsolde:()=>!S.flags.ysoldeYields});
+Object.assign(QUESTS,{
+  s1a:{act:4,name:'The Warden’s summons',lvl:10,needs:null,req:[()=>!!S.flags.sequel,'Begin the sequel first.'],
+    blurb:'A rider in the realm’s blue and silver waits at the Flagon with a sealed letter, and wolves made of winter on her trail.',
+    reward:{gold:400,xp:6000},done:'You carry the Abbess’s letter home. Hollowmere is no longer just a town: it is the last chapterhouse of the Order of the Shut Eye, and you are its Warden.',
+    stages:[
+      {t:'text',text:'The rider is half frozen. “From the Abbess of Saint Ivel,” she says, pressing a letter into your hands. “There were seven Sleepers, Warden. Not one. Hollowmere’s was only the smallest.”'},
+      {t:'text',text:'Before you can read further, the Flagon’s windows frost over from the outside. Howling, close. Whatever chased her across the mountains has caught up.'},
+      {t:'fight',foes:['winterwolf','yeti'],text:'Wolves the size of ponies pour out of the snow, breath smoking with cold.'},
+      {t:'check',skill:'history',dc:16,text:'The letter is written in the Order’s cipher. Maren helps you with the parts she remembers.',
+        pass:{text:'Seven seals, seven Sleepers, seven wardens. Six chapterhouses fell silent this year. And a name you don’t recognize, underlined twice: Vaelor, the Unwaking.',set:'vaelorKnown'},
+        fail:{text:'You catch only fragments: seven seals, a frozen pass to the north, and that every other chapterhouse has gone silent.'}},
+      {t:'text',text:'Maren closes the letter. “The north seal first,” she says. “The Glacier Shrine above the White Pass. If the others have fallen, it’s next.”'}
+    ]},
+  s1b:{act:4,name:'Into the White Pass',lvl:11,needs:'s1a',
+    blurb:'The road to the Glacier Shrine climbs through the White Pass, where frost giants have started raiding the herders’ steadings.',
+    reward:{gold:600,xp:9000},done:'The pass is open. Far above, the Glacier Shrine glitters like a broken tooth, and the giants’ drums have gone quiet.',
+    stages:[
+      {t:'text',text:'Three days of climbing. Burned steadings, frozen cattle, and huge bootprints in the snow, all heading up toward the shrine.'},
+      {t:'check',skill:'survival',dc:16,text:'A storm is coming in fast. You need shelter before it hits.',
+        pass:{text:'You find a cave the giants use as a waystation, and take its sentries by surprise.',set:'ambush'},
+        fail:{text:'The storm catches you in the open. You stagger into a giants’ waystation half blind.',damage:'4d8',dtype:'cold'}},
+      {t:'fight',foes:['yeti','winterwolf'],text:'The waystation’s beasts come at you out of the dark.'},
+      {t:'text',text:'Past the cave, a frost giant stands guard on the old Order bridge, axe resting on one shoulder.'},
+      {t:'fight',foes:['frostgiant'],text:'The giant laughs, a sound like a glacier cracking, and steps onto the bridge to meet you.'}
+    ]},
+  s1c:{act:4,name:'The Glacier Shrine',lvl:11,needs:'s1b',rests:2,
+    blurb:'Jarl Hrimgar has taken the Glacier Shrine. Something inside it is waking, and the giants mean to feed it.',
+    reward:{gold:1000,xp:15000},done:'',
+    stages:[
+      {t:'text',text:'The shrine is carved into the glacier itself. Inside, behind sheets of blue ice, you can see the shape of the second Sleeper: something vast, coiled, with frost for skin.'},
+      {t:'fight',foes:['frostgiant'],text:'Hrimgar’s housecarl bars the great hall, axe raised.'},
+      {t:'save',save:'con',dc:17,text:'The temperature drops so fast your breath freezes in your throat. The Sleeper is dreaming of winter.',
+        pass:{text:'You force your way through the cold.'},fail:{text:'Frost sears your lungs.',damage:'6d8',dtype:'cold'}},
+      {t:'fight',foes:['yeti','winterwolf'],text:'The inner sanctum is guarded by Hrimgar’s hunting beasts.'},
+      {t:'fight',foes:['jarl'],text:'Jarl Hrimgar rises from a throne of ice. “The Unwaking One promised us an endless winter,” he booms. “You are too late, little warden.”'},
+      {t:'choice',text:'Hrimgar falls. The seal is cracked but holding, and a shard of the Sleeper’s frozen heart lies glittering on the floor. Its power hums in your bones.',options:[
+        {label:'Reseal the shrine',goto:'reseal'},
+        {label:'Take the shard',goto:'shard'}]},
+      {id:'reseal',t:'text',effect:'frostSealed',goto:'end',text:'You press Maren’s three keys into the ice and turn them. The cracks close. Somewhere deep in the glacier, the second Sleeper sighs back into its dreams.'},
+      {id:'shard',t:'text',effect:'takeShard',text:'You pick up the shard. It doesn’t burn. It feels like it was always meant for your hand. The seal holds, barely, and you feel the Sleeper watching you go.'},
+      {id:'end',t:'text',text:'On the way down, a raven lands on the bridge rail. It speaks in an old man’s voice: “Two seals, Warden. Five remain. I will be waiting at the last.” Then it crumbles into ash.'}
+    ]},
+  s2a:{act:5,name:'Bells under the water',lvl:12,needs:'s1c',
+    blurb:'In the Fenmarch, the bells of the drowned Abbey of Saint Ivel ring every night, though the abbey sank a hundred years ago.',
+    reward:{gold:800,xp:12000},done:'The fen villages can sleep again, for now. The abbey bells still ring, deeper in the marsh.',
+    stages:[
+      {t:'text',text:'The Fenmarch is all black water and grey reeds. The villagers won’t go out after dark: things climb out of the water when the bells ring.'},
+      {t:'fight',foes:['ghast','ghast','ghoul'],text:'As the first bell tolls, the drowned dead crawl out of the reeds.'},
+      {t:'check',skill:'investigation',dc:17,text:'One of the dead wears an Order signet. Its pockets are sealed in wax.',
+        pass:{text:'A waterlogged letter from the Abbess: “Vaelor came as a pilgrim. He was the first of us, a hundred years before the Order had a name. He asked to see the seal.”',set:'abbessLetter'},
+        fail:{text:'The letter dissolves in your hands. Only one word survives: “pilgrim.”'}},
+      {t:'fight',foes:['wraith','ghast'],text:'A cold shape rises from the water, eyes like drowned candles.'}
+    ]},
+  s2b:{act:5,name:'Morvath’s brood',lvl:13,needs:'s2a',
+    blurb:'A young black dragon is hunting the fen villages. The fenfolk say its mother lairs in the drowned abbey.',
+    reward:{gold:1200,xp:15000},done:'The young dragon is dead. Its mother will have felt it die.',
+    stages:[
+      {t:'text',text:'You track the dragon to an island of rotten cypress, littered with the bones of cattle and fishing boats.'},
+      {t:'check',skill:'stealth',dc:17,text:'The dragon is asleep on its hoard, one eye half open.',
+        pass:{text:'You get close before it wakes.',set:'ambush'},fail:{text:'A branch cracks. The eye opens fully.'}},
+      {t:'fight',foes:['youngblack'],text:'The dragon uncoils with a hiss like a kettle, acid already dripping from its jaws.'}
+    ]},
+  s2c:{act:5,name:'The Drowned Abbey',lvl:13,needs:'s2b',rests:2,
+    blurb:'Morvath the Drowner coils around the third seal at the bottom of the abbey. The bells are ringing for you.',
+    reward:{gold:2000,xp:25000},done:'',
+    stages:[
+      {t:'text',text:'You descend through the flooded nave on a rope of moonsilver chain. The bells ring in the black water around you. The third Sleeper’s seal glows faintly below.'},
+      {t:'fight',foes:['wraith','ghast'],text:'The abbey’s last monks still keep their vigil, and they do not want visitors.'},
+      {t:'text',if:'shard',text:'The rime shard at your belt grows cold, and the wraiths hesitate. They know what you carry.'},
+      {t:'save',save:'dex',dc:18,text:'The floor of the chapter house gives way into the dragon’s flooded lair.',
+        pass:{text:'You catch the edge and swing down safely.'},fail:{text:'You fall, hard, into acid-slick water.',damage:'6d10',dtype:'acid'}},
+      {t:'fight',foes:['morvath'],text:'Morvath the Drowner rises from the black water, vast and ancient, the drowned seal glowing in her coils. “My child,” she hisses. “You will pay for my child.”'},
+      {t:'text',effect:'ch2end',text:'Morvath sinks into the dark. You reseal the third Sleeper with the Order’s keys. On the altar, someone has left a message carved fresh into the stone: “Three of seven. Come to Greyhallow, Warden. I have something of yours.” It is signed with a closed eye.'}
+    ]}
+});
+const SEQUEL_CHAPTERS=[[4,'Chapter 1: The Frozen Seal'],[5,'Chapter 2: The Drowned Abbey']];
+function renderSequelModal(kind){
+  if(kind==='start')return `<div class="adv" role="dialog" aria-modal="true" aria-label="The Seven Seals"><div class="adv-inner">
+  <p class="meta">Sequel</p><h1>The Seven Seals</h1>
+  <p class="prose">Hollowmere’s Sleeper is no longer a threat. But the Order of the Shut Eye never guarded just one. There were seven Sleepers, sealed across the realm by seven chapterhouses, and this year six of those chapterhouses went silent.</p>
+  <p class="prose">Someone is breaking the seals one by one. His name is Vaelor, the Unwaking, and he was the very first Warden of the Order, a hundred years before it had a name.</p>
+  <p class="prose">This is a campaign for levels 10 to 20. Chapters 1 and 2 (levels 10 to 14) are ready now; the rest is still being written. Your hero, your town and everything you’ve built come with you.</p>
+  <div class="actions">${btn('beginsequel','Become the Warden','','btn big')}${btn('closesequel','Not yet','','btn ghost')}</div></div></div>`;
+  return `<div class="adv" role="dialog" aria-modal="true" aria-label="Chapter 2 complete"><div class="adv-inner">
+  <p class="meta">End of Chapter 2</p><h1>Three of seven</h1>
+  <p class="prose">Three seals hold: Hollowmere’s, the glacier’s and the abbey’s. Four remain, scattered across a realm that doesn’t yet know it is in danger.</p>
+  <p class="prose">Vaelor is waiting in Greyhallow, the Varne family’s old city${S.flags.ysoldeYields?', and Ysolde has written to warn you that her family’s house has opened its doors to him':''}. Chapter 3, The Burning Court, is still to be written.</p>
+  <div class="actions">${btn('closech2','Keep playing','','btn big')}</div></div></div>`;
+}
+
 /* ---- hero rules ---- */
 const mod=s=>Math.floor((s-10)/2);
 const sgn=n=>(n>=0?'+':'−')+Math.abs(n);
-const pb=(h=S.hero)=>h.level>=9?4:h.level>=5?3:2;
+const pb=(h=S.hero)=>h.level>=17?6:h.level>=13?5:h.level>=9?4:h.level>=5?3:2;
 const effAbil=(k,h=S.hero)=>Math.max(h.abil[k],...((typeof activeItems==='function'&&h.items)?activeItems(h).filter(m=>m.set&&m.set[k]).map(m=>m.set[k]):[]));
 const am=(k,h=S.hero)=>mod(effAbil(k,h));
 const hasFeat=(f,h=S.hero)=>h.feats.includes(f);
 const isCaster=(h=S.hero)=>!!CLASSES[h.cls].caster;
 const spellMod=(h=S.hero)=>am(CLASSES[h.cls].caster,h);
-const spellDC=(h=S.hero)=>8+pb(h)+spellMod(h);
+const spellDC=(h=S.hero)=>8+pb(h)+spellMod(h)+(S&&S.run&&S.run.combat&&S.run.combat.innate?1:0);
 const spellAtk=(h=S.hero)=>pb(h)+spellMod(h)+itemSum('spellAtk',h);
-const heroSpeed=(h=S.hero)=>SPECIES[h.species].speed;
-function skillMod(k,h=S.hero){let m=am(SKILLS[k][1],h);if(h.skills.includes(k))m+=pb(h)*(h.expertise.includes(k)?2:1);return m+(h.gear.check||0)+itemSum('checks',h)}
-function saveMod(k,h=S.hero){return am(k,h)+(CLASSES[h.cls].saves.includes(k)?pb(h):0)+itemSum('saves',h)}
+const heroSpeed=(h=S.hero)=>(h.conds&&h.conds.shape?FORMS[h.conds.shape].speed-SPECIES[h.species].speed:0)+SPECIES[h.species].speed+(h.cls==='monk'?(h.level>=10?4:h.level>=6?3:h.level>=2?2:0):0)+(h.cls==='ranger'&&h.level>=6?2:0)+(h.cls==='barbarian'&&h.level>=5?2:0);
+function skillMod(k,h=S.hero){let m=am(SKILLS[k][1],h);if(h.skills.includes(k))m+=pb(h)*(h.expertise.includes(k)?2:1);else if(h.cls==='bard'&&h.level>=2)m+=Math.floor(pb(h)/2);return m+(h.gear.check||0)+itemSum('checks',h)}
+function saveMod(k,h=S.hero){return am(k,h)+(CLASSES[h.cls].saves.includes(k)||(h.cls==='monk'&&h.level>=14)?pb(h):0)+itemSum('saves',h)+(h.cls==='paladin'&&h.level>=6?Math.max(1,am('cha',h)):0)+(h.cls==='druid'&&h.level>=6&&k==='con'?Math.max(0,am('wis',h)):0)}
 function baseAC(h=S.hero){
-  let ac=(h.cls==='fighter'&&h.level>=7?1:0)+(h.cls==='fighter'?16:0)+(h.cls==='fighter'?0:h.cls==='cleric'?18:h.cls==='rogue'?11+am('dex',h):(h.mageArmor?13:10)+am('dex',h));
-  return ac+(h.gear.ac||0)+activeItems(h).filter(m=>m.name!=='Bracers of Defense'||(h.cls==='wizard')).reduce((a,m)=>a+(m.ac||0),0);
+  const dex=am('dex',h);let ac;
+  switch(h.cls){
+    case 'fighter':ac=16+(h.level>=7?1:0);break;
+    case 'cleric':ac=18;break;
+    case 'rogue':ac=11+dex;break;
+    case 'monk':ac=10+dex+am('wis',h);break;
+    case 'warlock':ac=13+dex;break;
+    case 'paladin':ac=18;break;
+    case 'barbarian':ac=10+dex+am('con',h);break;
+    case 'druid':ac=13+dex;break;
+    case 'bard':ac=11+dex;break;
+    case 'ranger':ac=12+dex;break;
+    case 'sorcerer':ac=Math.max((h.mageArmor?13:10)+dex,h.level>=3?10+dex+am('cha',h):0);break;
+    default:ac=(h.mageArmor?13:10)+dex;
+  }
+  return ac+(h.gear.ac||0)+activeItems(h).reduce((a,m)=>a+(m.ac||0),0);
 }
-function heroAC(){const h=S.hero,c=S.run&&S.run.combat;return baseAC(h)+(c&&c.shieldUp?5:0)+(h.conc==='shieldoffaith'?2:0)}
+function heroAC(){const h=S.hero,c=S.run&&S.run.combat,sh=shape(h);return Math.max(h.conds.barkskin?17:0,sh?Math.max(sh.ac,h.level>=3?13+am('wis'):0):baseAC(h))+(c&&c.shieldUp?5:0)+(h.conc==='shieldoffaith'?2:0)}
 function maxHP(h){
   const die=CLASSES[h.cls].hd,con=am('con',h);
-  return die+con+(h.level-1)*(die/2+1+con)+(hasFeat('tough',h)?2*h.level:0)+(h.species==='dwarf'?h.level:0);
+  return die+con+(h.level-1)*(die/2+1+con)+(hasFeat('tough',h)?2*h.level:0)+(h.species==='dwarf'?h.level:0)+(h.cls==='sorcerer'&&h.level>=3?h.level:0);
 }
 function maxPools(h){
   const p={hd:h.level};
-  if(h.cls==='fighter'){p.secondwind=h.level>=4?3:2;p.surge=h.level>=2?1:0;if(h.level>=9)p.indom=1}
+  if(h.cls==='fighter'){p.secondwind=h.level>=10?4:h.level>=4?3:2;p.surge=h.level>=17?2:h.level>=2?1:0;if(h.level>=9)p.indom=h.level>=17?3:h.level>=13?2:1}
   if(h.cls==='cleric'&&h.level>=10)p.di=1;
   if(h.cls==='cleric'&&h.level>=2)p.cd=h.level>=6?3:2;
-  if(h.cls==='wizard')p.arcane=1;
-  if(isCaster(h))SLOTS[h.level].forEach((n,i)=>p['slot'+(i+1)]=n);
+  if(h.cls==='wizard'){p.arcane=1;p.overchannel=h.level>=14?1:0}
+  if(isCaster(h)&&!CLASSES[h.cls].pact)(CLASSES[h.cls].half?HALF:SLOTS)[h.level].forEach((n,i)=>p['slot'+(i+1)]=n);
+  if(h.cls==='barbarian'){p.rage=h.level>=17?6:h.level>=12?5:h.level>=6?4:h.level>=3?3:2;p.relentless2=h.level>=11?1:0;p.intim=h.level>=14?1:0}
+  if(h.cls==='druid'){p.ws=h.level>=17?4:h.level>=6?3:h.level>=2?2:0;p.lunar=h.level>=14?1:0;p.resurge=h.level>=5?1:0;p.mstep=h.level>=10?Math.max(1,am('wis',h)):0}
+  if(h.cls==='bard'){p.bi=Math.max(1,am('cha',h))}
+  if(h.cls==='paladin'){p.loh=5*h.level;p.freesmite=h.level>=2?1:0;p.cd=h.level>=3?2:0}
+  if(h.cls==='ranger'){p.veil=h.level>=14?Math.max(1,am('wis',h)):0;p.favored=h.level>=9?4:h.level>=5?3:2;p.tireless=h.level>=10?Math.max(1,am('wis',h)):0}
+  if(h.cls==='warlock'){if(h.level>=11)p.arc6=1;if(h.level>=13)p.arc7=1;p.hurl=h.level>=14?1:0;p.pact=PACT[h.level][0];p.cunning=h.level>=2?1:0;p.dol=h.level>=6?Math.max(1,am('cha',h)):0}
+  if(h.cls==='sorcerer'){p.sp=h.level>=2?h.level:0;p.innate=2;p.restore=h.level>=5?1:0}
+  if(h.cls==='monk'){p.focus=h.level>=2?h.level:0;p.metab=h.level>=2?1:0;p.wholeness=h.level>=6?Math.max(1,am('wis',h)):0}
   if(hasFeat('lucky',h))p.luck=pb(h);
   if(h.species==='human')p.insp=1;
   if(h.species==='orc'){p.relentless=1;p.rush=pb(h)}
   return p;
 }
 function longRest(h){
-  h.hpMax=maxHP(h);h.hp=h.hpMax;h.temp=0;h.pools=maxPools(h);h.conds={};h.conc=null;h.dying=null;
-  if(h.cls==='wizard'&&h.pools.slot1>0){h.pools.slot1--;h.mageArmor=true}else if(h.cls==='wizard')h.mageArmor=false;
+  h.hpMax=maxHP(h);h.hp=h.hpMax;h.temp=0;h.pools=maxPools(h);h.relentlessUses=0;h.conds={};h.conc=null;h.dying=null;
+  const ma=h.cls==='wizard'||(h.cls==='sorcerer'&&h.level<3);
+  if(ma&&h.pools.slot1>0){h.pools.slot1--;h.mageArmor=true}else h.mageArmor=false;
   (h.items||[]).forEach(i=>{if(MAGIC[i.id].charges)i.charges=Math.min(MAGIC[i.id].charges,(i.charges||0)+d(6)+1)});
 }
 function buildHero(o){
@@ -1400,7 +1789,12 @@ function levelFeatures(h,l,silent){
   if(l===4&&!h.asi){asi();h.asi=true}
   if(l===6&&h.cls==='fighter'&&!h.asi6){asi();h.asi6=true}
   if(l===8&&!h.asi8){asi();h.asi8=true}
+  if(l===12&&!h.asi12){asi();h.asi12=true}
+  if(l===14&&h.cls==='fighter'&&!h.asi14){asi();h.asi14=true}
   if(l===10&&h.cls==='rogue'&&!h.asi10){asi();h.asi10=true}
+  if(h.cls==='ranger'&&l===2&&!h.expertise.includes('survival')){if(!h.skills.includes('survival'))h.skills.push('survival');h.expertise.push('survival')}
+  if(h.cls==='ranger'&&l===9&&!h.expertise.includes('perception')){if(!h.skills.includes('perception'))h.skills.push('perception');h.expertise.push('perception')}
+  if(h.cls==='bard'&&(l===2||l===9)){for(const s of h.skills.filter(x=>!h.expertise.includes(x)).slice(0,2))h.expertise.push(s)}
   if(l===6&&h.cls==='rogue'){for(const s of h.skills.filter(x=>!h.expertise.includes(x)).slice(0,2))h.expertise.push(s)}
 }
 
@@ -1419,6 +1813,7 @@ function rollCheck(spec){
   if(spec.save==='con'&&spec.vs==='poison'&&h.species==='dwarf')adv=true;
   if(h.conds.poisoned&&spec.skill)dis=true;
   const r=heroD20(adv,dis),m=spec.skill?skillMod(spec.skill):saveMod(spec.save);
+  if(spec.skill&&h.cls==='rogue'&&h.level>=11&&h.skills.includes(spec.skill)&&r.nat<10){r.txt+=` (Reliable Talent: ${r.nat} counts as 10)`;r.nat=10}
   const label=spec.skill?SKILL[spec.skill]:`${ABIL_NAME[spec.save]} save`;
   return{nat:r.nat,mod:m,total:r.nat+m,label,txt:`${label}: ${r.txt} ${sgn(m)}`};
 }
@@ -1441,7 +1836,8 @@ function applyOutcome(){
 }
 function rerollCheck(kind){
   const p=S.run.pending,h=S.hero;if(!p||p.passed||p.final)return;
-  if(kind==='insp'&&h.pools.insp){h.pools.insp--;p.res=rollCheck(p.spec);p.res.txt+=' (Heroic Inspiration reroll)'}
+  if(kind==='bi'&&h.pools.bi&&h.cls==='bard'){h.pools.bi--;const x=d(biDie());p.res.bonus=(p.res.bonus||0)+x;p.res.total+=x;p.biTried=true}
+  else if(kind==='insp'&&h.pools.insp){h.pools.insp--;p.res=rollCheck(p.spec);p.res.txt+=' (Heroic Inspiration reroll)'}
   else if(kind==='luck'&&h.pools.luck){h.pools.luck--;const r2=rollCheck(p.spec);if(r2.total>p.res.total)p.res=r2;p.res.txt+=` (Lucky: second roll ${r2.nat})`}
   else if(kind==='tactical'&&h.pools.secondwind&&p.spec.skill&&h.cls==='fighter'&&h.level>=2){
     const b=d(10);p.res.bonus=(p.res.bonus||0)+b;p.res.total+=b;p.tacticalTried=true;
@@ -1456,7 +1852,13 @@ function shortRest(){
   const r=S.run,h=S.hero;if(!r||r.rested||r.combat)return;
   r.restsUsed=(r.restsUsed||0)+1;r.rested=r.restsUsed>=(qdef().rests||1);r.resting=true;const got=[];
   if(h.cls==='fighter'){if(h.pools.secondwind<maxPools(h).secondwind){h.pools.secondwind++;got.push('a Second Wind')}if(h.level>=2&&!h.pools.surge){h.pools.surge=1;got.push('Action Surge')}}
-  if(h.cls==='cleric'&&h.level>=2&&h.pools.cd<2){h.pools.cd++;got.push('a Channel Divinity')}
+  if(((h.cls==='cleric'&&h.level>=2)||(h.cls==='paladin'&&h.level>=3))&&h.pools.cd<2){h.pools.cd++;got.push('a Channel Divinity')}
+  if(h.cls==='barbarian'&&h.pools.rage<maxPools(h).rage){h.pools.rage++;got.push('a Rage')}
+  if(h.cls==='druid'&&h.level>=2&&h.pools.ws<maxPools(h).ws){h.pools.ws++;got.push('a Wild Shape')}
+  if(h.cls==='bard'&&h.level>=5&&h.pools.bi<maxPools(h).bi){h.pools.bi=maxPools(h).bi;got.push('all your Bardic Inspiration')}
+  if(h.cls==='warlock'&&h.pools.pact<PACT[h.level][0]){h.pools.pact=PACT[h.level][0];got.push('all your pact slots')}
+  if(h.cls==='monk'&&h.level>=2&&h.pools.focus<h.level){h.pools.focus=h.level;got.push('all your Focus Points')}
+  if(h.cls==='sorcerer'&&h.pools.restore&&h.pools.sp<h.level){h.pools.restore=0;h.pools.sp=Math.min(h.level,h.pools.sp+Math.floor(h.level/2));got.push('Sorcery Points (Sorcerous Restoration)')}
   if(h.species==='orc'&&h.pools.rush<pb()){h.pools.rush=pb();got.push('Adrenaline Rush')}
   if(h.cls==='wizard'&&h.pools.arcane){
     let budget=Math.ceil(h.level/2);const mp=maxPools(h);const rec=[];
@@ -1486,7 +1888,10 @@ function finishRun(success,reason){
     {const lootId=rollLoot(h.level,q.loot!==undefined?q.loot:r.qid==='patrol'?.04:QUESTS[r.qid]&&QUESTS[r.qid].act>=2?.5:.25);if(lootId){giveItem(lootId);lines.push(`Found: ${MAGIC[lootId].name}!`);addLog(`You found ${MAGIC[lootId].name}.`,'good')}}
     if(r.qid!=='patrol'&&r.qid!=='bounty'&&r.qid!=='raid'){S.quests[r.qid]=true;S.prosperity+=1;lines.push('+1 Prosperity')}
     if(r.qid==='descent')S.flags.endModal=true;
-    r.result={success:true,text:q.done||ENDINGS[S.flags.ending]?.text||'',lines};addLog(`Completed: ${q.name}.`,'good');checkLevel();
+    r.result={success:true,text:q.done||ENDINGS[S.flags.ending]?.text||'',lines};
+    if(r.qid==='s1c')r.result.text=S.flags.rimeShard?'You carry the rime shard down the mountain. It is cold against your skin, and the town’s dogs won’t come near you.':'The Glacier Shrine is sealed again. The herders of the White Pass light fires in your honor all the way down the mountain.';
+    if(r.qid==='s2c')r.result.text='The third seal holds. Three of seven.';
+    addLog(`Completed: ${q.name}.`,'good');checkLevel();
   }else if(reason==='fled'){
     r.result={success:false,text:'You break away and make it back to town. The trouble will keep for another day.',lines:[]};addLog(`Retreated from ${q.name}.`);
   }else if(reason==='dead'&&S.flags.permadeath){
@@ -1503,7 +1908,7 @@ function finishRun(success,reason){
 }
 function checkLevel(){
   const h=S.hero;
-  while(h.level<MAX_LEVEL&&h.xp>=XP_AT[h.level]){
+  while(h.level<maxLevel()&&h.xp>=XP_AT[h.level]){
     const oldMax=h.hpMax,oldPools=maxPools(h);h.level++;levelFeatures(h,h.level);
     h.hpMax=maxHP(h);h.hp+=h.hpMax-oldMax;const np=maxPools(h);
     for(const k in np)h.pools[k]=(h.pools[k]||0)+Math.max(0,np[k]-(oldPools[k]||0));
@@ -1515,12 +1920,12 @@ function checkLevel(){
 }
 
 /* ---- combat on the grid ---- */
-const GW=8,GH=8;
+const GW=10,GH=12;
 const ck=(x,y)=>x+','+y;
 const cheb=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
 const ft=n=>n*5;
 function clog(text,kind){const c=S.run.combat;c.log.push({text,kind:kind||''});if(c.log.length>80)c.log.splice(0,c.log.length-80)}
-const fn=f=>f.key==='warden'?'the Rot-Warden':f.key==='captain'?'Captain Harl':f.key==='ysolde'?'Ysolde':f.key==='dream'?'the Dream of the Sleeper':f.key==='heart'?'the Heart of the Sleeper':'the '+f.name.toLowerCase();
+const fn=f=>f.key==='jarl'?'Jarl Hrimgar':f.key==='morvath'?'Morvath':f.key==='warden'?'the Rot-Warden':f.key==='captain'?'Captain Harl':f.key==='ysolde'?'Ysolde':f.key==='dream'?'the Dream of the Sleeper':f.key==='heart'?'the Heart of the Sleeper':'the '+f.name.toLowerCase();
 const Fn=f=>{const t=fn(f);return t[0].toUpperCase()+t.slice(1)};
 function liveFoes(){return S.run.combat.foes.filter(f=>f.hp>0)}
 function curTarget(){const c=S.run.combat;const t=c.foes[c.target];return t&&t.hp>0?t:liveFoes()[0]}
@@ -1548,8 +1953,8 @@ function heroReach(){const c=S.run.combat,half=S.hero.species==='halfling';retur
 const adjFoes=()=>liveFoes().filter(f=>cheb(f,S.run.combat.hero)<=1&&!f.turned);
 function makeBoard(n){
   for(let tries=0;tries<60;tries++){
-    const rocks=[],used=new Set(),hero={x:3+d(2)-1,y:GH-1};used.add(ck(hero.x,hero.y));
-    const nr=4+d(4);
+    const rocks=[],used=new Set(),hero={x:Math.floor(GW/2)-2+d(2),y:GH-1};used.add(ck(hero.x,hero.y));
+    const nr=7+d(6);
     while(rocks.length<nr){const x=d(GW)-1,y=1+d(GH-3),k=ck(x,y);if(!used.has(k)){rocks.push(k);used.add(k)}}
     const spots=[];
     while(spots.length<n){const x=d(GW)-1,y=d(3)-1,k=ck(x,y);if(!used.has(k)){spots.push({x,y});used.add(k)}}
@@ -1559,7 +1964,7 @@ function makeBoard(n){
   return{rocks:[],hero:{x:3,y:GH-1},spots:Array.from({length:n},(_,i)=>({x:i*2%GW,y:Math.floor(i/4)}))};
 }
 function retarget(){const c=S.run.combat;let best=-1,bd=99;c.foes.forEach((f,i)=>{if(f.hp>0&&cheb(f,c.hero)<bd){bd=cheb(f,c.hero);best=i}});if(best>=0)c.target=best}
-const TOKEN={rat:'R',blightrat:'R',wolf:'W',madwolf:'W',kobold:'K',bandit:'B',blightspawn:'S',warden:'W',ghoul:'G',spider:'X',blightkobold:'K',thug:'T',captain:'H',arcanist:'A',skeleton:'K',wight:'W',ogrezombie:'O',needleblight:'N',vineblight:'V',thornwarden:'T',ysolde:'Y',dream:'D',heart:'H',goblin:'Go',hobgoblin:'Hb',worg:'Wg',ogre:'O',troll:'Tr',hillgiant:'Gi'};
+const TOKEN={rat:'R',blightrat:'R',wolf:'W',madwolf:'W',kobold:'K',bandit:'B',blightspawn:'S',warden:'W',ghoul:'G',spider:'X',blightkobold:'K',thug:'T',captain:'H',arcanist:'A',skeleton:'K',wight:'W',ogrezombie:'O',needleblight:'N',vineblight:'V',thornwarden:'T',ysolde:'Y',dream:'D',heart:'H',goblin:'Go',hobgoblin:'Hb',worg:'Wg',ogre:'O',troll:'Tr',hillgiant:'Gi',frostgiant:'FG',winterwolf:'WW',yeti:'Ye',jarl:'Ja',ghast:'Gh',wraith:'Wr',youngblack:'YD',morvath:'M'};
 function startCombat(keys){
   if(S.run.thin&&keys.length>1){keys=keys.slice(0,-1);S.run.thin=false}
   const b=makeBoard(keys.length),counts={},h=S.hero,ambush=S.run.ambush;S.run.ambush=false;
@@ -1568,8 +1973,9 @@ function startCombat(keys){
   const c={board:2,cid:Math.random().toString(36).slice(2),rocks:b.rocks,hero:b.hero,foes,target:0,log:[],over:null,round:1,order:[],ti:0,turn:'start',
     move:0,actions:0,attacksLeft:0,bonus:false,react:true,downNoted:false};
   S.run.combat=c;retarget();
-  const hadv=(h.level>=3&&(h.cls==='rogue'||h.cls==='fighter'))||weaponItem().warn;
-  const ir=heroD20(hadv,false),im=am('dex')+(hasFeat('alert')?pb():0),hi=ir.nat+im;
+  const hadv=(h.level>=3&&(h.cls==='rogue'||h.cls==='fighter'))||(h.cls==='barbarian'&&h.level>=7)||weaponItem().warn;
+  if(h.cls==='monk'&&h.pools.metab&&(h.pools.focus<h.level||h.hp<h.hpMax)){h.pools.metab=0;h.pools.focus=h.level;const hl=d(maDie())+h.level;h.hp=Math.min(h.hpMax,h.hp+hl);clog(`Uncanny Metabolism: Focus restored and ${hl} HP regained.`,'good')}
+  const ir=heroD20(hadv,false),im=am('dex')+(hasFeat('alert')?pb():0)+(h.cls==='bard'&&h.level>=2?Math.floor(pb()/2):0),hi=ir.nat+im;
   clog(`Initiative: ${ir.txt} ${sgn(im)} = ${hi}${hadv?(h.cls==='rogue'?' (Assassinate)':' (Remarkable Athlete)'):''}.`,'info');
   c.order=[{id:'hero',init:hi,tie:99}];
   foes.forEach((f,i)=>{const a=d(20),bb=d(20),nat=ambush?Math.min(a,bb):a;c.order.push({id:i,init:nat+f.mods.dex,tie:f.mods.dex})});
@@ -1623,8 +2029,9 @@ function advanceTurn(){const c=S.run.combat;c.ti++;if(c.ti>=c.order.length){c.ti
 function heroTurnStart(){
   const c=S.run.combat,h=S.hero;
   c.shieldUp=false;c.react=true;c.dodging=false;
-  c.foes.forEach(f=>{f.sapped=false;f.slowed=false});
-  Object.assign(c,{acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
+  c.foes.forEach(f=>{f.sapped=false;f.slowed=false;f.stunned=false});
+  if(h.cls==='monk'&&h.level>=10&&h.conds.poisoned){delete h.conds.poisoned;clog('Self-Restoration: the poison fades.','good')}
+  Object.assign(c,{lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
   clog(`Round ${c.round}: your turn`,'head');c.head='h'+c.round;
   if(!curTarget()||c.foes[c.target].hp<=0)retarget();
   if(h.dying){c.move=0;c.actions=0;c.bonus=false;return}
@@ -1647,7 +2054,7 @@ function moveHero(x,y){
     const prev={...c.hero};
     if(!c.disengaged)for(const f of liveFoes()){
       if(!f.reacted&&!f.noReact&&!f.turned&&cheb(f,prev)<=1&&cheb(f,step)>1){
-        f.reacted=true;clog(`You leave ${fn(f)}’s reach. It takes an opportunity attack.`,'info');foeAttack(f,'melee');
+        f.reacted=true;clog(`You leave ${fn(f)}’s reach. It takes an opportunity attack.`,'info');c.ohDis=S.hero.cls==='ranger'&&S.hero.level>=7;foeAttack(f,'melee');c.ohDis=false;
         if(c.over||S.hero.dying)return;
       }
     }
@@ -1660,11 +2067,14 @@ function attackMods(t,kind,dist,normal){
   const c=S.run.combat,h=S.hero;let adv=false,dis=false;const why=[];
   if(c.adv){adv=true;why.push(c.advWhy||'advantage');c.adv=false;c.advWhy=null}
   if(c.lucky){adv=true;why.push('Lucky');c.lucky=false}
-  if(c.hidden){adv=true;why.push('unseen')}
+  if(c.hidden||h.conc==='greaterinvisibility'){adv=true;why.push('unseen')}
   if(t.vexed){adv=true;why.push('Vex');t.vexed=0}
   if(t.guided){adv=true;why.push('Guiding Bolt');t.guided=false}
   if(h.cls==='rogue'&&h.level>=3&&c.round===1&&!t.acted){adv=true;why.push('Assassinate')}
   if(t.turned){adv=adv}
+  if(t.stunned){adv=true;why.push('stunned')}
+  if(t.studied){adv=true;why.push('Studied Attacks');t.studied=false}
+  if(t.restrained){adv=true;why.push('restrained')}
   if(t.prone){if(dist<=1){adv=true;why.push('target prone')}else{dis=true;why.push('target prone at range')}}
   if(c.heroProne){dis=true;why.push('you’re prone')}
   if(c.grappledBy!=null){dis=true;why.push('restrained')}
@@ -1673,7 +2083,7 @@ function attackMods(t,kind,dist,normal){
   c.hidden=false;
   return{adv,dis,why};
 }
-const critOn=()=>S.hero.cls==='fighter'&&S.hero.level>=3?19:20;
+const critOn=()=>S.hero.cls==='fighter'?(S.hero.level>=15?18:S.hero.level>=3?19:20):20;
 function rollDice(n,sides,gwf){const r=[];for(let i=0;i<n;i++){let x=d(sides);if(gwf&&x<3)x=3;r.push(x)}return r}
 function weaponDamage(w,crit){
   const h=S.hero,c=S.run.combat,[n,s]=w.dmg.split('d').map(Number),gwf=h.cls==='fighter'&&w.twoHanded;
@@ -1694,40 +2104,72 @@ function rangeIssue(kind,range,long,t){
 }
 function useAttackAction(){
   const c=S.run.combat;if(c.attacksLeft>0){c.attacksLeft--;return true}
-  if(c.actions<1)return false;c.actions--;c.attacksLeft=(S.hero.cls==='fighter'&&S.hero.level>=5?2:1)-1;return true;
+  if(c.actions<1)return false;c.actions--;c.attacksLeft=(shape()?shape().multi:S.hero.cls==='fighter'&&S.hero.level>=20?4:S.hero.cls==='fighter'&&S.hero.level>=11?3:['fighter','monk','paladin','ranger','barbarian'].includes(S.hero.cls)&&S.hero.level>=5?2:1)-1;return true;
 }
-function weaponAttack(wid,reroll){
-  const c=S.run.combat,h=S.hero,w=WEAPONS[wid],t=curTarget();
+function weaponAttack(wid,reroll,o={}){
+  const c=S.run.combat,h=S.hero,t=curTarget();let w=WEAPONS[wid];
+  if(wid==='quarterstaff'&&c.shillelagh)w={...w,abil:'wis',dmg:h.level>=5?'1d10':'1d8',type:'force'};
+  if(w.fixedAtk!=null&&h.level>=6&&h.cls==='druid')w={...w,type:'radiant'};
+  if(h.cls==='monk'&&w.monk){const base=+w.dmg.split('d')[1];w={...w,dmg:`1d${Math.max(base,maDie())}`,type:wid==='unarmed'&&h.level>=6?'force':w.type}}
   if(!t||rangeIssue(w.kind,1,w.long||w.range))return;
   if(!reroll&&!useAttackAction())return;
-  const wi=weaponItem(),dist=cheb(c.hero,t),ab=weaponAbil(w),bonus=pb()+am(ab)+(h.gear.atk||0)+wi.wb;
+  const wi=w.fixedAtk!=null?{wb:0}:weaponItem();if(w.fixedAtk==null)wi.wb=Math.max(wi.wb,h.conds.magicwpn||0);const dist=cheb(c.hero,t),ab=weaponAbil(w),bonus=w.fixedAtk!=null?w.fixedAtk:pb()+am(ab)+(h.gear.atk||0)+wi.wb+(h.cls==='ranger'&&h.level>=2&&w.kind==='ranged'?2:0)+(c.sacred?Math.max(1,am('cha')):0);
   const m=attackMods(t,w.kind,dist,w.range);
+  const strAtk=w.fixedAtk==null&&ab==='str';
+  let brutal=false;if(c.reckless&&strAtk){if(c.brutalNext&&!o.cleave){brutal=true;c.brutalNext=false}else{m.adv=true;m.why.push('Reckless')}}
   const r=heroD20(m.adv,m.dis);let total=r.nat+bonus,btxt='';
   if(blessed()){const b=d(4);total+=b;btxt=` + Bless ${b}`}
   const crit=r.nat>=critOn(),hit=crit||(r.nat!==1&&total>=t.ac),why=m.why.length?` (${m.why.join(', ')})`:'';
   const head=`You ${w.verb} ${fn(t)}${why}: ${r.txt} ${sgn(bonus)}${btxt} = ${total} vs AC ${t.ac}.`;
   if(hit){
-    const wd=weaponDamage(w,crit);let total2=wd.sum+am(ab)+(h.gear.dmg||0)+wi.wb,txt=`${wd.txt} ${sgn(am(ab))}${h.gear.dmg?` + ${h.gear.dmg}`:''}${wi.wb?` + ${wi.wb} magic`:''}`;
+    const dmod=o.cleave?Math.min(0,am(ab)):w.fixedAtk!=null?w.fixedDmg:am(ab),gd=w.fixedAtk!=null?0:(h.gear.dmg||0);
+    const wd=weaponDamage(w,crit);let total2=wd.sum+dmod+gd+wi.wb,txt=`${wd.txt} ${sgn(dmod)}${gd?` + ${gd}`:''}${wi.wb?` + ${wi.wb} magic`:''}`;
+    if(c.rage&&strAtk){total2+=rageDmg();txt+=` + ${rageDmg()} Rage`}
+    if(c.rage&&c.reckless&&h.cls==='barbarian'&&h.level>=3&&!c.frenzyUsed&&strAtk){c.frenzyUsed=true;const fr=rollDice(crit?rageDmg()*2:rageDmg(),6);total2+=fr.reduce((a,b)=>a+b,0);txt+=` + Frenzy [${fr.join(', ')}]`}
+    if(brutal){const br=rollDice(crit?2:1,10);total2+=br.reduce((a,b)=>a+b,0);txt+=` + Brutal Strike [${br.join(', ')}]`}
     if(wi.fire&&w.kind==='melee'){const fr=rollDice(crit?4:2,6);total2+=fr.reduce((a,b)=>a+b,0);txt+=` + Flame Tongue [${fr.join(', ')}]`}
+    {const hx=hexBonus(t,crit);if(hx){total2+=hx;txt+=` + Hex ${hx}`}}
     if(h.cls==='rogue'&&m.adv&&!m.dis&&!c.sneakUsed&&(w.abil==='finesse'||w.kind==='ranged')){
       const nd=Math.ceil(h.level/2),s=rollDice(crit?nd*2:nd,6);c.sneakUsed=true;total2+=s.reduce((a,b)=>a+b,0);txt+=` + Sneak Attack [${s.join(', ')}]`;
       if(h.level>=3&&c.round===1){total2+=h.level;txt+=` + Assassinate ${h.level}`}
     }
+    let radiant=false;
+    if(h.cls==='paladin'&&h.level>=11&&w.kind==='melee'){const x=rollDice(crit?2:1,8).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Radiant Strikes ${x}`}
+    if(shape()&&h.level>=14&&h.pools.lunar&&!c.lunarUsed){c.lunarUsed=true;const x=rollDice(crit?4:2,10).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Lunar Form ${x}`}
+    if(h.cls==='paladin'&&h.level>=2&&w.kind==='melee'&&!w.twoHanded){total2+=2;txt+=' + 2 Dueling'}
+    if(h.conc==='huntersmark'&&c.markTarget!=null&&c.foes[c.markTarget]===t){const r=rollDice(crit?2:1,6),x=r.reduce((a,b)=>a+b,0);total2+=x;txt+=` + Hunter’s Mark ${x}`;
+      if(h.cls==='ranger'&&h.level>=11&&!c.preyUsed){const o2=liveFoes().find(f=>f!==t&&cheb(f,t)<=6);if(o2){c.preyUsed=true;const y=d(6);clog(`Superior Hunter’s Prey: ${y} force leaps to ${fn(o2)}.`,'good');hurt(o2,y,'force',false)}}}
+    if(h.cls==='ranger'&&h.level>=3&&!c.colossusUsed&&t.hp<t.hpMax){const r=rollDice(crit?2:1,8),x=r.reduce((a,b)=>a+b,0);c.colossusUsed=true;total2+=x;txt+=` + Colossus Slayer ${x}`}
+    if(h.conc==='crusadersmantle'){const x=rollDice(crit?2:1,4).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Mantle ${x} radiant`}
+    if(c.smiteNext&&w.kind==='melee'&&c.bonus&&(h.pools.freesmite||(slotFor(1)&&!c.slotUsed))){
+      let sl;if(h.pools.freesmite){h.pools.freesmite--;sl=1}else{sl=pickSlot(1,c.smiteLvl);useSlot(sl);c.slotUsed=true}c.smiteLvl=null;
+      c.bonus=false;c.smiteNext=false;const nd=1+sl+(t.type==='undead'?1:0),r=rollDice(crit?nd*2:nd,8),x=r.reduce((a,b)=>a+b,0);total2+=x;radiant=true;txt+=` + Divine Smite [${r.join(', ')}]`;
+    }
     clog(`${head} ${crit?'Critical hit! ':'Hit. '}${total2} ${w.type} damage (${txt}).`,'good');
+    if(c.ensnareNext&&h.conc==='ensnaringstrike'&&t.hp>0){c.ensnareNext=false;const s2=d(20),tt=s2+t.mods.str;if(tt<spellDC()){t.restrained=true;clog(`Ensnaring Strike: STR save ${s2} ${sgn(t.mods.str)} = ${tt} vs DC ${spellDC()}. Thorny vines pin ${fn(t)} in place.`,'good')}else clog(`Ensnaring Strike: ${fn(t)} tears free of the vines (${tt} vs DC ${spellDC()}).`,'info')}
     let mtxt='';
     if(hasMastery(wid)){
       if(w.mastery==='vex'){t.vexed=c.round;mtxt='Vex: your next attack against it has advantage.'}
       if(w.mastery==='sap'){t.sapped=true;mtxt='Sap: its next attack has disadvantage.'}
       if(w.mastery==='slow'){t.slowed=true;mtxt='Slow: its speed drops by 10 ft.'}
     }
-    let dtype=w.type;
+    let dtype=radiant?'radiant':w.type;
     if(h.gear.moon&&t.type==='undead'){const m=rollDice(crit?2:1,6),ms=m.reduce((a,b)=>a+b,0);total2+=ms;dtype='radiant';clog(`Moonsilver burns it for ${ms} radiant [${m.join(', ')}].`,'good')}
     hurt(t,total2,dtype,crit);
     if(mtxt&&t.hp>0)clog(mtxt,'info');
+    if(brutal&&t.hp>0){pushAway(t,3);clog(`Brutal Strike: ${fn(t)} is hurled back 15 ft.`,'good')}
+    if(w.knock&&t.hp>0&&!t.prone){const s2=d(20),tt=s2+t.mods.str;if(tt<w.knock){t.prone=true;clog(`${Fn(t)} is knocked prone.`,'good')}}
+    if(hasMastery(wid)&&w.mastery==='cleave'&&!c.cleaveUsed&&!o.cleave){const nx=liveFoes().find(f=>f!==t&&cheb(f,c.hero)<=1&&cheb(f,t)<=1);
+      if(nx){c.cleaveUsed=true;const save=c.target;c.target=c.foes.indexOf(nx);clog(`Cleave: your swing carries on into ${fn(nx)}.`,'info');weaponAttack(wid,true,{cleave:true});c.target=save}}
+    if(h.cls==='monk'&&w.monk&&c.stunNext&&!c.stunUsed&&h.pools.focus>0&&t.hp>0){h.pools.focus--;c.stunUsed=true;c.stunNext=false;
+      const s=d(20),tot=s+t.mods.con;if(tot<kiDC()){t.stunned=true;clog(`Stunning Strike: CON save ${s} ${sgn(t.mods.con)} = ${tot} vs DC ${kiDC()}. ${Fn(t)} is stunned!`,'good')}
+      else{t.guided=true;t.slowed=true;clog(`Stunning Strike: CON save ${s} ${sgn(t.mods.con)} = ${tot} vs DC ${kiDC()}. It shrugs it off, but it’s slowed and your next attack has advantage.`,'info')}}
+    if(o.flurry&&h.cls==='monk'&&h.level>=3&&t.hp>0&&!t.prone){const s=d(20),tot=s+t.mods.dex;if(tot<kiDC()){t.prone=true;clog(`Open Hand: ${fn(t)} fails a DEX save (${tot} vs ${kiDC()}) and is knocked prone.`,'good')}}
   }else{
     let g=0;if(hasMastery(wid)&&w.mastery==='graze'&&am(ab)>0){g=am(ab);clog(`${head} Miss. Graze still deals ${g} ${w.type} damage.`);hurt(t,g,w.type,false)}
     else{clog(`${head} Miss.`);fxMiss('f'+c.foes.indexOf(t))}
-    if(h.pools.insp&&t.hp>0)c.lastMiss={kind:'weapon',id:wid,ti:c.foes.indexOf(t),graze:g};
+    if(h.cls==='fighter'&&h.level>=13&&t.hp>0){t.studied=true}
+    if((h.pools.insp||h.pools.luck)&&t.hp>0)c.lastMiss={kind:'weapon',id:wid,ti:c.foes.indexOf(t),graze:g};
   }
 }
 function hurt(f,n,type,crit){
@@ -1737,18 +2179,19 @@ function hurt(f,n,type,crit){
   else if(f.vuln&&f.vuln.includes(type)){n*=2;clog(`${Fn(f)} is vulnerable to ${type}: double damage (${n}).`,'good')}
   else if((f.resist&&f.resist.includes(type))||(f.resistMundane&&BPS.includes(type)&&!S.hero.gear.moon)){n=Math.floor(n/2);clog(`${Fn(f)} resists ${type}: half damage (${n}).${f.resistMundane&&!S.hero.gear.moon?' Moonsilver would cut through.':''}`,'info')}
   if(f.regenStop&&f.regenStop.includes(type))f.noRegen=true;
-  f.hp-=n;if(f.turned&&n>0){f.turned=false}
+  f.hp-=n;if(f.turned&&n>0){f.turned=false}if(f.charmed&&n>0)f.charmed=false;
   if(f.hp<=0&&f.fortitude&&type!=='radiant'&&!crit){
     const r=d(20),tot=r+f.mods.con,dc=5+n;
     if(tot>=dc){f.hp=1;clog(`Undead Fortitude: ${fn(f)} rolls ${r} ${sgn(f.mods.con)} = ${tot} vs DC ${dc} and stays up with 1 HP.`,'bad');return}
   }
-  if(f.hp<=0){f.hp=0;clog(`${Fn(f)} falls.`,'good');const c=S.run.combat;if(c.foes[c.target].hp<=0)retarget()}
+  if(f.hp<=0){f.hp=0;clog(`${Fn(f)} falls.`,'good');const c=S.run.combat;if(c.foes[c.target].hp<=0)retarget();
+    const h=S.hero;if(h.cls==='warlock'&&h.level>=3){const tp=am('cha')+h.level;if(tp>h.temp){h.temp=tp;clog(`Dark One’s Blessing: ${tp} temporary HP.`,'good')}}}
 }
-function rerollAttack(){
-  const c=S.run.combat,h=S.hero,m=c&&c.lastMiss;if(!m||!h.pools.insp)return;
+function rerollAttack(kind){
+  const c=S.run.combat,h=S.hero,m=c&&c.lastMiss,pool=kind==='luck'?'luck':'insp';if(!m||!h.pools[pool])return;
   const t=c.foes[m.ti];if(!t||t.hp<=0)return;
-  h.pools.insp--;if(m.graze)t.hp+=m.graze;c.lastMiss=null;c.target=m.ti;
-  clog('Heroic Inspiration: you reroll the attack.','info');
+  h.pools[pool]--;if(m.graze)t.hp+=m.graze;c.lastMiss=null;c.target=m.ti;
+  clog(pool==='luck'?`Lucky: you spend a Luck Point and roll again (${h.pools.luck} left).`:'Heroic Inspiration: you reroll the attack.','info');
   if(m.kind==='weapon')weaponAttack(m.id,true);else castSpell(m.id,{reroll:true});
   c.lastMiss=null;
 }
@@ -1756,19 +2199,23 @@ function rerollAttack(){
 /* ---- spells ---- */
 function knownSpells(h=S.hero){
   const C=CLASSES[h.cls];if(!C.caster)return[];
-  const maxLvl=SLOTS[h.level].length;
-  return [...C.cantrips,...C.spells.filter(id=>SPELLS[id].lvl<=maxLvl)];
+  const maxLvl=C.pact?PACT[h.level][1]:(C.half?HALF:SLOTS)[h.level].length;
+  const extra=Object.entries(C.spellsAt||{}).filter(([l])=>h.level>=+l).flatMap(([,a])=>a);
+  return [...C.cantrips,...C.spells.filter(id=>SPELLS[id].lvl<=maxLvl),...extra];
 }
-function slotFor(lvl){const h=S.hero;for(let l=lvl;l<=5;l++)if(h.pools['slot'+l]>0)return l;return 0}
+function slotFor(lvl){const h=S.hero;if(isWarlock(h)){if(lvl>5)return h.pools['arc'+lvl]>0?lvl:0;return h.pools.pact>0&&PACT[h.level][1]>=lvl?PACT[h.level][1]:0}for(let l=lvl;l<=9;l++)if(h.pools['slot'+l]>0)return l;return 0}
 function cantripDice(sp){return`${S.hero.level>=5?2:1}${sp.dmg}`}
 function spellIssue(id){
   const c=S.run.combat,h=S.hero,sp=SPELLS[id];
   if(sp.form==='reaction'||sp.form==='auto')return'automatic';
-  if(sp.lvl>0&&!slotFor(sp.lvl)&&!c.freeCast)return'no slots';
-  if(sp.lvl>0&&c.slotUsed&&!c.freeCast)return'one slot spell per turn';
-  if(sp.cast==='bonus'&&!c.bonus)return'bonus action used';
-  if(sp.cast==='action'&&c.actions<1)return'action used';
-  if(sp.form==='attack'||sp.form==='save'||sp.form==='missile'||sp.form==='rays'||sp.form==='spiritual')return rangeIssue(sp.kind==='melee'?'melee':'ranged',sp.range,sp.range);
+  if(shape())return'in beast form';
+  const favored=id==='huntersmark'&&h.pools.favored>0;
+  if(sp.lvl>0&&!slotFor(sp.lvl)&&!c.freeCast&&!favored)return'no slots';
+  if(sp.lvl>0&&c.slotUsed&&!c.freeCast&&!favored)return'one slot spell per turn';
+  const asBonus=sp.cast==='bonus'||(sp.cast==='action'&&c.quicken);
+  if(asBonus&&!c.bonus)return'bonus action used';
+  if(!asBonus&&sp.cast==='action'&&c.actions<1)return'action used';
+  if(['attack','save','missile','rays','spiritual','blast','hex','mark','chain','dance'].includes(sp.form))return rangeIssue(sp.kind==='melee'?'melee':'ranged',sp.range,sp.range);
   return null;
 }
 function concentrate(id){
@@ -1778,47 +2225,61 @@ function concentrate(id){
 function castSpell(id,o={}){
   const c=S.run.combat,h=S.hero,sp=SPELLS[id];
   if(!o.reroll&&spellIssue(id))return;
-  if(sp.form==='teleport'||sp.form==='point'||sp.form==='cone'){c.aim=id;return}
+  if(sp.form==='teleport'||sp.form==='point'||sp.form==='cone'){if(c.freeCast&&false){}c.aim=id;c.aimSlot=o.slot||null;return}
   const t=curTarget();
   let lvl=0;
   if(!o.reroll){
-    if(sp.lvl>0){if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=slotFor(sp.lvl);h.pools['slot'+lvl]--;c.slotUsed=true}}
-    if(sp.cast==='action')c.actions--;else if(sp.cast==='bonus')c.bonus=false;
+    if(sp.lvl>0){if(id==='huntersmark'&&h.pools.favored>0){h.pools.favored--;lvl=1;clog(`Favored Enemy: a free Hunter’s Mark (${h.pools.favored} left today).`,'info')}else if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=pickSlot(sp.lvl,o.slot);useSlot(lvl);c.slotUsed=true}}
+    if(sp.cast==='action'&&c.quicken){c.bonus=false;c.quicken=false;clog('Quickened Spell: cast as a bonus action.','info')}else if(sp.cast==='action')c.actions--;else if(sp.cast==='bonus')c.bonus=false;
   }
   c.hidden=false;
   const up=Math.max(0,lvl-sp.lvl),sm=spellMod(),dol=h.cls==='cleric'&&h.level>=3?2+lvl:0;
   const tag=lvl>sp.lvl?` (level ${lvl} slot)`:'';
   if(sp.form==='attack'){
-    const dist=cheb(c.hero,t),m=attackMods(t,sp.kind,dist,sp.range),r=heroD20(m.adv,m.dis);
+    const dist=cheb(c.hero,t),m=attackMods(t,sp.kind,dist,sp.range);if(c.innate){m.adv=true;m.why.push('Innate Sorcery')}const r=heroD20(m.adv,m.dis);
     let total=r.nat+spellAtk(),btxt='';if(blessed()){const b=d(4);total+=b;btxt=` + Bless ${b}`}
     const crit=r.nat===20,hit=crit||(r.nat!==1&&total>=t.ac),why=m.why.length?` (${m.why.join(', ')})`:'';
-    const expr=sp.lvl===0?cantripDice(sp):`${4+up}d6`;
-    const [n,s]=expr.split('d').map(Number),dice=rollDice(crit?n*2:n,s),dmg=dice.reduce((a,b)=>a+b,0)+(sp.lvl===0&&h.cls==='cleric'&&h.level>=7?sm:0)+empower();
+    const expr=sp.lvl===0?cantripDice(sp):addDice(sp.dmg,up);
+    const [n,s]=expr.split('d').map(Number),dice=rollDice(crit?n*2:n,s);
+    if(sp.explode){let extra=0;for(let i=0;i<dice.length&&extra<Math.max(1,am('cha'));i++)if(dice[i]===s){dice.push(d(s));extra++}}
+    const hx=hit?hexBonus(t,crit):0;
+    const dmg=dice.reduce((a,b)=>a+b,0)+(sp.lvl===0&&(h.cls==='cleric'||h.cls==='druid')&&h.level>=7?sm:0)+empower()+affinity(sp.type)+hx;
     const head=`${sp.name}${tag} at ${fn(t)}${why}: ${r.txt} ${sgn(spellAtk())}${btxt} = ${total} vs AC ${t.ac}.`;
-    if(hit){clog(`${head} ${crit?'Critical hit! ':'Hit. '}${dmg} ${sp.type} damage [${dice.join(', ')}].`,'good');
+    if(hit&&sp.lvl===0&&h.cls==='cleric'&&h.level>=14){const tp=2*am('wis');if(tp>h.temp)h.temp=tp}
+    if(hit){clog(`${head} ${crit?'Critical hit! ':'Hit. '}${dmg} ${sp.type} damage [${dice.join(', ')}]${affinity(sp.type)?` + Elemental Affinity ${affinity(sp.type)}`:''}${hx?` + Hex ${hx}`:''}.`,'good');
+      if(sp.bounce&&new Set(dice).size<dice.length){const nt=liveFoes().filter(f=>f!==t&&cheb(f,t)<=6).sort((a,b)=>cheb(a,t)-cheb(b,t))[0];
+        if(nt){const r2=heroD20(c.innate,false),tot2=r2.nat+spellAtk(),hit2=r2.nat===20||(r2.nat!==1&&tot2>=nt.ac),d2=rollDice(3,8).reduce((a,b)=>a+b,0)+affinity(sp.type);
+          clog(`Two dice matched: the orb leaps to ${fn(nt)}. ${r2.txt} ${sgn(spellAtk())} = ${tot2}. ${hit2?`${d2} fire.`:'Miss.'}`,hit2?'good':'');if(hit2)hurt(nt,d2,sp.type,false)}}
+      if(sp.effect==='pull'&&t.hp>0){for(let i=0;i<2;i++){const dx=Math.sign(c.hero.x-t.x),dy=Math.sign(c.hero.y-t.y),nx=t.x+dx,ny=t.y+dy;if(cheb({x:nx,y:ny},c.hero)<1||isRock(c,nx,ny)||foeAt(c,nx,ny))break;t.x=nx;t.y=ny}clog(`The thorny whip drags ${fn(t)} toward you.`,'info')}
       if(sp.effect==='slow')t.slowed=true;if(sp.effect==='noreact')t.noReact=true;if(sp.effect==='guided')t.guided=true;
       hurt(t,dmg,sp.type,crit);
       if(t.hp>0&&sp.effect)clog({slow:'Its speed drops by 10 ft.',noreact:'It can’t make opportunity attacks until its turn.',guided:'The next attack against it has advantage.'}[sp.effect],'info');
     }else{
       if(sp.lvl===0&&h.cls==='wizard'&&h.level>=3){const half=Math.floor(dmg/2);clog(`${head} Miss. Potent Cantrip still deals ${half}.`);hurt(t,half,sp.type,false)}
       else{clog(`${head} Miss.`);fxMiss('f'+c.foes.indexOf(t))}
-      if(sp.lvl===0&&h.pools.insp&&t.hp>0&&!o.reroll)c.lastMiss={kind:'spell',id,ti:c.foes.indexOf(t),graze:0};
+      if(sp.lvl===0&&(h.pools.insp||h.pools.luck)&&t.hp>0&&!o.reroll)c.lastMiss={kind:'spell',id,ti:c.foes.indexOf(t),graze:0};
     }
   }else if(sp.form==='save'){
-    const hurtAlready=t.hp<t.hpMax,expr=sp.lvl===0?`${h.level>=5?2:1}${hurtAlready&&sp.dmgHurt?sp.dmgHurt:sp.dmg}`:sp.dmg;
-    const r=d(20),tot=r+t.mods[sp.save],saved=tot>=spellDC(),dr=roll(expr);if(sp.lvl===0&&h.cls==='cleric'&&h.level>=7)dr.total+=sm;
+    const hurtAlready=t.hp<t.hpMax,expr=sp.lvl===0?`${h.level>=5?2:1}${hurtAlready&&sp.dmgHurt?sp.dmgHurt:sp.dmg}`:sp.upcast?addDice(sp.dmg,up):sp.dmg;
+    const r=d(20),tot=r+t.mods[sp.save],saved=tot>=spellDC(),dr=roll(expr);if(sp.lvl===0&&(h.cls==='cleric'||h.cls==='druid')&&h.level>=7)dr.total+=sm;
+    if(id==='blight'&&t.type==='plant'){const [a,b]=expr.split('d').map(Number);dr.total=a*b}
     const potent=saved&&h.cls==='wizard'&&h.level>=3;
     clog(`${sp.name} on ${fn(t)}. ${ABIL_SHORT[sp.save]} save: d20 [${r}] ${sgn(t.mods[sp.save])} = ${tot} vs DC ${spellDC()}. ${saved?'It resists.':`It takes ${dr.total} ${sp.type} damage (${rtxt(dr)}).`}`,saved?'':'good');
-    if(!saved)hurt(t,dr.total,sp.type,false);else if(potent)hurt(t,Math.floor(dr.total/2),sp.type,false);
+    if(!saved&&sp.effect==='mock'&&t.hp>0){t.sapped=true;clog('Stung by the insult, it has disadvantage on its next attack.','info')}
+    if(!saved&&sp.effect==='flee'&&t.hp>0){pushAway(t,t.speed);clog(`${Fn(t)} flees from the whispers in its head.`,'info')}
+    if(c.overchannel&&sp.lvl>0&&sp.lvl<=5&&!saved){c.overchannel=false;const [a,b2]=expr.split('d');dr.total=(+a)*parseInt(b2)+(+(b2.split('+')[1]||0));clog('Overchannel: maximum damage.','good')}
+    if(saved&&sp.nohalf){clog('It dodges completely.','info')}else if(!saved)hurt(t,dr.total,sp.type,false);else if(potent||sp.lvl>0){if(sp.lvl>0)clog(`It still takes ${Math.floor(dr.total/2)}.`,'good');hurt(t,Math.floor(dr.total/2),sp.type,false)}
   }else if(sp.form==='missile'){
-    const n=3+up,rs=Array.from({length:n},()=>roll('1d4+1')),tot=rs.reduce((a,r)=>a+r.total,0)+empower();
-    clog(`Magic Missile${tag}: ${n} darts strike ${fn(t)} for ${tot} force (${rs.map(r=>r.total).join(' + ')}).`,'good');hurt(t,tot,'force',false);
+    const n=3+up,plan=o.alloc?Object.entries(o.alloc).filter(([,k])=>k>0).map(([i,k])=>[+i,k]):[[c.foes.indexOf(t),n]];let emp=empower();
+    clog(`Magic Missile${tag}: ${n} glowing darts.`,'info');
+    for(const [i,k] of plan){const f=c.foes[i];if(!f||f.hp<=0)continue;const rs=Array.from({length:k},()=>roll('1d4+1')),tot=rs.reduce((a,r)=>a+r.total,0)+emp;emp=0;
+      clog(`${k} dart${k>1?'s':''} strike ${fn(f)} (${f.label}) for ${tot} force (${rs.map(r=>r.total).join(' + ')}).`,'good');hurt(f,tot,'force',false)}
   }else if(sp.form==='rays'){
-    const n=3+up;clog(`Scorching Ray${tag}: ${n} rays.`,'info');
-    for(let i=0;i<n;i++){const tt=curTarget();if(!tt||rangeIssue('ranged',sp.range,sp.range,tt))break;
-      const dist=cheb(c.hero,tt),m=attackMods(tt,'ranged',dist,sp.range),r=heroD20(m.adv,m.dis);let total=r.nat+spellAtk();if(blessed())total+=d(4);
-      const crit=r.nat===20,hit=crit||(r.nat!==1&&total>=tt.ac),dice=rollDice(crit?4:2,6),dmg=dice.reduce((a,b)=>a+b,0);
-      clog(`Ray ${i+1} at ${fn(tt)}: ${r.txt} ${sgn(spellAtk())} = ${total}. ${hit?`${crit?'Critical! ':''}${dmg} fire [${dice.join(', ')}].`:'Miss.'}`,hit?'good':'');
+    const n=3+up,seq=o.alloc?Object.entries(o.alloc).flatMap(([i,k])=>Array(k).fill(+i)):Array(n).fill(c.foes.indexOf(t));clog(`Scorching Ray${tag}: ${n} rays.`,'info');
+    for(let i=0;i<n;i++){let tt=c.foes[seq[i]];if(!tt||tt.hp<=0)tt=curTarget();if(!tt||rangeIssue('ranged',sp.range,sp.range,tt))break;
+      const dist=cheb(c.hero,tt),m=attackMods(tt,'ranged',dist,sp.range),r=heroD20(m.adv||!!c.innate,m.dis);let total=r.nat+spellAtk();if(blessed())total+=d(4);
+      const crit=r.nat===20,hit=crit||(r.nat!==1&&total>=tt.ac),dice=rollDice(crit?4:2,6),dmg=dice.reduce((a,b)=>a+b,0)+(i===0?affinity('fire'):0)+(hit?hexBonus(tt,crit):0);
+      clog(`Ray ${i+1} at ${fn(tt)} (${tt.label}): ${r.txt} ${sgn(spellAtk())} = ${total}. ${hit?`${crit?'Critical! ':''}${dmg} fire [${dice.join(', ')}].`:'Miss.'}`,hit?'good':'');
       if(hit)hurt(tt,dmg,'fire',crit);}
   }else if(sp.form==='wave'){
     const hits=liveFoes().filter(f=>cheb(f,c.hero)<=1);const dr=roll(`${2+up}d8`);dr.total+=empower();
@@ -1833,7 +2294,37 @@ function castSpell(id,o={}){
   }else if(sp.form==='buff'){
     concentrate(id);
     if(id==='spiritguardians'){c.sgDice=3+up;clog(`Spirit Guardians${tag}: radiant spirits circle you, 15 ft out.`,'good')}
-    else clog(`${sp.name}${tag}: ${id==='bless'?'add 1d4 to your attacks and saves':'+2 AC'} while you concentrate.`,'good');
+    else clog(`${sp.name}${tag}: ${id==='greaterinvisibility'?'you vanish from sight':id==='bless'?'add 1d4 to your attacks and saves':id==='crusadersmantle'?'your weapon hits deal an extra 1d4 radiant':'+2 AC'} while you concentrate.`,'good');
+  }else if(sp.form==='chain'){
+    const oc=c.overchannel&&lvl<=5;const r=roll(addDice(sp.dmg,0)),tot=r.total+empower()+affinity(sp.type);
+    const tg=[t,...liveFoes().filter(f=>f!==t&&cheb(f,t)<=6).slice(0,3)];clog(`Chain Lightning${tag}: ${rtxt(r)} = ${tot} lightning, arcing to ${tg.length} target${tg.length>1?'s':''}.`,'good');
+    for(const f of tg){const s2=d(20),tt=s2+f.mods.dex,sv=tt>=spellDC(),n=sv?Math.floor(tot/2):tot;clog(`${Fn(f)} (${f.label}) DEX save ${s2} ${sgn(f.mods.dex)} = ${tt}: ${n}.`,sv?'':'good');hurt(f,n,'lightning',false)}
+  }else if(sp.form==='healflat'){
+    const amt=70+10*(lvl-6);h.hp=Math.min(h.hpMax,h.hp+amt);delete h.conds.poisoned;clog(`Heal${tag}: you regain ${amt} HP.`,'good');
+  }else if(sp.form==='deathward'){
+    h.conds.deathward=true;clog('Death Ward: the next time you would fall, you’ll stay standing at 1 HP.','good');
+  }else if(sp.form==='woodland'){
+    concentrate(id);c.zones=(c.zones||[]).filter(z=>z.spell!==id);c.zones.push({spell:id,follow:true,x:c.hero.x,y:c.hero.y,r:2,save:'wis',dmg:addDice('5d8',lvl-4),type:'force',lvl});clog(`Conjure Woodland Beings${tag}: spirits of the deep wood swirl around you.`,'good');
+  }else if(sp.form==='dance'){
+    concentrate(id);const s2=d(20),tt=s2+t.mods.wis;if(tt<spellDC()){t.restrained=true;t.restrainedBy='ottosdance';clog(`Otto’s Irresistible Dance: ${fn(t)} fails a WIS save (${tt} vs ${spellDC()}) and starts to dance.`,'good')}else clog(`Otto’s Irresistible Dance: ${fn(t)} resists (${tt} vs ${spellDC()}).`,'info');
+  }else if(sp.form==='shillelagh'){
+    c.shillelagh=true;clog('Shillelagh: your staff hums with nature’s power. It uses Wisdom and deals force damage.','good');
+  }else if(sp.form==='mark'){
+    concentrate('huntersmark');c.markTarget=c.foes.indexOf(t);clog(`Hunter’s Mark: you mark ${fn(t)} as your quarry.`,'good');
+  }else if(sp.form==='ensnare'){
+    concentrate('ensnaringstrike');c.ensnareNext=true;clog('Ensnaring Strike: thorns coil around your weapon, ready for your next hit.','good');
+  }else if(sp.form==='barkskin'){
+    h.conds.barkskin=true;clog('Barkskin: your skin turns rough and hard as oak. Your AC can’t drop below 17.','good');
+  }else if(sp.form==='aid'){
+    const amt=5*(lvl-1);h.hpMax+=amt;h.hp+=amt;clog(`Aid${tag}: your maximum and current HP rise by ${amt}.`,'good');
+  }else if(sp.form==='magicweapon'){
+    h.conds.magicwpn=1;clog('Magic Weapon: your weapon gleams. +1 to attack and damage rolls.','good');
+  }else if(sp.form==='blast'){
+    eldritchBlast(o.alloc);
+  }else if(sp.form==='hex'){
+    concentrate('hex');c.hexTarget=c.foes.indexOf(t);clog(`Hex${tag}: you curse ${fn(t)}. Your hits on it deal an extra 1d6 necrotic.`,'good');
+  }else if(sp.form==='agathys'){
+    const amt=5*lvl;h.temp=Math.max(h.temp,amt);h.conds.agathys=amt;clog(`Armor of Agathys${tag}: a skin of spectral frost. ${amt} temporary HP, and ${amt} cold damage to anything that hits you in melee.`,'good');
   }else if(sp.form==='guardian'){
     c.guardian={x:c.hero.x,y:c.hero.y,left:60};clog(`Guardian of Faith${tag}: a towering spectral sentinel appears beside you.`,'good');
   }else if(sp.form==='spiritual'){
@@ -1860,19 +2351,33 @@ function aimCells(){
 }
 function aimAt(x,y){
   const c=S.run.combat,h=S.hero,id=c.aim,sp=SPELLS[id];if(!aimCells().has(ck(x,y)))return;
-  let lvl;if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=slotFor(sp.lvl);if(!lvl)return;h.pools['slot'+lvl]--;c.slotUsed=true}
-  if(sp.cast==='action')c.actions--;else c.bonus=false;c.aim=null;c.hidden=false;
+  let lvl;if(sp.internal){lvl=id==='lightningbolt2'?c.clLvl||3:id==='movebeam'?(c.zones||[]).find(z=>z.spell==='moonbeam')?.lvl||2:0}else if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=pickSlot(sp.lvl,c.aimSlot);c.aimSlot=null;if(!lvl)return;useSlot(lvl);c.slotUsed=true}
+  if(sp.cast==='action'&&c.quicken){c.bonus=false;c.quicken=false}else if(sp.cast==='action')c.actions--;else c.bonus=false;c.aim=null;c.hidden=false;
   if(sp.form==='cone'){castCone(sp,lvl,{x,y});return}
-  if(sp.form==='teleport'){c.hero={x,y};clog('Misty Step: silver mist, and you’re elsewhere.','good');return}
-  const p={x,y},extra=sp.upcast&&lvl>sp.lvl?`+${lvl-sp.lvl}d6`:'';
-  const r1=roll(sp.upcast?`${8+lvl-sp.lvl}d6`:sp.dmg),r2=sp.dmg2?roll(sp.dmg2):null,total=r1.total+(r2?r2.total:0)+empower();
+  if(sp.form==='teleport'){c.hero={x,y};clog(id==='moonstep'?'Moonlight Step: you vanish in a shaft of moonlight.':'Misty Step: silver mist, and you’re elsewhere.','good');return}
+  if(sp.effect==='entangle'||sp.effect==='charm'){
+    if(sp.conc)concentrate(id);const p={x,y};
+    for(const f of liveFoes().filter(f=>cheb(f,p)<=sp.radius)){const r=d(20),tot=r+f.mods[sp.save],saved=tot>=spellDC();
+      if(sp.effect==='entangle'){clog(`${Fn(f)} ${ABIL_SHORT[sp.save]} save ${r} ${sgn(f.mods[sp.save])} = ${tot}: ${saved?'pulls free.':'is caught in grasping weeds and restrained.'}`,saved?'':'good');if(!saved){f.restrained=true;f.restrainedBy='entangle'}}
+      else{clog(`${Fn(f)} ${ABIL_SHORT[sp.save]} save ${r} ${sgn(f.mods[sp.save])} = ${tot}: ${saved?'looks away.':'stands entranced by the shifting colors.'}`,saved?'':'good');if(!saved)f.charmed=true}}
+    return;
+  }
+  if(sp.effect==='zone'&&id!=='movebeam'){concentrate(id);c.zones=(c.zones||[]).filter(z=>z.spell!==id);c.zones.push({spell:id,x,y,r:sp.radius,save:sp.save,dmg:sp.upcast?addDice(sp.dmg,lvl-sp.lvl):sp.dmg,type:sp.type,lvl})}
+  if(id==='movebeam'){const z=(c.zones||[]).find(z=>z.spell==='moonbeam');if(z){z.x=x;z.y=y}}
+  if(sp.effect==='storm'){concentrate(id);c.clLvl=lvl}
+  const p={x,y};
+  const oc=c.overchannel&&lvl>=1&&lvl<=5;if(oc)c.overchannel=false;
+  const r1=(oc?rollMax:roll)(sp.upcast?addDice(sp.dmg,lvl-sp.lvl):id==='lightningbolt2'?addDice('3d10',(c.clLvl||3)-3):id==='movebeam'?addDice('2d10',lvl-2):sp.dmg),r2=sp.dmg2?roll(sp.dmg2):null,total=r1.total+(r2?r2.total:0)+empower()+affinity(sp.type);
   clog(`${sp.name}${lvl>sp.lvl?` (level ${lvl} slot)`:''} lands: ${rtxt(r1)}${r2?` + ${rtxt(r2)}`:''} = ${total} damage.`,'good');
   for(const f of liveFoes().filter(f=>cheb(f,p)<=sp.radius)){
-    const r=d(20),tot=r+f.mods.dex,saved=tot>=spellDC(),n=saved?Math.floor(total/2):total;
-    clog(`${Fn(f)} DEX save ${r} ${sgn(f.mods.dex)} = ${tot}: ${n} damage.`,saved?'':'good');hurt(f,n,sp.type,false);
+    const sv=sp.save||'dex',r=d(20),tot=r+f.mods[sv],saved=tot>=spellDC(),n=saved?Math.floor(total/2):total;
+    clog(`${Fn(f)} ${ABIL_SHORT[sv]} save ${r} ${sgn(f.mods[sv])} = ${tot}: ${n} damage.`,saved?'':'good');hurt(f,n,sp.type,false);
   }
   if(cheb(c.hero,p)<=sp.radius){
     if(h.cls==='wizard'&&h.level>=6)clog('Sculpt Spells: the blast bends around you.','info');
+    else if(sp.safe){}
+    else if(c.careful){c.careful=false;clog('Careful Spell: the blast parts around you.','info')}
+    else if(sp.save&&sp.save!=='dex'){const sv=heroSave(sp.save,spellDC()),n=sv.pass?Math.floor(total/2):total;clog(`You’re inside it! ${sv.txt}. You take ${n}.`,'bad');dealHero(n,sp.type)}
     else{const n=aoeHero(total,spellDC());clog(`You’re inside the blast! You take ${n}.`,'bad');dealHero(n,sp.type)}
   }
 }
@@ -1884,14 +2389,15 @@ function coneCells(dir){
   return new Set(out);
 }
 function castCone(sp,lvl,dir){
-  const cells=coneCells(dir),r=roll(`${8+lvl-sp.lvl}d8`),total=r.total+empower();
-  clog(`${sp.name}${lvl>sp.lvl?` (level ${lvl} slot)`:''}: a blast of frost, ${rtxt(r)}${empower()?` + ${empower()}`:''} = ${total} cold.`,'good');
+  const cells=coneCells(dir),r=roll(addDice(sp.dmg,lvl-sp.lvl)),total=r.total+empower();
+  clog(`${sp.name}${lvl>sp.lvl?` (level ${lvl} slot)`:''}: ${sp.type==='cold'?'a blast of frost':'a storm of arrows'}, ${rtxt(r)}${empower()?` + ${empower()}`:''} = ${total} ${sp.type}.`,'good');
   const hit=liveFoes().filter(f=>cells.has(ck(f.x,f.y)));if(!hit.length)clog('The cone catches nothing.','info');
   for(const f of hit){const s=d(20),tot=s+f.mods[sp.save],saved=tot>=spellDC(),n=saved?Math.floor(total/2):total;
     clog(`${Fn(f)} ${ABIL_SHORT[sp.save]} save ${s} ${sgn(f.mods[sp.save])} = ${tot}: ${n} damage.`,saved?'':'good');hurt(f,n,sp.type,false)}
 }
+function rollMax(expr){const m=/^(\d+)d(\d+)([+-]\d+)?$/.exec(expr);if(!m)return roll(expr);const t=(+m[1])*(+m[2])+(+(m[3]||0));return{total:t,rolls:Array(+m[1]).fill(+m[2]),expr:expr+' (maximized)'}}
 function aoeHero(total,dc){
-  const h=S.hero,sv=heroSave('dex',dc),ev=h.cls==='rogue'&&h.level>=7;
+  const h=S.hero,sv=heroSave('dex',dc),ev=(h.cls==='rogue'||h.cls==='monk')&&h.level>=7;
   const n=sv.pass?(ev?0:Math.floor(total/2)):(ev?Math.floor(total/2):total);
   clog(`${sv.txt}. ${sv.pass?'Success':'Failure'}${ev?' (Evasion)':''}.`,'info');return n;
 }
@@ -1904,10 +2410,12 @@ function pushAway(f,n){
 }
 function heroSave(k,dc){
   const h=S.hero,c=S.run&&S.run.combat;
-  const adv=(k==='dex'&&c&&c.dodging);
+  const adv=(k==='dex'&&c&&c.dodging)||(k==='dex'&&h.cls==='barbarian'&&h.level>=2)||(k==='str'&&c&&c.rage);
   const r=heroD20(adv,false),m=saveMod(k);let total=r.nat+m,b='';
   if(blessed()){const x=d(4);total+=x;b=` + Bless ${x}`}
   if(c&&c.grappledBy!=null&&k==='dex'){const r2=d(20);if(r2+m<total){total=Math.min(total,r2+m+(b?0:0));b+=' (restrained: disadvantage)'}}
+  if(total<dc&&h.cls==='bard'&&h.pools.bi&&dc-total<=biDie()){h.pools.bi--;const x=d(biDie());total+=x;b+=`; Bardic Inspiration +${x}`}
+  if(total<dc&&h.pools.dol){h.pools.dol--;const x=d(10);total+=x;b+=`; Dark One’s Own Luck +${x}`}
   if(total<dc&&h.pools.indom){h.pools.indom--;const r3=heroD20(false,false);const t3=r3.nat+m+h.level;b+=`; Indomitable reroll ${r3.txt} ${sgn(m)} + ${h.level} = ${t3}`;total=t3}
   return{pass:total>=dc,txt:`${ABIL_SHORT[k]} save ${r.txt} ${sgn(m)}${b} = ${total} vs DC ${dc}`};
 }
@@ -1915,6 +2423,46 @@ function heroSave(k,dc){
 /* ---- class and species features in combat ---- */
 function feature(id,arg){
   const c=S.run.combat,h=S.hero,t=curTarget();
+  if(id==='overchannel'){if(!h.pools.overchannel||c.overchannel)return;h.pools.overchannel--;c.overchannel=true;clog('Overchannel: your next damaging spell of level 5 or lower deals maximum damage.','good');return}
+  if(id==='veil'){if(!c.bonus||!h.pools.veil)return;h.pools.veil--;c.bonus=false;c.hidden=true;clog('Nature’s Veil: you fade from sight.','good');return}
+  if(id==='intim'){if(!c.bonus||!h.pools.intim)return;h.pools.intim--;c.bonus=false;clog('Intimidating Presence: you roar.','good');
+    for(const f of liveFoes().filter(f=>cheb(f,c.hero)<=6)){const s2=d(20),tt=s2+f.mods.wis,dc=8+pb()+am('str'),sv=tt>=dc;clog(`${Fn(f)} WIS save ${s2} ${sgn(f.mods.wis)} = ${tt} vs DC ${dc}: ${sv?'stands firm.':'flees in terror.'}`,sv?'':'good');if(!sv)f.turned=true}return}
+  if(id==='hurl'){if(!h.pools.hurl||c.hurlNext)return;c.hurlNext=true;clog('Hurl Through Hell is ready for your next hit.','info');return}
+  if(id==='rage'){if(!c.bonus||c.rage||!h.pools.rage)return;h.pools.rage--;c.bonus=false;c.rage=true;
+    if(h.level>=7){const m=Math.floor(heroSpeed()/2);c.move+=m;clog(`You fly into a Rage! Instinctive Pounce: +${ft(m)} ft.`,'good')}else clog('You fly into a Rage! Resistance to weapon damage, and +'+rageDmg()+' damage with Strength attacks.','good');return}
+  if(id==='reckless'){if(c.reckless||h.level<2)return;c.reckless=true;clog('Reckless Attack: advantage on your Strength attacks this turn, but enemies get advantage against you until your next turn.','info');return}
+  if(id==='brutal'){if(!c.reckless||h.level<9||c.brutalNext)return;c.brutalNext=true;clog('Brutal Strike readied for your next attack.','info');return}
+  if(id.startsWith('ws:')){wildShape(id.slice(3));return}
+  if(id==='revert'){if(!c.bonus||!shape())return;c.bonus=false;delete h.conds.shape;clog('You return to your own form.','info');return}
+  if(id==='resurge'){if(h.pools.ws||!h.pools.resurge)return;const l=slotFor(1);if(!l)return;useSlot(l);h.pools.resurge=0;h.pools.ws=1;clog(`Wild Resurgence: a level ${l} slot becomes a Wild Shape use.`,'good');return}
+  if(id==='bolt2'){if(c.actions<1||h.conc!=='calllightning')return;c.aim='lightningbolt2';return}
+  if(id==='mbeam'){if(c.actions<1||h.conc!=='moonbeam')return;c.aim='movebeam';return}
+  if(id==='mstep'){if(!c.bonus||!h.pools.mstep)return;h.pools.mstep--;c.aim='moonstep';return}
+  if(id==='loh'){if(!c.bonus||!h.pools.loh)return;c.bonus=false;
+    if(h.conds.poisoned&&h.pools.loh>=5){h.pools.loh-=5;delete h.conds.poisoned;clog('Lay on Hands: the poison is purged.','good');return}
+    const n=Math.min(h.pools.loh,h.hpMax-h.hp);if(!n){c.bonus=true;return}h.pools.loh-=n;h.hp+=n;clog(`Lay on Hands: +${n} HP (${h.pools.loh} left in the pool).`,'good');return}
+  if(id==='smite'){if(h.cls!=='paladin'||h.level<2||(!h.pools.freesmite&&!slotFor(1)))return;
+    if(!c.smiteNext&&!h.pools.freesmite&&castLvl())c.smiteLvl=castLvl();c.smiteNext=!c.smiteNext;clog(c.smiteNext?'Divine Smite readied for your next melee hit.':'Divine Smite put away.','info');return}
+  if(id==='sacred'){if(c.sacred||!h.pools.cd||h.level<3)return;h.pools.cd--;c.sacred=true;clog(`Sacred Weapon: your weapon blazes with holy light. +${Math.max(1,am('cha'))} to weapon attack rolls this fight.`,'good');return}
+  if(id==='abjure'){if(c.actions<1||!h.pools.cd||h.level<9)return;h.pools.cd--;c.actions--;const n=Math.max(1,am('cha'));
+    const tg=liveFoes().filter(f=>cheb(f,c.hero)<=12).sort((a,b)=>cheb(a,c.hero)-cheb(b,c.hero)).slice(0,n);clog('Abjure Foes: you raise your holy symbol.','good');
+    for(const f of tg){const s2=d(20),tt=s2+f.mods.wis,sv=tt>=spellDC();clog(`${Fn(f)} WIS save ${s2} ${sgn(f.mods.wis)} = ${tt}: ${sv?'resists.':'flees in terror.'}`,sv?'':'good');if(!sv)f.turned=true}return}
+  if(id==='movemark'){if(!c.bonus||h.conc!=='huntersmark'||!t)return;const cur=c.foes[c.markTarget];if(cur&&cur.hp>0)return;c.bonus=false;c.markTarget=c.foes.indexOf(t);clog(`You move your Hunter’s Mark to ${fn(t)}.`,'good');return}
+  if(id==='tireless'){if(c.actions<1||!h.pools.tireless)return;h.pools.tireless--;c.actions--;const n=d(8)+am('wis');h.temp=Math.max(h.temp,n);clog(`Tireless: ${n} temporary HP.`,'good');return}
+  if(id==='mastrike'){if(!c.bonus||h.cls!=='monk')return;c.bonus=false;monkStrikes(1,false);return}
+  if(id==='flurry'){if(!c.bonus||!h.pools.focus)return;h.pools.focus--;c.bonus=false;clog('Flurry of Blows!','info');monkStrikes(h.level>=10?3:2,true);return}
+  if(id==='patient'){if(!c.bonus)return;c.bonus=false;c.disengaged=true;clog('Patient Defense: Disengage.','info');return}
+  if(id==='patientf'){if(!c.bonus||!h.pools.focus)return;h.pools.focus--;c.bonus=false;c.disengaged=true;c.dodging=true;clog('Patient Defense: Disengage and Dodge.','info');return}
+  if(id==='stepwind'){if(!c.bonus)return;c.bonus=false;c.move+=heroSpeed();clog(`Step of the Wind: +${ft(heroSpeed())} ft.`,'info');return}
+  if(id==='stepwindf'){if(!c.bonus||!h.pools.focus)return;h.pools.focus--;c.bonus=false;c.move+=heroSpeed();c.disengaged=true;clog(`Step of the Wind: Dash and Disengage, +${ft(heroSpeed())} ft.`,'info');return}
+  if(id==='wholeness'){if(!c.bonus||!h.pools.wholeness)return;h.pools.wholeness--;c.bonus=false;const n=Math.max(1,d(maDie())+am('wis'));h.hp=Math.min(h.hpMax,h.hp+n);clog(`Wholeness of Body: +${n} HP.`,'good');return}
+  if(id==='stun'){if(h.level<5||!h.pools.focus||c.stunUsed)return;c.stunNext=!c.stunNext;clog(c.stunNext?'Stunning Strike readied for your next hit.':'Stunning Strike put away.','info');return}
+  if(id==='innate'){if(!c.bonus||c.innate)return;if(h.pools.innate)h.pools.innate--;else if(h.level>=7&&h.pools.sp>=2)h.pools.sp-=2;else return;c.bonus=false;c.innate=true;clog('Innate Sorcery: your spells blaze. +1 to your spell save DC and advantage on spell attacks.','good');return}
+  if(id==='quicken'){if(c.quicken||(h.pools.sp||0)<2)return;h.pools.sp-=2;c.quicken=true;clog('Quickened Spell: your next action spell is cast as a bonus action.','info');return}
+  if(id==='careful'){if(c.careful||(h.pools.sp||0)<1)return;h.pools.sp--;c.careful=true;clog('Careful Spell: your next area spell won’t touch you.','info');return}
+  if(id.startsWith('font')){const l=+id.slice(4),cost={1:2,2:3,3:5}[l];if(!c.bonus||(h.pools.sp||0)<cost)return;h.pools.sp-=cost;h.pools['slot'+l]=(h.pools['slot'+l]||0)+1;c.bonus=false;clog(`Font of Magic: ${cost} Sorcery Points become a level ${l} slot.`,'good');return}
+  if(id==='movehex'){if(!c.bonus||h.conc!=='hex'||!t)return;const cur=c.foes[c.hexTarget];if(cur&&cur.hp>0)return;c.bonus=false;c.hexTarget=c.foes.indexOf(t);clog(`You move your Hex to ${fn(t)}.`,'good');return}
+  if(id==='vigor'){if(c.actions<1||h.level<5)return;c.actions--;h.temp=Math.max(h.temp,12);clog('Fiendish Vigor: 12 temporary HP.','good');return}
   if(id==='secondwind'){if(!c.bonus||!h.pools.secondwind)return;h.pools.secondwind--;c.bonus=false;const r=roll(`1d10+${h.level}`);h.hp=Math.min(h.hpMax,h.hp+r.total);clog(`Second Wind: you heal ${r.total} (${rtxt(r)}).`,'good')}
   else if(id==='surge'){if(!h.pools.surge)return;h.pools.surge--;c.actions++;clog('Action Surge: one more action this turn.','good')}
   else if(id==='aim'){if(!c.bonus||c.moved||h.level<3)return;c.bonus=false;c.adv=true;c.advWhy='Steady Aim';c.move=0;clog('Steady Aim: your next attack has advantage.','good')}
@@ -1946,11 +2494,23 @@ function combatAction(k){
   const c=S.run&&S.run.combat;if(!c||c.over||c.turn!=='hero')return;
   const h=S.hero;
   if(h.dying){if(k==='deathsave')deathSave();return}
-  if(k!=='reroll')c.lastMiss=null;
+  if(!k.startsWith('reroll'))c.lastMiss=null;
   if(WEAPONS[k])weaponAttack(k);
-  else if(SPELLS[k])castSpell(k);
+  else if(k.startsWith('up:')){const [,id,l]=k.split(':');c.pick=null;if(id==='smite'){c.smiteLvl=+l;c.smiteNext=true;clog(`Divine Smite readied with a level ${l} slot.`,'info')}else castSpell(id,{slot:+l})}
+  else if(k==='cancelpick'){c.pick=null}
+  else if(k.startsWith('lvl:')){S.flags.castLvl=+k.slice(4)}
+  else if(k.startsWith('split')){const sp=c.split;if(!sp)return;
+    if(k==='splitcancel'){c.split=null;return}
+    if(k==='splitgo'){const tot=Object.values(sp.alloc).reduce((a,b)=>a+b,0);if(tot!==sp.n)return;c.split=null;castSpell(sp.id,{slot:sp.slot,alloc:sp.alloc});checkWin();return}
+    const [op,i]=k.slice(5).split(':'),tot=Object.values(sp.alloc).reduce((a,b)=>a+b,0);
+    if(op==='+'&&tot<sp.n)sp.alloc[i]=(sp.alloc[i]||0)+1;if(op==='-'&&(sp.alloc[i]||0)>0)sp.alloc[i]--;return}
+  else if(SPELLS[k]){if(spellIssue(k))return;
+    if(MULTI[k]){const slot=plannedSlot(k)||0,n=multiCount(k,slot),tg=multiTargets(k);
+      if(n>1&&tg.length>1){c.split={id:k,slot,n,alloc:{[c.foes.indexOf(curTarget())]:n}};return}}
+    castSpell(k,{slot:castLvl()})}
   else if(k==='spiritual')spiritualStrike(false);
-  else if(k==='reroll')rerollAttack();
+  else if(k==='reroll')rerollAttack('insp');
+  else if(k==='rerollluck')rerollAttack('luck');
   else if(k==='cancelaim')c.aim=null;
   else if(k==='dash'){if(c.actions<1)return;c.actions--;c.move+=heroSpeed();clog(`Dash: +${ft(heroSpeed())} ft.`,'info')}
   else if(k==='disengage'){if(c.actions<1)return;c.actions--;c.disengaged=true;clog('Disengage: no opportunity attacks against you this turn.','info')}
@@ -1980,20 +2540,25 @@ function checkWin(){
 function dealHero(n,type){
   const h=S.hero,c=S.run.combat;
   if(type==='poison'&&h.species==='dwarf'){n=Math.floor(n/2);clog('Dwarven Resilience halves the poison damage.','info')}
+  if(c&&c.rage&&['bludgeoning','piercing','slashing'].includes(type)){n=Math.floor(n/2);clog('Your rage shrugs off half the damage.','info')}
+  if(type==='fire'&&h.cls==='sorcerer'&&h.level>=6){n=Math.floor(n/2);clog('Your draconic blood resists the fire.','info')}
+  if(type==='necrotic'&&h.cls==='warlock'&&h.level>=10){n=Math.floor(n/2);clog('Fiendish Resilience halves the necrotic damage.','info')}
   if(type==='necrotic'&&h.gear.necro){n=Math.floor(n/2);clog('Your moonsilver armor halves the necrotic damage.','info')}
   if(h.temp){const a=Math.min(h.temp,n);h.temp-=a;n-=a;if(a)clog(`Temporary HP absorbs ${a}.`,'info')}
   if(n<=0)return;
   h.hp-=n;
   if(h.hp<=0){
     const over=-h.hp;
+    if(h.conds.deathward){delete h.conds.deathward;h.hp=1;clog('Death Ward flares: you drop to 1 HP instead.','good');return}
     if(h.pools.relentless&&over<h.hpMax){h.pools.relentless--;h.hp=1;clog('Relentless Endurance: you drop to 1 HP instead.','good');return}
     h.hp=0;
     if(h.conc){clog(`You lose concentration on ${SPELLS[h.conc].name}.`,'bad');h.conc=null}
     if(over>=h.hpMax){clog(`Massive damage: ${over} past 0 HP is at least your HP maximum. You die instantly.`,'bad');c.over='dead';return}
+    if(h.cls==='barbarian'&&h.level>=11&&c.rage){const dc=10+5*(h.relentlessUses||0);h.relentlessUses=(h.relentlessUses||0)+1;const sv=heroSave('con',dc);if(sv.pass){h.hp=2*h.level;clog(`Relentless Rage: ${sv.txt}. You refuse to fall, back up at ${h.hp} HP.`,'good');return}}
     h.dying={s:0,f:0};c.heroProne=true;clog('You drop to 0 HP and fall unconscious. You’ll make death saving throws on your turns.','bad');
     return;
   }
-  if(h.conc){const dc=Math.min(30,Math.max(10,Math.floor(n/2))),sv=heroSave('con',dc);
+  if(h.conc&&!(h.conc==='huntersmark'&&h.cls==='ranger'&&h.level>=13)){const dc=Math.min(30,Math.max(10,Math.floor(n/2))),sv=heroSave('con',dc);
     if(!sv.pass){clog(`Concentration broken (${sv.txt}). ${SPELLS[h.conc].name} ends.`,'bad');h.conc=null}else clog(`You keep concentrating (${sv.txt}).`,'info')}
 }
 function deathSave(){
@@ -2014,6 +2579,13 @@ const inGuardians=f=>S.hero.conc==='spiritguardians'&&cheb(f,S.run.combat.hero)<
 function foeTurn(f){
   const c=S.run.combat,h=S.hero;
   f.reacted=false;f.noReact=false;
+  if(f.stunned){clog(`${Fn(f)} is stunned and loses its turn.`,'good');f.acted=true;endFoeTurn(f);return}
+  if(f.restrained&&h.conc!==(f.restrainedBy||'ensnaringstrike'))f.restrained=false;
+  if(f.restrained&&f.restrainedBy==='ottosdance'){const s2=d(20),tt=s2+f.mods.wis;if(tt>=spellDC()){f.restrained=false;clog(`${Fn(f)} stops dancing.`,'info')}else{clog(`${Fn(f)} dances on, helpless.`,'good');f.acted=true;endFoeTurn(f);return}}
+  if(f.charmed&&h.conc!=='hypnoticpattern')f.charmed=false;
+  if(f.charmed){clog(`${Fn(f)} stands entranced.`,'good');f.acted=true;endFoeTurn(f);return}
+  if(f.restrained){if((f.restrainedBy||'ensnaringstrike')==='ensnaringstrike'){const r=roll('1d6');clog(`The thorny vines cut ${fn(f)} for ${r.total} piercing.`,'good');hurt(f,r.total,'piercing',false);checkWin();if(f.hp<=0||c.over)return}
+    if(cheb(f,c.hero)>(f.reach||1)){const s2=d(20),tt=s2+f.mods.str;if(tt>=spellDC()){f.restrained=false;clog(`${Fn(f)} tears free of the vines.`,'info')}else clog(`${Fn(f)} struggles against the vines and stays stuck.`,'info');f.acted=true;endFoeTurn(f);return}}
   if(f.regen&&f.hp>0){if(f.noRegen)clog(`${Fn(f)} can’t regenerate: the wound was seared.`,'good');else if(f.hp<f.hpMax){const g=Math.min(f.regen,f.hpMax-f.hp);f.hp+=g;clog(`${Fn(f)} regenerates ${g} HP.`,'bad')}f.noRegen=false}
   if(h.dying){if(!c.downNoted){clog('With you down, your enemies stop attacking. (Solo rule: they leave a dying hero alone.)','info');c.downNoted=true}f.acted=true;return}
   let speed=f.speed;if(f.slowed)speed=Math.max(0,speed-2);if(inGuardians(f))speed=Math.floor(speed/2);
@@ -2026,7 +2598,7 @@ function foeTurn(f){
   }
   if(f.burst&&f.burstReady===false&&d(6)>=5){f.burstReady=true;clog(`${Fn(f)} gathers power again.`,'info')}
   let dist=cheb(f,c.hero);
-  if(f.burst&&f.burstReady!==false&&dist<=12&&los(c,f,c.hero)){
+  if(f.burst&&f.burstReady!==false&&dist<=(f.burst.range||12)&&los(c,f,c.hero)){
     f.burstReady=false;const r=roll(f.burst.dmg),bt=f.burst.dtype||'fire';clog(`${Fn(f)} casts ${f.burst.name}: ${rtxt(r)} = ${r.total} ${bt}.`,'bad');
     const n=aoeHero(r.total,f.burst.dc);if(n){clog(`You take ${n} ${bt} damage.`,'bad');dealHero(n,bt)}else clog('You dive clear.','good');
     f.acted=true;endFoeTurn(f);return;
@@ -2034,15 +2606,21 @@ function foeTurn(f){
   if(dist<=(f.reach||1)){foeMelee(f)}
   else if(f.ranged&&dist<=f.ranged.long&&los(c,f,c.hero)&&(f.keepAway||dist>speed+1)){foeRanged(f)}
   else{
-    const map=reach(c,f,speed,(x,y)=>(x===c.hero.x&&y===c.hero.y)||c.foes.some(o=>o!==f&&o.hp>0&&o.x===x&&o.y===y)?'no':false);
-    let best=null;for(const v of map.values()){const dv=cheb(v,c.hero);if(!best||dv<best.dv||(dv===best.dv&&v.d<best.d))best={...v,dv}}
+    const blk=(x,y)=>(x===c.hero.x&&y===c.hero.y)||c.foes.some(o=>o!==f&&o.hp>0&&o.x===x&&o.y===y)?'no':false;
+    const pickBest=m=>{let b=null;for(const v of m.values()){const dv=cheb(v,c.hero);if(!b||dv<b.dv||(dv===b.dv&&v.d<b.d))b={...v,dv}}return b};
+    const map=reach(c,f,speed,blk);let best=pickBest(map);
+    if(!f.ranged&&speed>0&&best&&best.dv>(f.reach||1)){
+      const map2=reach(c,f,speed*2,blk),b2=pickBest(map2);
+      if(b2&&(b2.x!==f.x||b2.y!==f.y))moveFoe(f,map2,b2,true);
+      f.acted=true;endFoeTurn(f);return;
+    }
     if(best&&(best.x!==f.x||best.y!==f.y))moveFoe(f,map,best);
     if(f.hp>0&&!c.over){dist=cheb(f,c.hero);
       if(dist<=(f.reach||1))foeMelee(f);else if(f.ranged&&dist<=f.ranged.long&&los(c,f,c.hero))foeRanged(f)}
   }
   f.acted=true;endFoeTurn(f);
 }
-function moveFoe(f,map,dest){
+function moveFoe(f,map,dest,dash){
   const c=S.run.combat;let steps=0;
   for(const st of pathTo(map,dest.x,dest.y)){
     if(c.react&&!S.hero.dying&&cheb(f,c.hero)<=1&&cheb(st,c.hero)>1){
@@ -2053,7 +2631,7 @@ function moveFoe(f,map,dest){
     }
     f.x=st.x;f.y=st.y;steps++;
   }
-  if(steps)clog(`${Fn(f)} moves ${ft(steps)} ft.`,'info');
+  if(steps)clog(dash?`${Fn(f)} takes the Dash action and runs ${ft(steps)} ft. No attack this turn.`:`${Fn(f)} moves ${ft(steps)} ft (speed ${ft(f.speed)} ft).`,'info');
 }
 function foeRanged(f){const c=S.run.combat;for(let i=0;i<(f.rangedMulti||1);i++){if(f.hp<=0||c.over||S.hero.dying)break;foeAttack(f,'ranged')}}
 function foeMelee(f){
@@ -2062,6 +2640,9 @@ function foeMelee(f){
 }
 function endFoeTurn(f){
   const c=S.run.combat,h=S.hero;
+  c.zones=(c.zones||[]).filter(z=>h.conc===z.spell);
+  for(const z of c.zones){if(z.follow){z.x=c.hero.x;z.y=c.hero.y}if(f.hp>0&&!c.over&&cheb(f,z)<=z.r){const s2=d(20),tot=s2+f.mods[z.save],sv=tot>=spellDC(),r=roll(z.dmg),n=sv?Math.floor(r.total/2):r.total;
+    clog(`${SPELLS[z.spell].name} catches ${fn(f)}: ${ABIL_SHORT[z.save]} save ${s2} ${sgn(f.mods[z.save])} = ${tot}. ${n} ${z.type}.`,'good');hurt(f,n,z.type,false);checkWin()}}
   if(f.hp>0&&c.guardian&&c.guardian.left>0&&cheb(f,c.guardian)<=2&&!c.over){
     const s=d(20),tot=s+f.mods.dex,saved=tot>=spellDC(),n=Math.min(c.guardian.left,saved?10:20);c.guardian.left-=n;
     clog(`The Guardian of Faith strikes ${fn(f)}: DEX save ${s} ${sgn(f.mods.dex)} = ${tot}. ${n} radiant.`,'good');hurt(f,n,'radiant',false);
@@ -2082,7 +2663,10 @@ function foeAttack(f,mode,atkObj){
   if(f.prone){dis=true;why.push('it’s prone')}
   if(mode==='ranged'&&dist>f.ranged.range){dis=true;why.push('long range')}
   if(c.dodging){dis=true;why.push('Dodge')}
-  if(c.hidden){dis=true;why.push('can’t see you')}
+  if(c.reckless){adv=true;why.push('you’re reckless')}
+  if(f.restrained){dis=true;why.push('it’s restrained')}
+  if(c.ohDis){dis=true;why.push('Escape the Horde')}
+  if(c.hidden||h.conc==='greaterinvisibility'){dis=true;why.push('can’t see you')}
   if(c.heroPara){adv=true;why.push('you’re paralyzed')}
   if(c.grappledBy!=null){adv=true;why.push('you’re restrained')}
   const a=d(20),b=d(20);let nat=a,rt=`d20 [${a}]`;
@@ -2090,15 +2674,22 @@ function foeAttack(f,mode,atkObj){
   let total=nat+r.atk,crit=nat===20;let hit=crit||(nat!==1&&total>=ac);if(hit&&c.heroPara&&dist<=1)crit=true;
   const how=mode==='ranged'?`fires its ${f.ranged.name}`:r.name?`attacks with its ${r.name}`:'attacks',w=why.length?` (${why.join(', ')})`:'';
   const head=`${Fn(f)} ${how}${w}: ${rt} + ${r.atk} = ${total} vs your AC ${ac}.`;
-  if(hit&&!crit&&h.cls==='wizard'&&c.react&&S.flags.autoShield!==false&&total<ac+5&&slotFor(1)){
-    const l=slotFor(1);h.pools['slot'+l]--;c.react=false;c.shieldUp=true;clog(`${head} You cast Shield as a reaction: AC ${ac+5}. It misses.`,'good');fxMiss('hero','block');return;
+  if(hit&&!crit&&knownSpells().includes('shield')&&c.react&&S.flags.autoShield!==false&&total<ac+5&&slotFor(1)){
+    const l=slotFor(1);useSlot(l);c.react=false;c.shieldUp=true;clog(`${head} You cast Shield as a reaction: AC ${ac+5}. It misses.`,'good');fxMiss('hero','block');return;
   }
+  if(hit&&!crit&&h.cls==='bard'&&h.level>=3&&c.react&&h.pools.bi&&S.flags.autoCutting!==false&&total-biDie()<ac){c.react=false;h.pools.bi--;const x=d(biDie());if(total-x<ac){clog(`${head} Cutting Words: your jeer throws it off by ${x}. It misses.`,'good');fxMiss('hero','block');return}clog(`Cutting Words: you subtract ${x}, but it still hits.`,'info')}
   if(!hit){clog(`${head} Miss.`,'info');fxMiss('hero');return}
   const dr=dmgRoll(r.dmg,crit,0);let n=dr.total,extra='';
   if(f.martial&&!c.martialUsed&&liveFoes().some(o=>o!==f&&cheb(o,c.hero)<=1)){const m=roll('2d6');n+=m.total;extra+=` Martial Advantage adds ${m.total}.`}
   if(h.cls==='rogue'&&h.level>=5&&c.react){c.react=false;n=Math.floor(n/2);extra=' Uncanny Dodge halves it.'}
+  if(h.cls==='monk'&&h.level>=3&&c.react){c.react=false;const red=d(10)+am('dex')+h.level;n=Math.max(0,n-red);extra+=` Deflect Attacks turns aside ${red}.`;if(!n)fxMiss('hero','block')}
   clog(`${head} ${crit?'Critical! ':''}You take ${n} (${dr.txt}).${extra}`,'bad');
   dealHero(n,r.dtype||(mode==='ranged'?'piercing':f.dtype));
+  if(!c.over&&!h.dying&&n>0&&mode==='melee'&&f.hp>0&&h.cls==='barbarian'&&h.level>=10&&c.react&&cheb(f,c.hero)<=1&&!shape()){c.react=false;clog('Retaliation!','info');const save=c.target;c.target=c.foes.indexOf(f);weaponAttack('greataxe',true);c.target=save;checkWin()}
+  if(!c.over&&mode==='melee'&&h.conds.agathys&&f.hp>0){clog(`Armor of Agathys freezes ${fn(f)} for ${h.conds.agathys} cold.`,'good');hurt(f,h.conds.agathys,'cold',false);if(h.temp<=0)delete h.conds.agathys;checkWin()}
+  if(!c.over&&!h.dying&&n>0&&f.hp>0&&c.react&&knownSpells().includes('hellishrebuke')&&slotFor(1)&&S.flags.autoRebuke!==false&&cheb(f,c.hero)<=12){
+    const l=slotFor(1);useSlot(l);c.react=false;const rr=roll(`${1+l}d10`),s2=d(20),tot=s2+f.mods.dex,sv=tot>=spellDC(),dd=sv?Math.floor(rr.total/2):rr.total;
+    clog(`Hellish Rebuke (level ${l}): flames engulf ${fn(f)}. DEX save ${s2} ${sgn(f.mods.dex)} = ${tot}. ${dd} fire.`,'good');hurt(f,dd,'fire',false);checkWin()}
   if(!c.over&&!h.dying&&r.drain){h.hpMax=Math.max(1,h.hpMax-n);h.hp=Math.min(h.hp,h.hpMax);clog(`Life Drain: your maximum HP drops by ${n} until you finish a long rest (now ${h.hpMax}).`,'bad')}
   if(!c.over&&!h.dying&&mode==='melee'&&f.grapple&&c.grappledBy==null){c.grappledBy=c.foes.indexOf(f);clog(`${Fn(f)} wraps around you. You’re grappled and restrained (escape DC ${f.grapple}).`,'bad')}
   if(!c.over&&!h.dying&&r.rider){const sv=heroSave(r.rider.save,r.rider.dc);const rr=roll(r.rider.dmg),m=sv.pass?Math.floor(rr.total/2):rr.total;
@@ -2137,12 +2728,12 @@ function render(){
   if(S&&S.run&&S.run.combat)playFX();
 }
 function renderInner(app){
-  if(!S||S.flags.rebuild||S.flags.fallen){app.innerHTML=renderCreate();return}
+  if(!S||S.flags.rebuild||S.flags.fallen||S.flags.respec){app.innerHTML=renderCreate();return}
   const tabs=[['town','Town'],['farm','Farm'],['quests','Quests'],['folk','Folk'],['hero','Hero'],['journal','Journal']];
   const body={town:renderTown,farm:renderFarm,quests:renderQuests,folk:renderFolk,hero:renderHero,journal:renderJournal}[S.tab]||renderTown;
   app.innerHTML=`<div class="wrap">${renderHeader()}${S.flags.note?`<div class="note" role="status">${S.flags.note.split('\n\n').map(p=>`<p>${esc(p)}</p>`).join('')}<div class="actions">${btn('note','Got it','','btn ghost small')}</div></div>`:''}<main>${body()}</main></div>
   <nav class="tabs" aria-label="Sections">${tabs.map(([k,l])=>`<button data-a="tab" data-t="${k}" aria-current="${S.tab===k}">${l}</button>`).join('')}</nav>
-  ${S.run?renderRun():''}${S.flags.actModal?renderActModal():''}${S.flags.act2Modal?renderAct2Modal():''}${S.flags.endModal&&!S.run?renderEndModal():''}`;
+  ${S.run?renderRun():''}${S.flags.actModal?renderActModal():''}${S.flags.act2Modal?renderAct2Modal():''}${S.flags.endModal&&!S.run?renderEndModal():''}${S.flags.sequelModal?renderSequelModal('start'):''}${S.flags.ch2Modal&&!S.run?renderSequelModal('ch2'):''}`;
 }
 function playFX(){
   const board=document.querySelector('.board'),c=S&&S.run&&S.run.combat;
@@ -2382,11 +2973,20 @@ function renderTown(){
   <ul class="checklist">${tier.map(([ok,t])=>`<li class="${ok?'ok':''}">${t}</li>`).join('')}</ul>`;
 }
 
+function jobHint(w){
+  const kb=w.kind==='kobold'?1:0;
+  return{build:'Adds 1 build point to the current project every night.',idle:'Resting. Still paid.',
+    salvage:`Each week: 1d${w.die}${kb?' + 1':''} timber or stone from the ruins, whichever you have less of.`,
+    lumber:`Each week: 1d${w.die} + ${(lvl('lumber')>=2?2:0)+(lvl('lumber')>=3?3:0)} timber.`.replace(' + 0',''),
+    quarry:`Each week: 1d${w.die} + ${kb+(lvl('quarry')>=2?2:0)+(lvl('quarry')>=3?3:0)} stone.`.replace(' + 0',''),
+    mine:'Each week: a chance at a lump of moonsilver.',guard:'+1 town defense against raids.'}[w.assign]||'';
+}
 function renderWorkers(){
-  const opts=[['build','Construction'],['idle','Resting']].concat(built('lumber')?[['lumber','Lumber camp']]:[],built('quarry')?[['quarry','Quarry']]:[],S.flags.warren&&S.flags.ending!=='reseal'?[['mine','Mine (moonsilver)']]:[],S.flags.act1?[['guard','Guard (+1 defense)']]:[]);
+  const opts=[['build','Construction'],['idle','Resting']].concat(S.salvage.timber+S.salvage.stone>0?[['salvage','Scavenge the ruins']]:[],built('lumber')?[['lumber','Lumber camp']]:[],built('quarry')?[['quarry','Quarry']]:[],S.flags.warren&&S.flags.ending!=='reseal'?[['mine','Mine (moonsilver)']]:[],S.flags.act1?[['guard','Guard (+1 defense)']]:[]);
   let html=`<h2>Workers</h2><p class="meta">Housing: ${housed()} of ${housingCap()}. Wages and 1 food each are due every Monday.</p>`;
-  if(S.workers.length)html+=`<ul class="ledger">${S.workers.map(w=>`<li><div class="row"><h3>${esc(w.name)}</h3><span class="meta">${w.kind==='kobold'?'Kobold, ':''}d${w.die}, ${w.wage} gp a week</span></div>
+  if(S.workers.length)html+=`<ul class="ledger">${S.workers.map(w=>`<li><div class="row"><h3>${esc(w.name)}</h3><span class="meta">${w.kind==='kobold'?'Kobold digger, ':''}d${w.die}, ${w.wage} gp a week</span></div><p class="meta">${jobHint(w)}</p>
     <div class="actions"><label class="meta">Job <select data-assign="${w.id}">${opts.map(([v,l])=>`<option value="${v}" ${w.assign===v?'selected':''}>${l}</option>`).join('')}</select></label>${btn('fire','Let go',`data-id="${w.id}"`,'btn ghost small')}</div></li>`).join('')}</ul>`;
+  html+=`<p class="meta">${built('lumber')&&built('quarry')?'':'The Lumber camp and Quarry jobs appear once those buildings are finished. '}Kobold diggers get +1 when quarrying, scavenging or mining.</p>`;
   if(!built('flagon'))html+=`<p>Rebuild the Rusty Flagon to hire help.</p>`;
   else{
     const cs=candidates(),full=housed()>=housingCap();
@@ -2395,25 +2995,42 @@ function renderWorkers(){
   return html;
 }
 
+let seedPlot=null;
+const cropSell=k=>CROPS[k].sell+(built('market')?1:0)+(lvl('farmstead')>=3?1:0);
+const CROP_USES={
+  potato:'Cheap and quick: the easy way to earn a little gold. Dorrin and Corwin love them as gifts.',
+  wheat:'Mill one into 2 food to feed your workers, or sell it. Bram loves it as a gift.',
+  moon:'Ilsa brews it into a healing potion for 5 gp, or it sells for the best price. Maren and Ilsa love it as a gift.'
+};
+function seedGuide(i){
+  const water=lvl('well')>=3?'The aqueduct waters it for you':'It grows only on days it’s watered (or rains)';
+  const fast=S.flags.ending==='bloom';
+  const rows=['potato','wheat','moon'].map(k=>{
+    const c=CROPS[k],cost=k==='moon'?0:c.seed,days=fast?Math.ceil(c.grow/2):c.grow,sell=cropSell(k),have=k!=='moon'||S.inv.moonseed>0;
+    const per=((sell-cost)/days).toFixed(1);
+    return `<li><div class="row"><h3>${c.name}</h3><span class="meta">${k==='moon'?`${S.inv.moonseed} seed${S.inv.moonseed===1?'':'s'} in hand`:`${cost} gp a seed`}</span></div>
+      <p>Ready after ${days} watered day${days>1?'s':''}${fast?' (the grey bloom doubles growth)':''}. Sells for ${sell} gp${k==='moon'?'':`, a profit of ${sell-cost} gp`}, about ${per} gp a day.</p>
+      <p class="meta">${CROP_USES[k]}${k==='moon'?' Seeds come from quests, Ilsa’s friendship and Corwin’s cart.':''}</p>
+      <div class="actions">${btn('plant',`Plant ${c.name.toLowerCase()}${cost?` for ${cost} gp`:''}`,`data-i="${i}" data-c="${k}" ${dis(!have||S.res.gold<cost)}`,'btn small')}</div></li>`}).join('');
+  return `<div class="pickrow"><p><b>What to plant in field ${i+1}?</b> ${water}.</p><ul class="ledger">${rows}</ul><div class="actions">${btn('seedcancel','Cancel','','btn ghost small')}</div></div>`;
+}
 function renderFarm(){
   const anyCrop=S.plots.some(p=>p.crop);
   const inv=['potato','wheat','moon'].filter(k=>S.inv[k]>0);
-  const binTotal=Object.entries(S.bin).reduce((a,[k,v])=>a+v*CROPS[k].sell,0);
+  const binTotal=Object.entries(S.bin).reduce((a,[k,v])=>a+v*cropSell(k),0);
   return `<h2>Fields</h2>
   <p class="meta">Crops only grow on days they’re watered, or when it rains.${built('farmstead')?'':' Rebuild the farmstead to open 3 more plots.'}</p>
   <div class="actions">${btn('water',S.used.water?'Watered today':'Water all crops',dis(S.used.water||!anyCrop||S.weather==='rain'))}</div>
   <div class="plots" style="margin-top:14px">${S.plots.map((p,i)=>{
-    if(!p.crop)return `<div class="plot"><span class="meta">Empty plot</span><div class="actions">
-      ${btn('plant',`Potatoes, 1 gp`,`data-i="${i}" data-c="potato" ${dis(S.res.gold<1)}`,'btn ghost small')}
-      ${btn('plant',`Wheat, 2 gp`,`data-i="${i}" data-c="wheat" ${dis(S.res.gold<2)}`,'btn ghost small')}
-      ${S.inv.moonseed?btn('plant',`Moonblossom (${S.inv.moonseed})`,`data-i="${i}" data-c="moon"`,'btn ghost small'):''}</div></div>`;
+    if(!p.crop)return `<div class="plot ${seedPlot===i?'ready':''}"><span class="meta">Field ${i+1}: empty</span><div class="actions">${btn('seedpick',seedPlot===i?'Choosing…':'Plant something',`data-i="${i}"`,seedPlot===i?'btn small':'btn ghost small')}</div></div>`;
     const c=CROPS[p.crop],ready=p.days>=c.grow;
     return `<div class="plot ${ready?'ready':'growing'}"><h3>${c.name}</h3>
       ${ready?'<span>Ready to harvest</span>':`<div class="bar"><i style="width:${pct(p.days,c.grow)}%"></i></div><span class="meta">Day ${p.days} of ${c.grow}. ${p.watered||S.weather==='rain'?'Watered.':'Thirsty.'}</span>`}
       ${ready?`<div class="actions">${btn('harvest','Harvest',`data-i="${i}"`,'btn small')}</div>`:''}</div>`;
   }).join('')}</div>
+  ${seedPlot!=null&&S.plots[seedPlot]&&!S.plots[seedPlot].crop?seedGuide(seedPlot):''}
   <h2>Produce</h2>
-  ${inv.length?`<ul class="ledger">${inv.map(k=>`<li><div class="row"><h3>${CROPS[k].name}: ${S.inv[k]}</h3><span class="meta">Sells for ${CROPS[k].sell} gp each</span></div><div class="actions">
+  ${inv.length?`<ul class="ledger">${inv.map(k=>`<li><div class="row"><h3>${CROPS[k].name}: ${S.inv[k]}</h3><span class="meta">Sells for ${cropSell(k)} gp each</span></div><div class="actions">
     ${btn('ship','Put all in the shipping bin',`data-k="${k}"`,'btn small')}
     ${k==='wheat'?btn('mill','Mill one into 2 food','','btn ghost small'):''}
     ${k==='moon'?btn('brew',`Ilsa brews a potion (5 gp)`,dis(S.res.gold<5),'btn ghost small'):''}</div></li>`).join('')}</ul>`:'<p class="meta">Nothing harvested yet.</p>'}
@@ -2430,6 +3047,8 @@ function renderQuests(){
   const act1=Object.keys(QUESTS).filter(k=>QUESTS[k].act===1),act2=Object.keys(QUESTS).filter(k=>QUESTS[k].act===2);
   return `${S.raid&&S.raid.arrive<=S.day?`<div class="raidbox"><p><b>Raid today: ${RAIDS[S.raid.type].name}.</b> Defending takes your daytime task.</p><div class="actions">${btn('quest','Defend the town','data-q="raid" '+dis(S.used.day),'btn')}</div></div>`:''}<h2>Notice board</h2>
   <p class="meta">${S.used.day?'You’ve already spent today’s daytime. Quests will wait until tomorrow.':'A quest takes your daytime task. You rest fully each night.'}</p>
+  ${S.flags.act3&&S.hero.level>=10&&!S.flags.sequel?`<div class="raidbox" style="border-color:var(--lantern)"><p><b>Sequel: The Seven Seals.</b> A campaign for levels 10 to 20. Your hero and your town carry over.</p><div class="actions">${btn('sequelintro','Read the Abbess’s letter','','btn')}</div></div>`:''}
+  ${S.flags.sequel?SEQUEL_CHAPTERS.filter(([a])=>a===4||S.quests.s1c).map(([a,t])=>`<h2>${t}</h2><ul class="ledger">${Object.keys(QUESTS).filter(k=>QUESTS[k].act===a).map(questRow).join('')}</ul>`).join(''):''}
   ${S.flags.act2?`<h2>Act 3: The Shut Eye</h2><p class="meta">Keys recovered: ${keyCount()} of 3.</p><ul class="ledger">${Object.keys(QUESTS).filter(k=>QUESTS[k].act===3).map(questRow).join('')}</ul>`:''}
   ${S.flags.act1?`<h2>Act 2: The Hollow Below</h2><ul class="ledger">${act2.map(questRow).join('')}</ul>`:''}
   <h2>${S.flags.act1?'Act 1: Restoration':'Act 1: Restoration'}</h2>
@@ -2459,6 +3078,10 @@ function renderFolk(){
   }).join('')}</ul>
   <h2>Ilsa’s shelf</h2>
   <div class="row"><span>Healing potion: heals 2d4 + 2. You have ${S.inv.potion}. ${weeklyStock().ilsa?`Ilsa can spare ${weeklyStock().ilsa} more this week.`:'She’s out until Monday.'}</span>${weeklyStock().ilsa?btn('buypotion',`Buy for ${potionPrice()} gp`,dis(S.res.gold<potionPrice()),'btn small'):'<span class="tag">Sold out</span>'}</div>
+  ${S.flags.mystic&&!S.flags.mysticUsed?`<h2>Sable the Mystic</h2>
+  <p>A quiet woman with ink-stained fingers and eyes like a winter sky. “Every life is a path,” she says. “I can offer you one turning, once, and never again.”</p>
+  <p class="meta">A one-time respec: choose a new class, species, background and ability scores. You keep your level, XP, gold, items, quests and friendships.</p>
+  <div class="actions">${btn('respec','Hear her offer',dis(!!S.run),'btn')}</div>`:''}
   <h2>Mirela’s wagon</h2>
   ${merchantHere()?`<p>A painted wagon full of strange goods. Mirela leaves after ${dateInfo(S.merchant.leave).season} ${dateInfo(S.merchant.leave).sday}.</p>
   <ul class="ledger">${S.merchant.stock.map(id=>{const m=MAGIC[id],sold=S.merchant.sold.includes(id),left=(S.merchant.qty||{})[id];return `<li><div class="row"><span><b>${m.name}</b> <span class="meta">${m.rarity}${m.attune?', needs attunement':''}${!sold&&left>1?`, ${left} left`:''}</span></span>${sold?'<span class="tag done">Sold out</span>':btn('buymagic',`Buy for ${mPrice(id)} gp`,`data-k="${id}" ${dis(S.res.gold<mPrice(id))}`,'btn small')}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>
@@ -2506,14 +3129,14 @@ function newDraft(base){
   return{name:(base&&base.name)||'',cls,species:(base&&base.species)||'human',bg:(base&&base.bg)||'soldier',abil:{...CLASSES[cls].array}};
 }
 function renderCreate(){
-  if(!draft)draft=newDraft(S&&S.flags&&(S.flags.rebuild||S.flags.fallen)?(S.flags.rebuild?{name:S.hero.name,cls:S.hero.cls}:null):null);
-  const mode=S&&S.flags.rebuild?'rebuild':S&&S.flags.fallen?'fallen':'new';
-  const preview=buildHero({...draft,name:draft.name||'Wanderer'});
+  if(!draft){draft=newDraft(S&&S.flags&&(S.flags.rebuild||S.flags.fallen||S.flags.respec)?(S.flags.rebuild?{name:S.hero.name,cls:S.hero.cls}:S.flags.respec?{name:S.hero.name,cls:S.hero.cls,species:S.hero.species,bg:S.hero.bg}:null):null);if(S&&S.flags.respec)draft.avatar=S.hero.avatar}
+  const mode=S&&S.flags.respec?'respec':S&&S.flags.rebuild?'rebuild':S&&S.flags.fallen?'fallen':'new';
+  const preview=buildHero({...draft,name:draft.name||'Wanderer',level:mode==='respec'?S.hero.level:1});
   const B=BACKGROUNDS[draft.bg],pr=CLASSES[draft.cls].priority.filter(a=>B.abil.includes(a));
   const sel=(field,opts)=>`<select data-draft="${field}">${opts.map(([v,l])=>`<option value="${v}" ${draft[field]===v?'selected':''}>${l}</option>`).join('')}</select>`;
   return `<div class="wrap create">
   <h1>Hollowmere</h1>
-  ${mode==='new'?'<p class="lede">A valley town gone quiet. A deed to a ruined farm. A sealed mine in the hills. Bring the town back to life, one quest and one rafter at a time.</p>':
+  ${mode==='respec'?`<p class="lede">Sable’s draught is bitter and smells of rain. Drink it, and you can become someone else: a new class, species, background and ability scores. You keep your level (${S.hero.level}), your experience, your gold, your items and everything the town remembers about you. This can only be done once.</p>`:''}${mode==='respec'?'':mode==='new'?'<p class="lede">A valley town gone quiet. A deed to a ruined farm. A sealed mine in the hills. Bring the town back to life, one quest and one rafter at a time.</p>':
     mode==='rebuild'?'<p class="lede">The game now uses the full 5.5e rules. Rebuild your hero: your level, XP, gold and the whole town carry over.</p>':
     '<p class="lede">The town remembers its fallen defender. A new adventurer arrives to take up the work, and everything you built is still here.</p>'}
   <div class="avatarpick">${avatarHTML(draft.avatar,draft.name||'?','avatar big')}<div><p class="field" style="margin:0 0 6px">Token</p><p class="meta">Your picture on the battle map. Square images work best.</p><div class="actions">${btn('avatar',draft.avatar?'Change image':'Choose image','','btn ghost small')}${draft.avatar?btn('avatarclear','Remove','','btn ghost small'):''}</div></div></div>
@@ -2531,7 +3154,7 @@ function renderCreate(){
   <p>${preview.hpMax} HP, AC ${baseAC(preview)}, speed ${ft(heroSpeed(preview))} ft. Skills: ${preview.skills.map(s=>SKILL[s]+(preview.expertise.includes(s)?' (expertise)':'')).join(', ')}.</p>
   <p class="meta">${SPECIES[draft.species].traits.map(t=>`${t[0]}: ${t[1]}`).join(' ')}</p>
   <p class="meta">Feats: ${preview.feats.map(f=>`${FEATS[f][0]} (${FEATS[f][1]})`).join(' ')}</p>
-  <div class="actions" style="margin-top:18px">${btn('create',mode==='rebuild'?'Rebuild my hero':mode==='fallen'?'Arrive in Hollowmere':'Arrive in Hollowmere','','btn big')}</div>
+  <div class="actions" style="margin-top:18px">${btn('create',mode==='respec'?'Drink the draught':mode==='rebuild'?'Rebuild my hero':'Arrive in Hollowmere','','btn big')}${mode==='respec'?btn('cancelrespec','Not yet','','btn ghost'):''}</div>
   <p class="meta" style="margin-top:14px">Your game saves automatically in this browser.</p>
   </div>`;
 }
@@ -2544,13 +3167,13 @@ function renderHero(){
   <div class="abilgrid sheet">${ABIL.map(k=>`<div><span>${ABIL_SHORT[k]}</span><b>${h.abil[k]}</b><span>${sgn(am(k))}</span><small>Save ${sgn(saveMod(k))}${C.saves.includes(k)?' ●':''}</small></div>`).join('')}</div>
   <h2>Attacks</h2>
   <ul class="ledger">${C.weapons.map(id=>{const w=WEAPONS[id],ab=weaponAbil(w);return`<li><div class="row"><b>${w.name}</b><span>${sgn(pb()+am(ab))}, ${w.dmg} ${sgn(am(ab))}${h.gear.dmg?` + ${h.gear.dmg}`:''} ${w.type}</span></div><p class="meta">${w.kind==='melee'?'Melee, 5 ft':`Ranged, ${ft(w.range)}/${ft(w.long)} ft`}.${hasMastery(id)?` ${MASTERY[w.mastery]}`:''}</p></li>`}).join('')}</ul>
-  ${sp.length?`<h2>Spells</h2><p class="meta">Slots: ${[1,2,3,4,5].filter(l=>maxPools(h)['slot'+l]).map(l=>`level ${l}: ${p['slot'+l]}/${maxPools(h)['slot'+l]}`).join(', ')}.${h.mageArmor?' Mage Armor is up.':''}</p>
+  ${sp.length?`<h2>Spells</h2><p class="meta">${isWarlock()?'':'Slots: '}${slotSummary(h,true)}.${h.cls==='sorcerer'&&h.level>=2?` Sorcery Points: ${p.sp}/${h.level}.`:''}${h.mageArmor?' Mage Armor is up.':''}</p>
   <ul class="ledger">${sp.map(id=>`<li><b>${SPELLS[id].name}</b> <span class="meta">${SPELLS[id].lvl?`Level ${SPELLS[id].lvl}`:'Cantrip'}</span><p class="meta">${SPELLS[id].desc}</p></li>`).join('')}</ul>`:''}
   <h2>Features</h2>
   <ul class="ledger">${C.features.map(f=>`<li><b>${f[1]}</b>${f[0]>h.level?` <span class="tag lock">Level ${f[0]}</span>`:''}<p class="meta">${f[2]}</p></li>`).join('')}
   ${SPECIES[h.species].traits.map(t=>`<li><b>${t[0]}</b> <span class="meta">${SPECIES[h.species].name}</span><p class="meta">${t[1]}</p></li>`).join('')}
   ${h.feats.map(f=>`<li><b>${FEATS[f][0]}</b> <span class="meta">Feat</span><p class="meta">${FEATS[f][1]}</p></li>`).join('')}</ul>
-  <p class="meta">Today: ${[p.secondwind!==undefined&&`Second Wind ${p.secondwind}`,p.surge!==undefined&&h.level>=2&&`Action Surge ${p.surge}`,p.cd!==undefined&&`Channel Divinity ${p.cd}`,p.luck!==undefined&&`Luck points ${p.luck}`,p.insp!==undefined&&`Heroic Inspiration ${p.insp?'ready':'used'}`,p.rush!==undefined&&`Adrenaline Rush ${p.rush}`,p.relentless!==undefined&&`Relentless Endurance ${p.relentless?'ready':'used'}`].filter(Boolean).join(', ')||'Nothing to track.'}</p>
+  <p class="meta">Today: ${[p.secondwind!==undefined&&`Second Wind ${p.secondwind}`,p.surge!==undefined&&h.level>=2&&`Action Surge ${p.surge}`,p.cd!==undefined&&`Channel Divinity ${p.cd}`,p.luck!==undefined&&`Luck points ${p.luck}`,p.insp!==undefined&&`Heroic Inspiration ${p.insp?'ready':'used'}`,p.rush!==undefined&&`Adrenaline Rush ${p.rush}`,p.relentless!==undefined&&`Relentless Endurance ${p.relentless?'ready':'used'}`,h.cls==='monk'&&h.level>=2&&`Focus Points ${p.focus}/${h.level}`,h.cls==='paladin'&&`Lay on Hands ${p.loh}/${5*h.level}`,h.cls==='barbarian'&&`Rage ${p.rage}`,h.cls==='druid'&&h.level>=2&&`Wild Shape ${p.ws}`,h.cls==='bard'&&`Bardic Inspiration ${p.bi} (d${biDie()})`,h.cls==='paladin'&&h.level>=2&&`Free smite ${p.freesmite?'ready':'used'}`,h.cls==='ranger'&&`Free Hunter’s Marks ${p.favored}`,h.cls==='sorcerer'&&`Innate Sorcery ${p.innate}`,h.cls==='warlock'&&h.level>=2&&`Magical Cunning ${p.cunning?'ready':'used'}`].filter(Boolean).join(', ')||'Nothing to track.'}</p>
   <h2>Skills</h2>
   <ul class="ledger skills">${Object.keys(SKILLS).map(k=>`<li class="row"><span>${h.skills.includes(k)?'●':'○'} ${SKILL[k]} <span class="meta">${ABIL_SHORT[SKILLS[k][1]]}${h.expertise.includes(k)?', expertise':''}</span></span><b>${sgn(skillMod(k))}</b></li>`).join('')}</ul>
   <p class="meta">Passive Perception ${10+skillMod('perception')}.</p>
@@ -2564,7 +3187,9 @@ function renderHero(){
   ${h.owned.length?`<h2>Gear</h2><p>${h.owned.map(id=>([...PEDDLER_GOODS,...SMITHY_ITEMS].find(g=>g.id===id)||{name:id}).name).join(', ')}.</p>`:''}
   <h2>Table rules</h2>
   <label class="toggle"><input type="checkbox" data-flag="permadeath" ${S.flags.permadeath?'checked':''}> Permanent death. Three failed death saves kill your hero; the town carries on with a new one.</label>
-  ${h.cls==='wizard'?`<label class="toggle"><input type="checkbox" data-flag="autoShield" ${S.flags.autoShield!==false?'checked':''}> Cast Shield automatically when it would turn a hit into a miss.</label>`:''}
+  ${h.cls==='bard'&&h.level>=3?`<label class="toggle"><input type="checkbox" data-flag="autoCutting" ${S.flags.autoCutting!==false?'checked':''}> Use Cutting Words automatically when it could turn a hit into a miss.</label>`:''}
+  ${h.cls==='warlock'?`<label class="toggle"><input type="checkbox" data-flag="autoRebuke" ${S.flags.autoRebuke!==false?'checked':''}> Cast Hellish Rebuke automatically when something damages you.</label>`:''}
+  ${knownSpells().includes('shield')?`<label class="toggle"><input type="checkbox" data-flag="autoShield" ${S.flags.autoShield!==false?'checked':''}> Cast Shield automatically when it would turn a hit into a miss.</label>`:''}
   <p class="meta">Solo rule: monsters stop attacking once you’re dying, so death saves decide your fate.</p>
   <h2>Your save</h2>
   <p class="meta">Saved automatically in this browser. Export a copy to move it to another device.</p>
@@ -2587,6 +3212,7 @@ function renderRun(){
         const opts=[];
         if(h.pools.insp)opts.push(btn('reroll','Reroll (Heroic Inspiration)','data-k="insp"','btn ghost'));
         if(h.pools.luck)opts.push(btn('reroll',`Lucky: roll again (${h.pools.luck})`,'data-k="luck"','btn ghost'));
+        if(h.cls==='bard'&&h.pools.bi&&!p.biTried)opts.push(btn('reroll',`Bardic Inspiration: +d${biDie()} (${h.pools.bi})`,'data-k="bi"','btn ghost'));
         if(h.cls==='fighter'&&h.level>=2&&h.pools.secondwind&&p.spec.skill&&!p.tacticalTried)opts.push(btn('reroll','Tactical Mind: +1d10','data-k="tactical"','btn ghost'));
         body=`<p class="rollline">${checkText(p.res,p.spec.dc)}. Failure.</p><p class="meta">You can try to change the result, or accept it.</p><div class="actions">${opts.join('')}${btn('accept','Accept the result')}</div>`;
       }
@@ -2598,8 +3224,10 @@ function renderRun(){
     }else{
       const rl=(qdef().rests||1)-(r.restsUsed||0),rest=!r.rested&&rl>0?btn('shortrest',`Short rest (1 hour)${(qdef().rests||1)>1?`, ${rl} left`:''}`,'','btn ghost'):'';
       const pot=S.inv.potion&&h.hp<h.hpMax?btn('potion',`Drink a potion (${S.inv.potion})`,'','btn ghost'):'';
-      const heals=h.cls==='cleric'&&h.hp<h.hpMax?['healingword','curewounds'].filter(id=>slotFor(1)).map(id=>btn('heal',`Cast ${SPELLS[id].name}`,`data-k="${id}"`,'btn ghost')).join(''):'';
-      const extras=rest+pot+heals+(S.inv.heroism&&!h.conds.heroism?btn('drinkhero','Drink Potion of Heroism','','btn ghost'):'')+(S.inv.superior&&h.hp<h.hpMax?btn('drinksup','Drink superior healing','','btn ghost'):'');
+      const heals=h.hp<h.hpMax?['healingword','curewounds'].filter(id=>knownSpells().includes(id)&&slotFor(1)).map(id=>btn('heal',`Cast ${SPELLS[id].name}`,`data-k="${id}"`,'btn ghost')).join(''):'';
+      const loh=h.cls==='paladin'&&h.pools.loh&&(h.hp<h.hpMax||h.conds.poisoned)?btn('lohq',`Lay on Hands (${h.pools.loh})`,'','btn ghost'):'';
+      const wl=(loh)+(h.cls==='warlock'?(h.pools.cunning&&h.pools.pact<PACT[h.level][0]?btn('cunning','Magical Cunning (regain pact slots)','','btn ghost'):'')+(h.level>=5&&h.temp<12?btn('vigorq','Fiendish Vigor','','btn ghost'):''):'');
+      const extras=rest+pot+heals+wl+(S.inv.heroism&&!h.conds.heroism?btn('drinkhero','Drink Potion of Heroism','','btn ghost'):'')+(S.inv.superior&&h.hp<h.hpMax?btn('drinksup','Drink superior healing','','btn ghost'):'');
       if(st.t==='text')body=`<p class="prose">${st.text}</p><div class="actions">${btn('cont','Continue')}${extras}</div>`;
       else if(st.t==='check')body=`<p class="prose">${st.text}</p><div class="actions">${btn('check',`Roll ${SKILL[st.skill]} (DC ${st.dc}, ${sgn(skillMod(st.skill))})`)}${extras}</div>`;
       else if(st.t==='save')body=`<p class="prose">${st.text}</p><div class="actions">${btn('check',`Roll a ${ABIL_NAME[st.save]} save (DC ${st.dc}, ${sgn(saveMod(st.save))})`)}${extras}</div>`;
@@ -2636,7 +3264,7 @@ function renderCombat(st){
     cells+=`<button class="cell ${rock?'rock':''} ${canGo?'reach':''} ${canAim?'aim':''}" ${tokId?`data-tok="${tokId}" data-cx="${x}" data-cy="${y}"`:''} ${act} ${act?'':'tabindex="-1"'} aria-label="${label}${canGo?`, move ${ft(r.d)} ft`:''}">${inner}</button>`;
   }
   const order=`<div class="initrow" aria-label="Turn order">${c.order.map((o,i)=>{const isH=o.id==='hero',f=isH?null:c.foes[o.id];
-    return `<span class="chip ${i===c.ti&&!c.over&&(c.turn==='hero'||o.id!=='hero')?'now':''} ${f&&f.hp<=0?'gone':''} ${isH?'me':''}">${isH?'You':f.label} ${o.init}</span>`}).join('')}</div>`;
+    return `<span class="chip ${!c.over&&(c.acting!=null?o.id===c.acting:(i===c.ti&&(c.turn==='hero'||o.id!=='hero')))?'now':''} ${f&&f.hp<=0?'gone':''} ${isH?'me':''}">${isH?'You':f.label} ${o.init}</span>`}).join('')}</div>`;
   let controls='';
   if(c.over)controls=`<div class="actions">${btn('cont','Continue','','btn big')}</div>`;
   else if(c.turn!=='hero'){const a=c.acting!=null?c.foes[c.acting]:null;controls=`<p class="turnline waiting"><b>${a?`${a.label} ${a.name} is acting…`:'Enemies are acting…'}</b></p>`}
@@ -2645,10 +3273,18 @@ function renderCombat(st){
   else{
     const tDist=t?cheb(c.hero,t):0;
     const atkLeft=c.attacksLeft>0?` (${c.attacksLeft} more attack${c.attacksLeft>1?'s':''} in this Attack action)`:'';
-    const wBtns=C.weapons.map(id=>{const w=WEAPONS[id],issue=rangeIssue(w.kind,1,w.long||w.range),off=issue||(c.actions<1&&c.attacksLeft<1);
+    const wBtns=heroWeapons().map(id=>{const w=WEAPONS[id],issue=rangeIssue(w.kind,1,w.long||w.range),off=issue||(c.actions<1&&c.attacksLeft<1);
       return btn('act',`${w.name}${issue?`: ${issue}`:''}`,`data-k="${id}" ${disab(off)}`,!issue&&w.kind==='melee'?'btn':'btn ghost')}).join('');
-    const spBtns=knownSpells().filter(id=>!['shield','magearmor'].includes(id)).map(id=>{const s=SPELLS[id],issue=spellIssue(id);
-      return btn('act',`${s.name}${s.cast==='bonus'?' (bonus)':''}${issue&&!['action used','bonus action used'].includes(issue)?`: ${issue}`:''}`,`data-k="${id}" ${disab(issue)}`,'btn ghost small')}).join('');
+    const pickRow=c.pick?(()=>{const isSm=c.pick==='smite',lv=isSm?[1,2,3,4,5].filter(l=>h.pools['slot'+l]>0):upcastLevels(c.pick),nm=isSm?'Divine Smite':SPELLS[c.pick].name;
+      return `<div class="pickrow"><p><b>${nm}:</b> which slot level? Higher slots make it stronger.</p><div class="actions">${lv.map(l=>btn('act',`Level ${l} (${h.pools['slot'+l]} left)`,`data-k="up:${c.pick}:${l}"`,'btn small')).join('')}${btn('act','Cancel','data-k="cancelpick"','btn ghost small')}</div></div>`})():'';
+    const spBtns=shape()?'':knownSpells().filter(id=>!['shield','magearmor','hellishrebuke'].includes(id)).map(id=>{const s=SPELLS[id],issue=spellIssue(id),pl=!issue&&s.lvl?plannedSlot(id):0;
+      return btn('act',`${s.name}${s.cast==='bonus'?' (bonus)':''}${pl&&pl>s.lvl?` at level ${pl}`:''}${issue&&!['action used','bonus action used'].includes(issue)?`: ${issue}`:''}`,`data-k="${id}" ${disab(issue)}`,pl&&pl>s.lvl?'btn small':'btn ghost small')}).join('');
+    const mp=maxPools(h),lvls=isWarlock(h)?[]:[1,2,3,4,5,6,7,8,9].filter(l=>mp['slot'+l]);
+    const lvlRow=lvls.length>1&&!shape()?`<div class="lvlrow"><span class="meta">Cast at:</span>${btn('act','Lowest','data-k="lvl:0"',castLvl()?'btn ghost small':'btn small')}${lvls.map(l=>btn('act',`Level ${l} (${h.pools['slot'+l]||0})`,`data-k="lvl:${l}" ${disab(!h.pools['slot'+l])}`,castLvl()===l?'btn small':'btn ghost small')).join('')}</div>`:'';
+    const splitRow=c.split?(()=>{const sp=c.split,tot=Object.values(sp.alloc).reduce((a,b)=>a+b,0);
+      return `<div class="pickrow"><p><b>${SPELLS[sp.id].name}${sp.slot>SPELLS[sp.id].lvl?` (level ${sp.slot})`:''}:</b> aim your ${sp.n} ${MULTI[sp.id]}. ${sp.n-tot?`${sp.n-tot} left to assign.`:'All assigned.'}</p>
+        <ul class="ledger">${multiTargets(sp.id).map(i=>{const f=c.foes[i],k=sp.alloc[i]||0;return `<li class="row"><span><b>${f.label}</b> ${f.name} <span class="meta">${f.hp}/${f.hpMax} HP</span></span><span class="split">${btn('act','−',`data-k="split-:${i}" ${disab(!k)}`,'btn ghost small')}<b>${k}</b>${btn('act','+',`data-k="split+:${i}" ${disab(tot>=sp.n)}`,'btn ghost small')}</span></li>`}).join('')}</ul>
+        <div class="actions">${btn('act','Fire','data-k="splitgo" '+disab(tot!==sp.n),'btn')}${btn('act','Cancel','data-k="splitcancel"','btn ghost small')}</div></div>`})():'';
     const f=[];
     if(h.cls==='fighter'){f.push(btn('act',`Second Wind (bonus), ${h.pools.secondwind}`,`data-k="secondwind" ${disab(!c.bonus||!h.pools.secondwind)}`,'btn ghost small'));
       if(h.level>=2)f.push(btn('act',`Action Surge, ${h.pools.surge}`,`data-k="surge" ${disab(!h.pools.surge)}`,'btn ghost small'))}
@@ -2656,6 +3292,37 @@ function renderCombat(st){
       if(h.level>=3)f.push(btn('act','Steady Aim (bonus)',`data-k="aim" ${disab(!c.bonus||c.moved)}`,'btn ghost small'))}
     if(h.cls==='cleric'&&h.level>=2){f.push(btn('act',`Divine Spark: heal, ${h.pools.cd}`,`data-k="sparkheal" ${disab(c.actions<1||!h.pools.cd)}`,'btn ghost small'),btn('act','Divine Spark: harm',`data-k="sparkharm" ${disab(c.actions<1||!h.pools.cd||!t||rangeIssue('ranged',6,6))}`,'btn ghost small'),btn('act','Turn Undead',`data-k="turn" ${disab(c.actions<1||!h.pools.cd)}`,'btn ghost small'))}
     if(h.conc==='spiritualweapon')f.push(btn('act','Spiritual Weapon strike (bonus)',`data-k="spiritual" ${disab(!c.bonus||!t||rangeIssue('ranged',12,12))}`,'btn ghost small'));
+    if(h.cls==='wizard'&&h.level>=14)f.push(btn('act',c.overchannel?'Overchannel: ready':`Overchannel, ${h.pools.overchannel}`,`data-k="overchannel" ${disab(c.overchannel||!h.pools.overchannel)}`,c.overchannel?'btn small':'btn ghost small'));
+    if(h.cls==='ranger'&&h.level>=14)f.push(btn('act',`Nature’s Veil (bonus), ${h.pools.veil}`,`data-k="veil" ${disab(!c.bonus||!h.pools.veil)}`,'btn ghost small'));
+    if(h.cls==='barbarian'&&h.level>=14)f.push(btn('act',`Intimidating Presence (bonus), ${h.pools.intim}`,`data-k="intim" ${disab(!c.bonus||!h.pools.intim)}`,'btn ghost small'));
+    if(h.cls==='warlock'&&h.level>=14)f.push(btn('act',c.hurlNext?'Hurl Through Hell: ready':`Hurl Through Hell, ${h.pools.hurl}`,`data-k="hurl" ${disab(c.hurlNext||!h.pools.hurl)}`,c.hurlNext?'btn small':'btn ghost small'));
+    if(h.cls==='barbarian'){f.push(btn('act',c.rage?'Raging':`Rage (bonus), ${h.pools.rage}`,`data-k="rage" ${disab(c.rage||!c.bonus||!h.pools.rage)}`,c.rage?'btn small':'btn ghost small'));
+      if(h.level>=2)f.push(btn('act',c.reckless?'Reckless this turn':'Reckless Attack',`data-k="reckless" ${disab(c.reckless)}`,c.reckless?'btn small':'btn ghost small'));
+      if(h.level>=9)f.push(btn('act',c.brutalNext?'Brutal Strike: ready':'Ready Brutal Strike',`data-k="brutal" ${disab(!c.reckless||c.brutalNext)}`,'btn ghost small'))}
+    if(h.cls==='druid'){if(shape())f.push(btn('act',`Return to your form (bonus)`,`data-k="revert" ${disab(!c.bonus)}`,'btn ghost small'));
+      else if(h.level>=2)Object.entries(FORMS).filter(([,fm])=>h.level>=fm.minL).forEach(([id,fm])=>f.push(btn('act',`Wild Shape: ${fm.name} (${h.pools.ws})`,`data-k="ws:${id}" ${disab(!c.bonus||!h.pools.ws)}`,'btn ghost small')));
+      if(h.level>=5&&!h.pools.ws&&h.pools.resurge)f.push(btn('act','Wild Resurgence (spend a slot)',`data-k="resurge" ${disab(!slotFor(1))}`,'btn ghost small'));
+      if(h.conc==='calllightning')f.push(btn('act','Call down a lightning bolt',`data-k="bolt2" ${disab(c.actions<1)}`,'btn small'));
+      if(h.conc==='moonbeam')f.push(btn('act','Move the Moonbeam',`data-k="mbeam" ${disab(c.actions<1)}`,'btn ghost small'));
+      if(h.level>=10)f.push(btn('act',`Moonlight Step, ${h.pools.mstep}`,`data-k="mstep" ${disab(!c.bonus||!h.pools.mstep)}`,'btn ghost small'))}
+    if(h.cls==='paladin'){f.push(btn('act',`Lay on Hands (bonus), ${h.pools.loh}`,`data-k="loh" ${disab(!c.bonus||!h.pools.loh||(h.hp>=h.hpMax&&!h.conds.poisoned))}`,'btn ghost small'));
+      if(h.level>=2)f.push(btn('act',c.smiteNext?'Divine Smite: ready':`Ready Divine Smite${h.pools.freesmite?' (free)':''}`,`data-k="smite" ${disab(!h.pools.freesmite&&!slotFor(1))}`,c.smiteNext?'btn small':'btn ghost small'));
+      if(h.level>=3)f.push(btn('act',c.sacred?'Sacred Weapon active':`Sacred Weapon, ${h.pools.cd}`,`data-k="sacred" ${disab(c.sacred||!h.pools.cd)}`,'btn ghost small'));
+      if(h.level>=9)f.push(btn('act','Abjure Foes',`data-k="abjure" ${disab(c.actions<1||!h.pools.cd)}`,'btn ghost small'))}
+    if(h.cls==='ranger'){if(h.conc==='huntersmark'&&(!c.foes[c.markTarget]||c.foes[c.markTarget].hp<=0))f.push(btn('act','Move Hunter’s Mark (bonus)',`data-k="movemark" ${disab(!c.bonus||!t)}`,'btn small'));
+      if(h.level>=10)f.push(btn('act',`Tireless, ${h.pools.tireless}`,`data-k="tireless" ${disab(c.actions<1||!h.pools.tireless)}`,'btn ghost small'))}
+    if(h.cls==='monk'){f.push(btn('act','Bonus unarmed strike',`data-k="mastrike" ${disab(!c.bonus||!t||rangeIssue('melee',1,1))}`,'btn ghost small'));
+      if(h.level>=2)f.push(btn('act',`Flurry of Blows, ${h.pools.focus} focus`,`data-k="flurry" ${disab(!c.bonus||!h.pools.focus||!t||rangeIssue('melee',1,1))}`,'btn ghost small'),
+        btn('act','Patient Defense',`data-k="patient" ${disab(!c.bonus)}`,'btn ghost small'),btn('act','Patient Defense + Dodge (1)',`data-k="patientf" ${disab(!c.bonus||!h.pools.focus)}`,'btn ghost small'),
+        btn('act','Step of the Wind',`data-k="stepwind" ${disab(!c.bonus)}`,'btn ghost small'),btn('act','Step of the Wind + Disengage (1)',`data-k="stepwindf" ${disab(!c.bonus||!h.pools.focus)}`,'btn ghost small'));
+      if(h.level>=5)f.push(btn('act',c.stunNext?'Stunning Strike: ready':'Ready Stunning Strike (1)',`data-k="stun" ${disab(!h.pools.focus||c.stunUsed)}`,c.stunNext?'btn small':'btn ghost small'));
+      if(h.level>=6)f.push(btn('act',`Wholeness of Body, ${h.pools.wholeness}`,`data-k="wholeness" ${disab(!c.bonus||!h.pools.wholeness)}`,'btn ghost small'))}
+    if(h.cls==='sorcerer'){f.push(btn('act',c.innate?'Innate Sorcery active':`Innate Sorcery (bonus), ${h.pools.innate}`,`data-k="innate" ${disab(c.innate||!c.bonus||(!h.pools.innate&&!(h.level>=7&&h.pools.sp>=2)))}`,'btn ghost small'));
+      if(h.level>=2){f.push(btn('act',c.quicken?'Quickened: next spell':`Quicken next spell (2 of ${h.pools.sp})`,`data-k="quicken" ${disab(c.quicken||h.pools.sp<2)}`,c.quicken?'btn small':'btn ghost small'),
+        btn('act',c.careful?'Careful: next area spell':'Careful Spell (1)',`data-k="careful" ${disab(c.careful||h.pools.sp<1)}`,c.careful?'btn small':'btn ghost small'));
+        [[1,2],[2,3],[3,5]].filter(([l])=>SLOTS[h.level].length>=l).forEach(([l,cost])=>f.push(btn('act',`Font: level ${l} slot (${cost})`,`data-k="font${l}" ${disab(!c.bonus||h.pools.sp<cost)}`,'btn ghost small')))}}
+    if(h.cls==='warlock'){if(h.conc==='hex'&&(!c.foes[c.hexTarget]||c.foes[c.hexTarget].hp<=0))f.push(btn('act','Move Hex (bonus)',`data-k="movehex" ${disab(!c.bonus||!t)}`,'btn small'));
+      if(h.level>=5)f.push(btn('act','Fiendish Vigor (12 temp HP)',`data-k="vigor" ${disab(c.actions<1)}`,'btn ghost small'))}
     if(h.species==='orc')f.push(btn('act',`Adrenaline Rush (bonus), ${h.pools.rush}`,`data-k="rush" ${disab(!c.bonus||!h.pools.rush)}`,'btn ghost small'));
     if(h.cls==='cleric'&&h.level>=10)f.push(btn('act',c.freeCast?'Divine Intervention ready':`Divine Intervention, ${h.pools.di||0}`,`data-k="di" ${disab(!h.pools.di||c.freeCast)}`,'btn ghost small'));
     {const it=(h.items||[]).find(i=>i.id==='wandmm');if(it)f.push(btn('act',`Wand of Magic Missiles, ${it.charges}`,`data-k="wandmm" ${disab(c.actions<1||!it.charges||!t||rangeIssue('ranged',24,24))}`,'btn ghost small'))}
@@ -2663,11 +3330,12 @@ function renderCombat(st){
     if(S.inv.heroism)f.push(btn('act',`Potion of Heroism (bonus), ${S.inv.heroism}`,`data-k="heroism" ${disab(!c.bonus||h.conds.heroism)}`,'btn ghost small'));
     if(hasFeat('lucky'))f.push(btn('act',`Lucky: advantage, ${h.pools.luck}`,`data-k="lucky" ${disab(!h.pools.luck||c.lucky)}`,'btn ghost small'));
     if(c.lastMiss&&h.pools.insp)f.push(btn('act','Reroll that attack (Heroic Inspiration)','data-k="reroll"','btn small'));
+    if(c.lastMiss&&h.pools.luck)f.push(btn('act',`Reroll that attack (Lucky, ${h.pools.luck})`,'data-k="rerollluck"','btn small'));
     controls=`
     <p class="turnline"><b>Your turn.</b> Move ${ft(c.move)} ft. Action ${c.actions>0?(c.actions>1?`×${c.actions}`:'ready'):'used'}${atkLeft}. Bonus ${c.bonus?'ready':'used'}. Reaction ${c.react?'ready':'used'}.${c.adv?' Next attack has advantage.':''}${c.lucky?' Lucky is set.':''}${c.hidden?' You’re hidden.':''}${c.disengaged?' Disengaged.':''}${c.heroProne?' You’re prone.':''}${c.heroPara?' You’re paralyzed.':''}${c.grappledBy!=null?' You’re restrained.':''}</p>
     <p class="meta">${t?`Target: ${t.label} ${t.name}, ${ft(tDist)} ft away.`:''} Tap a lit square to move, or an enemy to target it.</p>
     <div class="actions">${wBtns}</div>
-    ${spBtns?`<details class="group" open><summary>Spells${isCaster()?`: slots ${[1,2,3,4,5].filter(l=>maxPools(h)['slot'+l]).map(l=>`L${l} ${h.pools['slot'+l]}`).join(', ')}`:''}</summary><div class="actions">${spBtns}</div></details>`:''}
+    ${splitRow}${pickRow}${shape()?`<p class="meta">You’re a ${shape().name.toLowerCase()}: no spellcasting until you return to your own form.</p>`:''}${spBtns?`<details class="group" open>${''}<summary>Spells${isCaster()?`: ${slotSummary(h)}${h.cls==='sorcerer'&&h.level>=2?`, ${h.pools.sp} sorcery points`:''}`:''}</summary>${lvlRow}<div class="actions">${spBtns}</div></details>`:''}
     ${f.length?`<details class="group" open><summary>Features</summary><div class="actions">${f.join('')}</div></details>`:''}
     <details class="group"><summary>Other actions</summary><div class="actions">
       ${btn('act','Dash','data-k="dash" '+disab(c.actions<1),'btn ghost small')}${btn('act','Disengage','data-k="disengage" '+disab(c.actions<1),'btn ghost small')}${btn('act','Dodge','data-k="dodge" '+disab(c.actions<1),'btn ghost small')}
@@ -2681,7 +3349,7 @@ function renderCombat(st){
   return `${st.text?`<p class="prose">${st.text}</p>`:''}${order}
   <div class="board" role="grid" aria-label="Battle map, 5 ft squares">${cells}</div>
   <div class="foelist">${c.foes.map((f,i)=>{const tags=condTags(f);return `<button class="foe ${f.hp<=0?'dead':''} ${t===f&&!c.over?'target':''}" data-a="target" data-i="${i}" ${disab(f.hp<=0||c.over)}>
-    <span><b>${f.label}</b> ${f.name} <span class="meta">AC ${f.ac}, ${f.type}${f.ranged?`, ${f.ranged.name}`:''}${tags.length?`, ${tags.join(', ')}`:''}</span></span><span class="meta">${f.hp<=0?'Down':`${f.hp}/${f.hpMax} HP`}</span>
+    <span><b>${f.label}</b> ${f.name} <span class="meta">AC ${f.ac}, speed ${ft(f.speed)} ft, ${f.type}${f.ranged?`, ${f.ranged.name}`:''}${tags.length?`, ${tags.join(', ')}`:''}</span></span><span class="meta">${f.hp<=0?'Down':`${f.hp}/${f.hpMax} HP`}</span>
     <span class="bar foehp"><i style="width:${pct(f.hp,f.hpMax)}%"></i></span></button>`}).join('')}</div>
   ${controls}
   <ol class="clog" aria-live="polite">${logHTML}</ol>`;
@@ -2701,7 +3369,14 @@ function renderActModal(){
 const A={
   create(){
     const name=(($('#hname')||{}).value||draft.name||'').trim()||'Wanderer';draft.name=name;
-    if(S&&(S.flags.rebuild||S.flags.fallen)){
+    if(S&&S.flags.respec){
+      const old=S.hero;
+      S.hero=buildHero({...draft,avatar:draft.avatar||old.avatar,level:old.level,xp:old.xp,gear:old.gear,owned:old.owned});
+      S.hero.items=(old.items||[]).map(i=>({...i,attuned:false}));
+      S.flags.respec=false;S.flags.mysticUsed=true;
+      addLog(`${name} drinks Sable’s draught and wakes as a ${SPECIES[S.hero.species].name.toLowerCase()} ${CLASSES[S.hero.cls].name.toLowerCase()}.`,'good');
+      note('You wake changed. Sable is gone, and her wagon with her. Remember to re-attune your magic items on the Hero tab.');
+    }else if(S&&(S.flags.rebuild||S.flags.fallen)){
       const old=S.hero,keep=S.flags.rebuild;
       S.hero=buildHero({...draft,avatar:draft.avatar||(keep?old.avatar:null),level:keep?old.level:1,xp:keep?old.xp:0,gear:keep?old.gear:undefined,owned:keep?old.owned:undefined});
       addLog(keep?`${name} is rebuilt under the full rules.`:`${name} arrives to take up the fallen hero’s work.`,'good');
@@ -2712,6 +3387,8 @@ const A={
   avatar(){const n=$('#hname');if(n&&draft)draft.name=n.value;$('#avatarfile').click()},
   avatarclear(){if(draft&&(!S||S.flags.rebuild||S.flags.fallen)){draft.avatar=null;render()}else{S.hero.avatar=null;commit()}},
   plot(ds){selPlot=selPlot===ds.k?null:ds.k;render()},
+  respec(){if(!S.flags.mystic||S.flags.mysticUsed||S.run)return;S.flags.respec=true;draft=null;render();window.scrollTo(0,0)},
+  cancelrespec(){S.flags.respec=false;draft=null;render()},
   tab(ds){S.tab=ds.t;save();render();window.scrollTo(0,0)},
   note(){S.flags.note=null;commit()},
   sleep(){sleep()},
@@ -2722,7 +3399,9 @@ const A={
   hire(ds){hire(+ds.i)},
   fire(ds){const w=S.workers.find(x=>x.id==ds.id);if(w&&confirm(`Let ${w.name} go?`)){S.workers=S.workers.filter(x=>x!==w);addLog(`${w.name} moves on.`);commit()}},
   water(){water()},
-  plant(ds){plant(+ds.i,ds.c)},
+  plant(ds){seedPlot=null;plant(+ds.i,ds.c)},
+  seedpick(ds){seedPlot=seedPlot===+ds.i?null:+ds.i;render();setTimeout(()=>{const el=document.querySelector('.pickrow');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'})},30)},
+  seedcancel(){seedPlot=null;render()},
   harvest(ds){harvest(+ds.i)},
   ship(ds){S.bin[ds.k]+=S.inv[ds.k];S.inv[ds.k]=0;commit()},
   mill(){if(S.inv.wheat<1)return;S.inv.wheat--;S.res.food+=2;commit()},
@@ -2733,8 +3412,8 @@ const A={
   peddle(ds){buyPeddler(ds.k)},
   greater(){const h=S.hero;if(!S.inv.greater||h.hp>=h.hpMax||(S.run&&S.run.combat))return;S.inv.greater--;const r=roll('4d4+4');h.hp=Math.min(h.hpMax,h.hp+r.total);addLog(`You drink a greater healing potion and heal ${r.total}.`);commit()},
   potion(){const h=S.hero;if(!S.inv.potion||h.hp>=h.hpMax||(S.run&&S.run.combat))return;S.inv.potion--;const r=roll('2d4+2');h.hp=Math.min(h.hpMax,h.hp+r.total);addLog(`You drink a potion and heal ${r.total}.`);commit()},
-  heal(ds){const h=S.hero,sp=SPELLS[ds.k];if(!S.run||S.run.combat||h.cls!=='cleric')return;const l=slotFor(1);if(!l)return;h.pools['slot'+l]--;
-    const n=2*(1+l-1),s=ds.k==='curewounds'?8:4,dice=rollDice(n,s),amt=dice.reduce((a,b)=>a+b,0)+spellMod()+(h.level>=3?2+l:0);h.hp=Math.min(h.hpMax,h.hp+amt);
+  heal(ds){const h=S.hero,sp=SPELLS[ds.k];if(!S.run||S.run.combat||!knownSpells().includes(ds.k))return;const l=slotFor(1);if(!l)return;useSlot(l);
+    const n=2*(1+l-1),s=ds.k==='curewounds'?8:4,dice=rollDice(n,s),amt=dice.reduce((a,b)=>a+b,0)+spellMod()+(h.cls==='cleric'&&h.level>=3?2+l:0);h.hp=Math.min(h.hpMax,h.hp+amt);
     S.run.restNote=null;addLog(`${sp.name}: you heal ${amt}.`);commit()},
   quest(ds){startRun(ds.q)},
   cont(){
@@ -2760,8 +3439,15 @@ const A={
   closeact(){S.flags.actModal=false;commit()},
   closeact2(){S.flags.act2Modal=false;commit()},
   closeend(){S.flags.endModal=false;commit()},
+  sequelintro(){S.flags.sequelModal=true;render()},
+  closesequel(){S.flags.sequelModal=false;render()},
+  beginsequel(){S.flags.sequelModal=false;S.flags.sequel=true;addLog('You accept the Abbess’s charge. You are the Warden of the Shut Eye.','good');note('The Seven Seals has begun. The level cap rises to 14, and Chapter 1 is waiting on the notice board.');checkLevel();commit()},
+  closech2(){S.flags.ch2Modal=false;commit()},
   smith(ds){buySmithy(ds.k)},
   upgrade(ds){startUpgrade(ds.k)},
+  lohq(){const h=S.hero;if(!S.run||S.run.combat||h.cls!=='paladin'||!h.pools.loh)return;if(h.conds.poisoned&&h.pools.loh>=5){h.pools.loh-=5;delete h.conds.poisoned}else{const n=Math.min(h.pools.loh,h.hpMax-h.hp);h.pools.loh-=n;h.hp+=n}commit()},
+  cunning(){const h=S.hero;if(!S.run||S.run.combat||h.cls!=='warlock'||!h.pools.cunning)return;h.pools.cunning=0;h.pools.pact=Math.min(PACT[h.level][0],h.pools.pact+Math.ceil(PACT[h.level][0]/2));addLog('Magical Cunning: you regain pact slots.');commit()},
+  vigorq(){const h=S.hero;if(!S.run||S.run.combat||h.cls!=='warlock'||h.level<5)return;h.temp=Math.max(h.temp,12);commit()},
   buysup(){const st=weeklyStock();if(lvl('chapel')<3||!st.superior||S.res.gold<150)return;st.superior--;S.res.gold-=150;S.inv.superior=(S.inv.superior||0)+1;addLog('The sisters sell you a superior healing potion.');commit()},
   buymagic(ds){buyMagic(ds.k)},
   sellmagic(ds){sellMagic(+ds.i)},
