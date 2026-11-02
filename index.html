@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hollowmere: a solo valley adventure</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hollowmere">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#151e1b">
+<meta property="og:title" content="Hollowmere">
+<meta property="og:description" content="A solo D&amp;D adventure and valley town builder.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,600;0,800;1,400&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -876,7 +883,30 @@ function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
 function load(){try{const t=localStorage.getItem(SAVE_KEY);if(t){const o=JSON.parse(t);if(o&&(o.v===1||o.v===2))return o}}catch(e){}return null}
 function addLog(text,kind){S.log.unshift({day:S.day,text,kind:kind||''});if(S.log.length>250)S.log.length=250}
 function note(text){S.flags.note=S.flags.note?S.flags.note+'\n\n'+text:text}
-function commit(){checkAct();save();render()}
+/* ---- home screen and tab icon from your token ---- */
+let lastIconKey=null;
+function setHeadLink(rel,href,extra){let el=document.head.querySelector(`link[rel="${rel}"]`);if(!el){el=document.createElement('link');el.rel=rel;document.head.appendChild(el)}el.href=href;if(extra)for(const k in extra)el.setAttribute(k,extra[k])}
+function drawIcon(size,img,letter){
+  const cv=document.createElement('canvas');cv.width=cv.height=size;const g=cv.getContext('2d');
+  g.fillStyle='#151e1b';g.fillRect(0,0,size,size);
+  if(img){const s=Math.min(img.naturalWidth||img.width,img.naturalHeight||img.height),sx=((img.naturalWidth||img.width)-s)/2,sy=((img.naturalHeight||img.height)-s)/2;g.drawImage(img,sx,sy,s,s,0,0,size,size)}
+  else{g.fillStyle='#e3ad4d';g.beginPath();g.arc(size/2,size/2,size*0.42,0,Math.PI*2);g.fill();g.fillStyle='#151e1b';g.font=`700 ${Math.round(size*0.48)}px Georgia, serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(letter,size/2,size/2+size*0.03)}
+  return cv.toDataURL('image/png');
+}
+function updateAppIcon(){
+  try{
+    if(!document.head||typeof document.createElement!=='function')return;
+    const h=S&&S.hero,av=h&&h.avatar,letter=((h&&h.name)||'H').trim().charAt(0).toUpperCase()||'H',key=(av?av.length+':'+av.slice(-40):'none')+letter;
+    if(key===lastIconKey)return;lastIconKey=key;
+    const apply=img=>{const i180=drawIcon(180,img,letter),i192=drawIcon(192,img,letter),i512=drawIcon(512,img,letter);
+      setHeadLink('icon',i192,{type:'image/png'});setHeadLink('apple-touch-icon',i180);
+      const man={name:'Hollowmere',short_name:'Hollowmere',start_url:location.href.split('#')[0],display:'standalone',background_color:'#151e1b',theme_color:'#151e1b',icons:[{src:i192,sizes:'192x192',type:'image/png'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+      setHeadLink('manifest','data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(man)))};
+    if(av){const img=new Image();img.onload=()=>apply(img);img.onerror=()=>apply(null);img.src=av}else apply(null);
+  }catch(e){}
+}
+
+function commit(){checkAct();save();render();updateAppIcon()}
 
 function newState(dr){
   return{v:2,day:1,used:{morning:false,day:false,water:false},weather:'clear',
@@ -5123,7 +5153,7 @@ S=load();if(S)S=normalize(migrate(S));
 if(S&&S.v===2&&S.run&&S.run.combat&&S.run.combat.board!==2){const st=curStage();if(st&&st.t==='fight')startCombat(st.foes);else S.run.combat=null}
 if(S&&S.run&&S.run.combat&&!S.run.combat.cid)S.run.combat.cid=Math.random().toString(36).slice(2);
 if(S&&S.run&&S.run.combat&&!S.run.combat.over&&S.run.combat.turn!=='hero'){S.run.combat.acting=null;runTurns()}
-render();
+render();updateAppIcon();
 
 </script>
 </body>
