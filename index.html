@@ -4348,6 +4348,61 @@ function placeAt(c,r){
 function drawCottage(x,y){return svgHouse(x,y,18,12,'var(--m-roof2)')}
 function drawExtra(k,x,y){if(k==='townhouse')return svgHouse(x,y,22,20,'var(--m-roof)');if(k==='granary')return `<rect x="${x-10}" y="${y-18}" width="20" height="18" fill="var(--m-barn)" stroke="var(--m-line)"/><path d="M${x-10} ${y-18} a10 8 0 0 1 20 0" fill="var(--m-roof2)" stroke="var(--m-line)"/>`;return [0,1,2].map(i=>`<rect x="${x-14+i*10}" y="${y-12}" width="8" height="12" rx="1" fill="var(--m-soil)" stroke="var(--m-line)" stroke-width=".7"/><circle cx="${x-10+i*10}" cy="${y-7}" r="2.4" fill="var(--m-sprout)"/>`).join('')}
 
+/* ---- conversations: approaches, personalities and species biases ---- */
+const TOPICS={
+  small:['Make small talk','persuasion'],joke:['Tell a joke','performance'],listen:['Ask about their life','insight'],
+  work:['Talk shop about their work','investigation'],praise:['Pay them a compliment','persuasion'],faith:['Speak of the Dawn','religion'],
+  future:['Talk about the town’s future','history'],boast:['Tell tales of your deeds','intimidation'],nature:['Talk about crops and weather','nature']
+};
+const PERSONA={
+  maren:{loves:['faith','listen'],hates:['joke','boast'],likesSp:['aasimar','dwarf'],distrusts:['tiefling'],hint:'Old-fashioned and devout.'},
+  bram:{loves:['joke','boast'],hates:['faith','work'],likesSp:['halfling','human'],distrusts:['orc'],hint:'Loves a good yarn at the bar.'},
+  ilsa:{loves:['nature','listen'],hates:['boast','joke'],likesSp:['elf','gnome'],distrusts:['dragonborn'],hint:'Quiet, happiest among her plants.'},
+  dorrin:{loves:['work','future'],hates:['praise','small'],likesSp:['dwarf','goliath'],distrusts:['elf'],hint:'Gruff, and hates idle chatter.'},
+  corwin:{loves:['future','praise'],hates:['nature','faith'],likesSp:['tiefling','halfling'],distrusts:['dwarf'],hint:'All business, all charm.'}
+};
+const SETTLER_PERSONA={cheerful:{loves:['joke','small'],hates:['faith']},gruff:{loves:['work'],hates:['praise','small']},shy:{loves:['listen','nature'],hates:['boast','joke']},devout:{loves:['faith','listen'],hates:['joke','boast']},ambitious:{loves:['future','boast'],hates:['nature','listen']}};
+const REACT={
+  love:['Their face lights up.','They lean in, clearly delighted.','That clearly struck a chord.'],
+  ok:['They nod along, warming to you.','A good chat. They seem pleased.'],
+  meh:['They listen politely, but their mind is elsewhere.','It doesn’t quite land.'],
+  hate:['Their expression cools. Wrong subject.','They change the subject quickly.','An awkward silence.']
+};
+const BIAS_LINE={
+  maren:{tiefling:'Maren touches her charm when you come near. Old fears die hard.',aasimar:'Maren looks at you as if you might be an answer to her prayers.'},
+  bram:{orc:'Bram eyes your shoulders. “Last orc in here broke three of my tables.”',halfling:'Bram grins. “Halflings always know the best songs.”'},
+  ilsa:{dragonborn:'Ilsa keeps her distance. Fire and fields don’t mix, in her experience.',elf:'Ilsa relaxes around you, the way she does among her herbs.',gnome:'Ilsa is charmed by gnomes. Most people are.'},
+  dorrin:{elf:'Dorrin grunts. “Elves. Never finish a job before the next century.”',dwarf:'Dorrin claps your arm. “Good to see a proper face.”'},
+  corwin:{dwarf:'Corwin counts his coins twice when a dwarf is around. “Hagglers, the lot.”',tiefling:'Corwin beams. “Tieflings! My best customers.”'}
+};
+const SP_LIST=['human','elf','dwarf','halfling','orc','dragonborn','gnome','goliath','tiefling','aasimar'];
+function personaOf(who){if(typeof who==='string')return PERSONA[who];const w=who;settlerFolk(w);if(!w.likesSp){w.likesSp=[pick(SP_LIST)];w.distrusts=[pick(SP_LIST.filter(x=>x!==w.likesSp[0]))]}return{...SETTLER_PERSONA[w.personality],likesSp:w.likesSp,distrusts:w.distrusts}}
+function speciesBias(p){const sp=S.hero.species;return p.likesSp.includes(sp)?-4:p.distrusts.includes(sp)?4:0}
+function hashStr(t){let h=0;for(const ch of t)h=(h*31+ch.charCodeAt(0))>>>0;return h}
+function topicsToday(key,p){const all=Object.keys(TOPICS),h=hashStr(key+':'+S.day),out=[];let i=h;while(out.length<3){const t=all[i%all.length];if(!out.includes(t))out.push(t);i=Math.floor(i/7)+13+out.length*5}
+  if(!out.some(t=>p.loves.includes(t))&&h%3!==0)out[2]=p.loves[h%p.loves.length];return out}
+function topicDC(p,t){return (p.loves.includes(t)?8:p.hates.includes(t)?20:14)+speciesBias(p)}
+function converse(who,topic){
+  const isNpc=typeof who==='string',st=isNpc?S.npcs[who]:S.workers.find(w=>w.id===who);if(!st||st.talked)return;
+  if(isNpc&&!npcHere(who))return;
+  const p=personaOf(isNpc?who:st),[label,skill]=TOPICS[topic],dc=topicDC(p,topic),r=rollCheck({skill,dc});
+  st.talked=true;const loved=p.loves.includes(topic),hated=p.hates.includes(topic),ok=r.total>=dc&&!(hated&&r.nat!==20);
+  const react=pick(REACT[ok?(loved?'love':'ok'):(hated?'hate':'meh')]);
+  st.talkLog=`${label}: ${r.txt} = ${r.total} vs DC ${dc}. ${react}${ok?'':' Try again tomorrow night.'}`;
+  if(ok){const n=loved&&r.nat===20?2:1;if(isNpc){const L=NPCS[who].lines;st.line=L[Math.min(L.length-1,Math.floor(st.hearts/3))];gainHearts(who,n)}else{st.hearts=Math.min(5,(st.hearts||0)+n);st.line=PERSONALITIES[st.personality][1][Math.min(2,Math.floor(st.hearts/2))];settlerPerk(st)}}
+  st.learned=st.learned||{};st.learned[topic]=loved?'love':hated?'hate':'ok';
+  talkOpen=null;commit();
+}
+let talkOpen=null;
+function talkPanel(key,who){
+  const isNpc=typeof who==='string',st=isNpc?S.npcs[who]:S.workers.find(w=>w.id===who),p=personaOf(isNpc?who:st),bias=speciesBias(p);
+  const learned=st.learned||{},tag=t=>learned[t]==='love'?' ♥':learned[t]==='hate'?' ✗':'';
+  const biasLine=isNpc?(BIAS_LINE[who]||{})[S.hero.species]:bias<0?`${st.name.split(' ')[0]} seems to like ${SPECIES[S.hero.species].name.toLowerCase()} folk.`:bias>0?`${st.name.split(' ')[0]} is wary of ${SPECIES[S.hero.species].name.toLowerCase()} folk.`:'';
+  let html=`${st.talkLog?`<p class="meta">${esc(st.talkLog)}</p>`:''}`;
+  if(talkOpen===key&&!st.talked){html+=`<p class="meta">${isNpc?PERSONA[who].hint+' ':''}${biasLine||''} Pick an approach:</p><div class="actions">${topicsToday(key,p).map(t=>btn('converse',`${TOPICS[t][0]}${tag(t)} (${SKILL[TOPICS[t][1]]} ${sgn(skillMod(TOPICS[t][1]))})`,`data-who="${isNpc?who:'s'+who}" data-k="${t}"`,'btn ghost small')).join('')}</div>`}
+  return html;
+}
+
 /* ---- town 2: settler friendships, adjacency, extras, outer wall ---- */
 const PERSONALITIES={
   cheerful:['Cheerful',['Morning! Lovely day for it.','You know, I think I’m going to like it here.','Best decision I ever made, coming to Hollowmere.']],
@@ -4364,10 +4419,10 @@ function settlerPerk(w){if(w.hearts>=5&&!w.halfWage){w.halfWage=true;w.wage=Math
 const heartBonus=w=>(w.hearts||0)>=3?1:0;
 function renderSettlerFolk(){
   const st=S.workers.filter(w=>w.settler);if(!st.length)return'';const giftables=GIFT_ITEMS.filter(k=>S.inv[k]>0);
-  return `<h2>Settlers</h2><p class="meta">Neighbors who moved in on their own. Talk once a day, or bring a gift. At 3 hearts they work harder (+1 output); at 5 they take half wages.</p><ul class="ledger">${st.map(w=>{settlerFolk(w);const P=PERSONALITIES[w.personality];
+  return `<h2>Settlers</h2><p class="meta">Neighbors who moved in on their own. Talk once a day, or bring a gift. Each night, pick how to approach them: the right subject for their personality makes it easy, the wrong one ruins it. At 3 hearts they work harder (+1 output); at 5 they take half wages.</p><ul class="ledger">${st.map(w=>{settlerFolk(w);const P=PERSONALITIES[w.personality];
     return `<li><div class="row"><h3>${esc(w.name)}</h3><span class="hearts" aria-label="${w.hearts} of 5 hearts">${'<i>♥</i>'.repeat(w.hearts)}${'♡'.repeat(5-w.hearts)}</span></div>
     <p class="meta">${P[0]} ${TRADES[w.trade][0].toLowerCase()}. Loves ${CROPS[w.likes].name.toLowerCase()}.</p>${w.line?`<p class="prose">“${esc(w.line)}”</p>`:''}
-    <div class="actions">${btn('stalk','Talk',`data-i="${w.id}" ${dis(w.talked)}`,'btn small')}${giftables.map(k=>btn('sgift',`Give ${CROPS[k].name.toLowerCase()}`,`data-i="${w.id}" data-k="${k}" ${dis(w.gifted)}`,'btn ghost small')).join('')}</div></li>`}).join('')}</ul>`;
+    <div class="actions">${btn('talkopen',w.talked?'Talked tonight':talkOpen==='s'+w.id?'Close':'Talk',`data-k="s${w.id}" ${dis(w.talked)}`,'btn small')}${giftables.map(k=>btn('sgift',`Give ${CROPS[k].name.toLowerCase()}`,`data-i="${w.id}" data-k="${k}" ${dis(w.gifted)}`,'btn ghost small')).join('')}</div>${talkPanel('s'+w.id,w.id)}</li>`}).join('')}</ul>`;
 }
 /* extra placeable buildings */
 const EXTRAS={
@@ -4610,8 +4665,8 @@ function renderFolk(){
     return `<li><div class="row"><h3>${n.name}</h3><span class="hearts" aria-label="${st.hearts} of 10 hearts">${'<i>♥</i>'.repeat(st.hearts)}${'♡'.repeat(10-st.hearts)}</span></div>
       <p class="meta">${n.role}.${next?` At ${next.at} hearts: ${next.text}`:''}</p>
       ${st.line?`<p class="say">“${st.line}”</p>`:''}
-      ${here?`<div class="actions">${btn('talk','Talk',`data-n="${id}" ${dis(st.talked)}`,'btn ghost small')}
-        ${!st.gifted?giftables.map(k=>btn('gift',`Give ${CROPS[k].name.toLowerCase()}`,`data-n="${id}" data-k="${k}"`,'btn ghost small')).join(''):'<span class="meta">Gift given today.</span>'}</div>`:'<p class="meta">On the road. Back on Saturday.</p>'}</li>`;
+      ${here?`<div class="actions">${btn('talkopen',st.talked?'Talked tonight':talkOpen===id?'Close':'Talk',`data-k="${id}" ${dis(st.talked)}`,'btn ghost small')}
+        ${!st.gifted?giftables.map(k=>btn('gift',`Give ${CROPS[k].name.toLowerCase()}`,`data-n="${id}" data-k="${k}"`,'btn ghost small')).join(''):'<span class="meta">Gift given today.</span>'}</div>${talkPanel(id,id)}`:'<p class="meta">On the road. Back on Saturday.</p>'}</li>`;
   }).join('')}</ul>
   <h2>Ilsa’s shelf</h2>
   <div class="row"><span>Healing potion: heals 2d4 + 2. You have ${S.inv.potion}. ${weeklyStock().ilsa?`Ilsa can spare ${weeklyStock().ilsa} more this week.`:'She’s out until Monday.'}</span>${weeklyStock().ilsa?btn('buypotion',`Buy for ${potionPrice()} gp`,dis(S.res.gold<potionPrice()),'btn small'):'<span class="tag">Sold out</span>'}</div>
@@ -5037,6 +5092,8 @@ const A={
   demolish(ds){if(S.run)return;const i=+ds.i;let cost;if(ds.kind==='cottage'){S.cottages.splice(i,1);cost=COTTAGE_COST}else{const e=S.extras.splice(i,1)[0];cost=EXTRAS[e.k].cost}for(const r of ['timber','stone'])if(cost[r])S.res[r]+=Math.floor(cost[r]/2);while(housed()>housingCap()&&S.workers.length){const w=S.workers.pop();addLog(`${w.name} had nowhere to live and left town.`,'bad')}addLog('Demolished. Half the materials are salvaged.');commit()},
   wall(ds){buildWall(ds.k)},
   stalk(ds){settlerTalk(+ds.i)},
+  talkopen(ds){talkOpen=talkOpen===ds.k?null:ds.k;render()},
+  converse(ds){converse(ds.who[0]==='s'&&!NPCS[ds.who]?+ds.who.slice(1):ds.who,ds.k)},
   sgift(ds){settlerGift(+ds.i,ds.k)},
   placeat(ds){placeAt(+ds.c,+ds.r)},
   respec(){if(!S.flags.mystic||S.flags.mysticUsed||S.run)return;S.flags.respec=true;draft=null;render();window.scrollTo(0,0)},
