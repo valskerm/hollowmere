@@ -210,6 +210,12 @@ details.group summary{font-family:var(--sans);font-weight:700;cursor:pointer;pad
 .placesq{fill:var(--lantern);fill-opacity:.28;stroke:var(--lantern);stroke-width:1.5;cursor:pointer}
 .placesq.bonus{fill-opacity:.45}
 .placesq:hover,.placesq:focus{fill-opacity:.5}
+details.fold>summary.foldhead{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:8px}
+details.fold>summary.foldhead::-webkit-details-marker{display:none}
+details.fold>summary.foldhead h2{flex:1;margin-bottom:6px}
+details.fold>summary.foldhead::after{content:'▾';color:var(--muted);font-size:1.1rem;transition:transform .15s}
+details.fold:not([open])>summary.foldhead::after{transform:rotate(-90deg)}
+details.fold:not([open])>summary.foldhead h2{margin-bottom:0}
 .pickrow{margin-top:10px;padding:10px 12px;border:2px solid var(--lantern);border-radius:10px;background:var(--surface)}
 .plotpanel{margin-top:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:56px}
 /* act 2 bits */
@@ -906,6 +912,7 @@ function updateAppIcon(){
   }catch(e){}
 }
 
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.matches&&d.matches('details.fold')&&S&&S.flags){S.flags.fold=S.flags.fold||{};const k=d.dataset.fold;if(d.open)delete S.flags.fold[k];else S.flags.fold[k]=true;save()}},true);
 function commit(){checkAct();save();render();updateAppIcon()}
 
 function newState(dr){
@@ -4779,7 +4786,14 @@ function renderCreate(){
   </div>`;
 }
 
-function renderHero(){
+function renderHero(){return foldSections(renderHeroRaw())}
+function foldSections(html){
+  const parts=html.split(/(?=<h2>)/);const fold=S.flags.fold||{};
+  return parts.map((p,i)=>{if(i===0&&!p.startsWith('<h2'))return p;const m=p.match(/^<h2([^>]*)>([\s\S]*?)<\/h2>/);if(!m)return p;
+    const title=m[2].replace(/<[^>]+>/g,''),key=title.replace(/[\d+:%]/g,'').trim();
+    return `<details class="fold" data-fold="${esc(key)}" ${fold[key]?'':'open'}><summary class="foldhead"><h2${m[1]}>${m[2]}</h2></summary>${p.slice(m[0].length)}</details>`}).join('');
+}
+function renderHeroRaw(){
   const h=S.hero,C=CLASSES[h.cls],p=h.pools;
   const sp=knownSpells();
   return `${renderPending()}<div class="avatarpick sheethead">${avatarHTML(h.avatar,h.name,'avatar big')}<div><h2 style="margin:0">${esc(h.name)}</h2><div class="actions">${btn('avatar',h.avatar?'Change token':'Add a token image','','btn ghost small')}${h.avatar?btn('avatarclear','Remove','','btn ghost small'):''}</div></div></div>
@@ -4792,7 +4806,8 @@ function renderHero(){
   ${renderSpellbook()}
   <h2>Features</h2>
   <p class="meta">${h.sub?`Subclass: ${SUBNAME(h.sub)}${h.sub==='land'?` (${LANDS[h.land||'arid'][0]})`:''}.`:'Subclass at level 3.'}${h.style?` Fighting style: ${FIGHTING_STYLES[h.style][0]}.`:''}</p>
-  <ul class="ledger">${classFeatures(h).map(f=>`<li><b>${f[1]}</b>${f[0]>h.level?` <span class="tag lock">Level ${f[0]}</span>`:''}<p class="meta">${f[2]}</p></li>`).join('')}
+  <label class="toggle"><input type="checkbox" data-flag="hideFuture" ${S.flags.hideFuture?'checked':''}> Hide upcoming features</label>
+  <ul class="ledger">${classFeatures(h).filter(f=>!S.flags.hideFuture||f[0]<=h.level).map(f=>`<li><b>${f[1]}</b>${f[0]>h.level?` <span class="tag lock">Level ${f[0]}</span>`:''}<p class="meta">${f[2]}</p></li>`).join('')}
   ${SPECIES[h.species].traits.map(t=>`<li><b>${t[0]}</b> <span class="meta">${SPECIES[h.species].name}</span><p class="meta">${t[1]}</p></li>`).join('')}
   ${h.feats.map(f=>`<li><b>${FEATS[f][0]}</b> <span class="meta">Feat</span><p class="meta">${FEATS[f][1]}</p></li>`).join('')}</ul>
   <p class="meta">Today: ${[p.secondwind!==undefined&&`Second Wind ${p.secondwind}`,p.surge!==undefined&&h.level>=2&&`Action Surge ${p.surge}`,p.cd!==undefined&&`Channel Divinity ${p.cd}`,p.luck!==undefined&&`Luck points ${p.luck}`,p.insp!==undefined&&`Heroic Inspiration ${p.insp?'ready':'used'}`,p.rush!==undefined&&`Adrenaline Rush ${p.rush}`,p.relentless!==undefined&&`Relentless Endurance ${p.relentless?'ready':'used'}`,h.cls==='monk'&&h.level>=2&&`Focus Points ${p.focus}/${h.level}`,h.cls==='paladin'&&`Lay on Hands ${p.loh}/${5*h.level}`,h.cls==='barbarian'&&`Rage ${p.rage}`,h.cls==='druid'&&h.level>=2&&`Wild Shape ${p.ws}`,h.cls==='bard'&&`Bardic Inspiration ${p.bi} (d${biDie()})`,h.cls==='paladin'&&h.level>=2&&`Free smite ${p.freesmite?'ready':'used'}`,h.cls==='ranger'&&`Free Hunter’s Marks ${p.favored}`,h.cls==='sorcerer'&&`Innate Sorcery ${p.innate}`,h.cls==='warlock'&&h.level>=2&&`Magical Cunning ${p.cunning?'ready':'used'}`].filter(Boolean).join(', ')||'Nothing to track.'}</p>
