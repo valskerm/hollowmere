@@ -258,7 +258,7 @@ const SEASONS=['Spring','Summer','Fall','Winter'];
 const WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const XP_AT=[0,300,900,2700,6500,14000,23000,34000,48000,64000,85000,100000,120000,140000,165000,195000,225000,265000,305000,355000,999999];
 const MAX_LEVEL=10;
-const maxLevel=()=>S&&S.flags&&S.flags.sequel?(S.quests&&S.quests.s2c?17:14):MAX_LEVEL;
+const maxLevel=()=>S&&S.flags&&S.flags.sequel?(S.quests&&S.quests.s4c?20:S.quests&&S.quests.s2c?17:14):MAX_LEVEL;
 const ABIL=['str','dex','con','int','wis','cha'];
 const ABIL_NAME={str:'Strength',dex:'Dexterity',con:'Constitution',int:'Intelligence',wis:'Wisdom',cha:'Charisma'};
 const ABIL_SHORT={str:'STR',dex:'DEX',con:'CON',int:'INT',wis:'WIS',cha:'CHA'};
@@ -317,7 +317,7 @@ const CLASSES={
       [3,'Champion: Remarkable Athlete','Advantage on initiative and Athletics checks.'],
       [4,'Ability Score Improvement','+2 Strength.'],[5,'Extra Attack','Attack twice when you take the Attack action.'],
       [6,'Ability Score Improvement','+2 Strength (or +1 Strength and +1 Constitution).'],[7,'Champion: Defense style','+1 AC while wearing armor.'],
-      [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],[9,'Indomitable','Once a day, reroll a failed saving throw with a bonus equal to your level. Used automatically.'],[10,'Champion: Heroic Warrior','In combat, you regain Heroic Inspiration at the start of each turn if you don’t have it.'],[11,'Two Extra Attacks','Attack three times when you take the Attack action.'],[13,'Studied Attacks','When you miss, your next attack against that target has advantage.'],[13,'Indomitable','Two uses a day.'],[14,'Ability Score Improvement','Another +2.'],[15,'Champion: Superior Critical','Your weapon attacks score a critical hit on an 18 to 20.'],[16,'Ability Score Improvement','Another +2.'],[17,'Action Surge and Indomitable','Action Surge twice a day; Indomitable three times.']]},
+      [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],[9,'Indomitable','Once a day, reroll a failed saving throw with a bonus equal to your level. Used automatically.'],[10,'Champion: Heroic Warrior','In combat, you regain Heroic Inspiration at the start of each turn if you don’t have it.'],[11,'Two Extra Attacks','Attack three times when you take the Attack action.'],[13,'Studied Attacks','When you miss, your next attack against that target has advantage.'],[13,'Indomitable','Two uses a day.'],[14,'Ability Score Improvement','Another +2.'],[15,'Champion: Superior Critical','Your weapon attacks score a critical hit on an 18 to 20.'],[16,'Ability Score Improvement','Another +2.'],[17,'Action Surge and Indomitable','Action Surge twice a day; Indomitable three times.'],[18,'Champion: Survivor','Bloodied at the start of your turn, you regain 5 + Con HP. Advantage on death saves.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Three Extra Attacks','Attack four times when you take the Attack action.']]},
   rogue:{name:'Rogue',blurb:'Light on your feet. Vex a target, then land a Sneak Attack.',hd:8,primary:'dex',saves:['dex','int'],
     skillPool:['stealth','perception','acrobatics','persuasion','investigation','deception','insight','sleight','athletics'],skillCount:4,
     array:{dex:15,con:14,wis:13,cha:12,int:10,str:8},priority:['dex','con','wis','cha','int','str'],
@@ -330,7 +330,7 @@ const CLASSES={
       [3,'Steady Aim','Bonus action if you haven’t moved: advantage on your next attack, but you can’t move this turn.'],
       [4,'Ability Score Improvement','+2 Dexterity.'],[5,'Uncanny Dodge','Reaction: halve the damage of an attack that hits you. Sneak Attack rises to 3d6.'],
       [6,'Expertise','Two more skills with double proficiency.'],[7,'Evasion','On a Dexterity save against area damage, take none on a success and half on a failure. Sneak Attack rises to 4d6.'],
-      [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],[9,'Sneak Attack 5d6','Your Sneak Attack rises to 5d6.'],[10,'Ability Score Improvement','Another +2.'],[11,'Reliable Talent','Any skill you’re proficient in: a d20 roll below 10 counts as 10.'],[11,'Sneak Attack 6d6','7d6 at level 13.'],[12,'Ability Score Improvement','Another +2.'],[15,'Slippery Mind','Proficiency in Wisdom and Charisma saves. Sneak Attack 8d6.'],[16,'Ability Score Improvement','Another +2.'],[17,'Assassin: Death Strike','In the first round of a fight, a Sneak Attack hit forces a Constitution save or the damage is doubled. Sneak Attack 9d6.']]},
+      [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],[9,'Sneak Attack 5d6','Your Sneak Attack rises to 5d6.'],[10,'Ability Score Improvement','Another +2.'],[11,'Reliable Talent','Any skill you’re proficient in: a d20 roll below 10 counts as 10.'],[11,'Sneak Attack 6d6','7d6 at level 13.'],[12,'Ability Score Improvement','Another +2.'],[15,'Slippery Mind','Proficiency in Wisdom and Charisma saves. Sneak Attack 8d6.'],[16,'Ability Score Improvement','Another +2.'],[17,'Assassin: Death Strike','In the first round of a fight, a Sneak Attack hit forces a Constitution save or the damage is doubled. Sneak Attack 9d6.'],[18,'Elusive','No attack against you has advantage while you can act.'],[19,'Epic Boon','A powerful Epic Boon feat. Sneak Attack 10d6.'],[20,'Stroke of Luck','Once per short rest, turn a miss into a hit.']]},
   wizard:{name:'Wizard',blurb:'Fragile, brilliant, and the only one who can drop a Fireball.',hd:6,primary:'int',saves:['int','wis'],
     skillPool:['arcana','investigation','history','insight','medicine','nature','religion'],skillCount:2,
     array:{int:15,con:14,dex:13,wis:12,cha:10,str:8},priority:['int','con','dex','wis','cha','str'],
@@ -343,7 +343,7 @@ const CLASSES={
       [3,'Evoker: Potent Cantrip','Your damaging cantrips still deal half damage on a miss or a successful save.'],
       [4,'Ability Score Improvement','+2 Intelligence.'],[5,'Level 3 spells','Fireball. Cantrips deal 2 dice.'],
       [6,'Evoker: Sculpt Spells','Your Fireball and Ice Storm never hurt you.'],[7,'Level 4 spells','Ice Storm.'],
-      [8,'Ability Score Improvement','+2 Intelligence, or Constitution once Intelligence is 20.'],[9,'Level 5 spells','Cone of Cold.'],[10,'Evoker: Empowered Evocation','Add your Intelligence modifier to the damage of your evocation spells.'],[11,'Level 6 spells','Chain Lightning, Disintegrate.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Finger of Death, Prismatic Spray.'],[14,'Evoker: Overchannel','Once a day: your next damaging spell of level 5 or lower deals maximum damage.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Meteor Swarm, Power Word Kill, Foresight.']]},
+      [8,'Ability Score Improvement','+2 Intelligence, or Constitution once Intelligence is 20.'],[9,'Level 5 spells','Cone of Cold.'],[10,'Evoker: Empowered Evocation','Add your Intelligence modifier to the damage of your evocation spells.'],[11,'Level 6 spells','Chain Lightning, Disintegrate.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Finger of Death, Prismatic Spray.'],[14,'Evoker: Overchannel','Once a day: your next damaging spell of level 5 or lower deals maximum damage.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Meteor Swarm, Power Word Kill, Foresight.'],[18,'Spell Mastery','Magic Missile and Scorching Ray at their lowest level cost no slot.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Signature Spells','Cast Fireball at 3rd level twice per short rest without a slot.']]},
   cleric:{name:'Cleric',blurb:'Heavy armor, a shield and a god’s attention. Heal, smite and turn the dead.',hd:8,primary:'wis',saves:['wis','cha'],
     skillPool:['insight','medicine','persuasion','religion','history'],skillCount:2,
     array:{wis:15,str:14,con:13,cha:12,int:10,dex:8},priority:['wis','str','con','cha','int','dex'],
@@ -355,7 +355,7 @@ const CLASSES={
       [3,'Life Domain: Disciple of Life','Healing spells restore an extra 2 + the slot’s level.'],
       [4,'Ability Score Improvement','+2 Wisdom.'],[5,'Sear Undead','Turn Undead also deals Wisdom-modifier d8s of radiant damage.'],
       [6,'Channel Divinity','Three uses a day.'],[7,'Blessed Strikes: Potent Spellcasting','Add your Wisdom modifier to cantrip damage.'],[7,'Level 4 spells','Guardian of Faith.'],
-      [8,'Ability Score Improvement','+2 Wisdom, or Constitution once Wisdom is 20.'],[9,'Level 5 spells','Flame Strike.'],[10,'Divine Intervention','Once a day, cast any of your spells without spending a slot.'],[11,'Level 6 spells','Heal, Harm.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Fire Storm.'],[14,'Improved Blessed Strikes','When a cantrip deals damage, gain temporary HP equal to twice your Wisdom modifier.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Life: Supreme Healing','Your healing spells roll maximum on their dice. Level 9 spells: Mass Heal.']]},
+      [8,'Ability Score Improvement','+2 Wisdom, or Constitution once Wisdom is 20.'],[9,'Level 5 spells','Flame Strike.'],[10,'Divine Intervention','Once a day, cast any of your spells without spending a slot.'],[11,'Level 6 spells','Heal, Harm.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Fire Storm.'],[14,'Improved Blessed Strikes','When a cantrip deals damage, gain temporary HP equal to twice your Wisdom modifier.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Life: Supreme Healing','Your healing spells roll maximum on their dice. Level 9 spells: Mass Heal.'],[18,'Channel Divinity','Four uses.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Greater Divine Intervention','Wish is always prepared, and once a day you can cast it without a slot.']]},
   sorcerer:{name:'Sorcerer',blurb:'Magic in your blood. Bend spells with Metamagic and burn hot with draconic fire.',hd:6,primary:'cha',saves:['con','cha'],
     skillPool:['arcana','persuasion','insight','intimidation','deception','religion'],skillCount:2,
     array:{cha:15,con:14,dex:13,wis:12,int:10,str:8},priority:['cha','con','dex','wis','int','str'],
@@ -371,7 +371,7 @@ const CLASSES={
       [5,'Sorcerous Restoration','Once a day on a short rest, regain Sorcery Points equal to half your level.'],
       [6,'Elemental Affinity','Add your Charisma modifier to fire spell damage, and resist fire.'],
       [7,'Sorcery Incarnate','When Innate Sorcery is used up, spend 2 Sorcery Points to use it again.'],
-      [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Level 5 spells','Cone of Cold.'],[11,'Level 6 spells','Chain Lightning, Disintegrate.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Finger of Death, Prismatic Spray.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Meteor Swarm, Power Word Kill.']]},
+      [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Level 5 spells','Cone of Cold.'],[11,'Level 6 spells','Chain Lightning, Disintegrate.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Finger of Death, Prismatic Spray.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Meteor Swarm, Power Word Kill.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Arcane Apotheosis','While Innate Sorcery is active, one Metamagic option each turn costs no sorcery points.']]},
   warlock:{name:'Warlock',blurb:'A pact with a fiend. Eldritch Blast at will, Hex your foes, and slots that return on a short rest.',hd:8,primary:'cha',saves:['wis','cha'],
     skillPool:['arcana','deception','intimidation','investigation','history','nature','religion'],skillCount:2,
     array:{cha:15,con:14,dex:13,wis:12,int:10,str:8},priority:['cha','con','dex','wis','int','str'],
@@ -387,7 +387,7 @@ const CLASSES={
       [6,'Dark One’s Own Luck','Add a d10 to a failed saving throw, Charisma-modifier times a day. Used automatically.'],
       [7,'Level 4 pact slots','Blight.'],
       [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Level 5 pact slots','Synaptic Static.'],
-      [10,'Fiendish Resilience','Resistance to necrotic damage.'],[11,'Mystic Arcanum (6)','Circle of Death, once a day. Eldritch Blast fires three beams.'],[12,'Ability Score Improvement','Another +2.'],[13,'Mystic Arcanum (7)','Finger of Death, once a day.'],[14,'Fiend: Hurl Through Hell','Once a day, an Eldritch Blast hit can hurl the target through the Lower Planes: Charisma save or 8d10 psychic and stunned.'],[15,'Mystic Arcanum (8)','Power Word Stun, once a day.'],[16,'Ability Score Improvement','Another +2.'],[17,'Mystic Arcanum (9)','Power Word Kill, once a day. Four pact slots, and Eldritch Blast fires four beams.']]},
+      [10,'Fiendish Resilience','Resistance to necrotic damage.'],[11,'Mystic Arcanum (6)','Circle of Death, once a day. Eldritch Blast fires three beams.'],[12,'Ability Score Improvement','Another +2.'],[13,'Mystic Arcanum (7)','Finger of Death, once a day.'],[14,'Fiend: Hurl Through Hell','Once a day, an Eldritch Blast hit can hurl the target through the Lower Planes: Charisma save or 8d10 psychic and stunned.'],[15,'Mystic Arcanum (8)','Power Word Stun, once a day.'],[16,'Ability Score Improvement','Another +2.'],[17,'Mystic Arcanum (9)','Power Word Kill, once a day. Four pact slots, and Eldritch Blast fires four beams.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Eldritch Master','Once a day, regain all your pact slots as a bonus action.']]},
   monk:{name:'Monk',blurb:'Fists, speed and focus. Flurries of blows, stunning strikes, and you can knock arrows out of the air.',hd:8,primary:'dex',saves:['str','dex'],
     skillPool:['acrobatics','athletics','insight','stealth','religion','history'],skillCount:2,
     array:{dex:15,wis:14,con:13,str:12,int:10,cha:8},priority:['dex','wis','con','str','int','cha'],
@@ -405,7 +405,7 @@ const CLASSES={
       [6,'Open Hand: Wholeness of Body','Bonus action: heal a Martial Arts die + Wisdom, Wisdom-modifier times a day.'],
       [7,'Evasion','Take no damage on a successful Dexterity save against area damage, half on a failure.'],
       [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],
-      [10,'Heightened Focus','Flurry of Blows makes three strikes.'],[10,'Self-Restoration','Poison wears off at the start of your turn.'],[11,'Martial Arts d10','Your Martial Arts die grows to a d10.'],[12,'Ability Score Improvement','Another +2.'],[14,'Disciplined Survivor','Proficiency in every saving throw.'],[15,'Perfect Focus','Start every fight with at least 4 Focus Points.'],[16,'Ability Score Improvement','Another +2.'],[17,'Open Hand: Quivering Palm','On a hit, spend 3 Focus Points to set deadly vibrations in the target. End them later in place of an attack: Constitution save or 10d12 force, half on a save. Martial Arts d12.']]},
+      [10,'Heightened Focus','Flurry of Blows makes three strikes.'],[10,'Self-Restoration','Poison wears off at the start of your turn.'],[11,'Martial Arts d10','Your Martial Arts die grows to a d10.'],[12,'Ability Score Improvement','Another +2.'],[14,'Disciplined Survivor','Proficiency in every saving throw.'],[15,'Perfect Focus','Start every fight with at least 4 Focus Points.'],[16,'Ability Score Improvement','Another +2.'],[17,'Open Hand: Quivering Palm','On a hit, spend 3 Focus Points to set deadly vibrations in the target. End them later in place of an attack: Constitution save or 10d12 force, half on a save. Martial Arts d12.'],[18,'Superior Defense','3 Focus Points: resistance to all damage but force for the fight.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Body and Mind','+4 Dexterity and Wisdom (up to 25).']]},
   paladin:{name:'Paladin',blurb:'Plate, a shield and a holy oath. Smite with radiant fire and heal with a touch.',hd:10,primary:'str',saves:['wis','cha'],
     skillPool:['athletics','persuasion','insight','religion','intimidation','medicine'],skillCount:2,
     array:{str:15,cha:14,con:13,wis:12,dex:10,int:8},priority:['str','cha','con','wis','dex','int'],
@@ -421,7 +421,7 @@ const CLASSES={
       [6,'Aura of Protection','Add your Charisma modifier to all your saving throws.'],
       [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],
       [9,'Abjure Foes','Channel Divinity: up to your Charisma modifier in enemies within 60 ft make a Wisdom save or flee.'],[9,'Level 3 spells','Crusader’s Mantle.'],
-      [10,'Aura of Courage','You can’t be frightened.'],[11,'Radiant Strikes','Your melee weapon hits deal an extra 1d8 radiant.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 4 spells','Death Ward.'],[15,'Devotion: Smite of Protection','Your smites steady you: Divine Smite also gives you temporary HP equal to your Charisma modifier.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 5 spells','Holy Weapon, Destructive Wave.']]},
+      [10,'Aura of Courage','You can’t be frightened.'],[11,'Radiant Strikes','Your melee weapon hits deal an extra 1d8 radiant.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 4 spells','Death Ward.'],[15,'Devotion: Smite of Protection','Your smites steady you: Divine Smite also gives you temporary HP equal to your Charisma modifier.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 5 spells','Holy Weapon, Destructive Wave.'],[18,'Aura Expansion','Your auras reach 30 ft.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Holy Nimbus','Once a day, bonus action: a blazing aura burns enemies near you for 10 radiant at the start of their turns.']]},
   ranger:{name:'Ranger',blurb:'A longbow, a hunter’s eye and a little nature magic. Mark your prey and bring it down.',hd:10,primary:'dex',saves:['str','dex'],
     skillPool:['survival','perception','stealth','nature','athletics','insight','investigation','animal'],skillCount:3,
     array:{dex:15,wis:14,con:13,str:12,int:10,cha:8},priority:['dex','wis','con','str','int','cha'],
@@ -434,7 +434,7 @@ const CLASSES={
       [4,'Ability Score Improvement','+2 Dexterity.'],[5,'Extra Attack','Attack twice when you take the Attack action.'],[5,'Level 2 spells','Barkskin.'],
       [6,'Roving','+10 ft speed.'],[7,'Hunter: Escape the Horde','Opportunity attacks against you have disadvantage.'],
       [8,'Ability Score Improvement','+2 Dexterity, or Constitution once Dexterity is 20.'],[9,'Expertise','Perception.'],[9,'Level 3 spells','Conjure Barrage.'],
-      [10,'Tireless','Action: gain 1d8 + Wisdom temporary HP, Wisdom-modifier times a day.'],[11,'Hunter: Superior Hunter’s Prey','Once per turn, Hunter’s Mark damage also leaps 1d6 force to another enemy nearby.'],[12,'Ability Score Improvement','Another +2.'],[13,'Relentless Hunter','Taking damage can’t break your concentration on Hunter’s Mark. Level 4 spells: Conjure Woodland Beings.'],[14,'Nature’s Veil','Bonus action: become invisible, Wisdom-modifier times a day.'],[15,'Hunter: Superior Hunter’s Defense','Reaction: when you’re hit, halve the damage.'],[16,'Ability Score Improvement','Another +2.'],[17,'Precise Hunter','Advantage on attacks against your Hunter’s Mark target. Level 5 spells: Swift Quiver, Steel Wind Strike.']]},
+      [10,'Tireless','Action: gain 1d8 + Wisdom temporary HP, Wisdom-modifier times a day.'],[11,'Hunter: Superior Hunter’s Prey','Once per turn, Hunter’s Mark damage also leaps 1d6 force to another enemy nearby.'],[12,'Ability Score Improvement','Another +2.'],[13,'Relentless Hunter','Taking damage can’t break your concentration on Hunter’s Mark. Level 4 spells: Conjure Woodland Beings.'],[14,'Nature’s Veil','Bonus action: become invisible, Wisdom-modifier times a day.'],[15,'Hunter: Superior Hunter’s Defense','Reaction: when you’re hit, halve the damage.'],[16,'Ability Score Improvement','Another +2.'],[17,'Precise Hunter','Advantage on attacks against your Hunter’s Mark target. Level 5 spells: Swift Quiver, Steel Wind Strike.'],[18,'Feral Senses','Unseen enemies don’t give you disadvantage.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Foe Slayer','Hunter’s Mark deals 1d10 instead of 1d6.']]},
   barbarian:{name:'Barbarian',blurb:'Rage, a greataxe and a body that shrugs off blades. Hit first, hit hard, keep standing.',hd:12,primary:'str',saves:['str','con'],
     skillPool:['athletics','intimidation','perception','survival','nature','animal'],skillCount:2,
     array:{str:15,con:14,dex:13,wis:12,cha:10,int:8},priority:['str','con','dex','wis','cha','int'],
@@ -449,7 +449,7 @@ const CLASSES={
       [7,'Feral Instinct','Advantage on initiative.'],[7,'Instinctive Pounce','When you rage, you can move up to half your speed.'],
       [8,'Ability Score Improvement','+2 Strength, or Constitution once Strength is 20.'],
       [9,'Brutal Strike','Give up Reckless Attack’s advantage on one attack: if it hits, +1d10 damage and the target is knocked back 15 ft.'],
-      [10,'Berserker: Retaliation','Reaction: when a creature next to you damages you, attack it back.'],[11,'Relentless Rage','While raging, if you drop to 0 HP, make a Constitution save (DC 10, +5 each time) to stay up with HP equal to twice your level.'],[12,'Ability Score Improvement','Another +2. Five rages a day.'],[14,'Berserker: Intimidating Presence','Bonus action, once a day: enemies within 30 ft make a Wisdom save or flee.'],[15,'Persistent Rage','Once a day, if you start a fight with no rages left, you regain them all.'],[16,'Ability Score Improvement','Another +2. Rage damage +4.'],[17,'Improved Brutal Strike','Brutal Strike deals 2d10. Six rages a day.']]},
+      [10,'Berserker: Retaliation','Reaction: when a creature next to you damages you, attack it back.'],[11,'Relentless Rage','While raging, if you drop to 0 HP, make a Constitution save (DC 10, +5 each time) to stay up with HP equal to twice your level.'],[12,'Ability Score Improvement','Another +2. Five rages a day.'],[14,'Berserker: Intimidating Presence','Bonus action, once a day: enemies within 30 ft make a Wisdom save or flee.'],[15,'Persistent Rage','Once a day, if you start a fight with no rages left, you regain them all.'],[16,'Ability Score Improvement','Another +2. Rage damage +4.'],[17,'Improved Brutal Strike','Brutal Strike deals 2d10. Six rages a day.'],[18,'Indomitable Might','Strength checks can’t roll below your Strength score.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Primal Champion','+4 Strength and Constitution (up to 25).']]},
   druid:{name:'Druid',blurb:'Storms, moonlight and the shapes of beasts. Turn into a bear, or call lightning down on your foes.',hd:8,primary:'wis',saves:['int','wis'],
     skillPool:['nature','perception','insight','medicine','survival','animal','arcana','religion'],skillCount:2,
     array:{wis:15,con:14,dex:13,str:12,int:10,cha:8},priority:['wis','con','dex','str','int','cha'],
@@ -462,7 +462,7 @@ const CLASSES={
       [6,'Moon: Improved Circle Forms','Polar bear form. Your beast attacks deal radiant damage, and you add Wisdom to Constitution saves.'],
       [7,'Elemental Fury: Potent Spellcasting','Add your Wisdom modifier to cantrip damage.'],
       [8,'Ability Score Improvement','+2 Wisdom, or Constitution once Wisdom is 20.'],[9,'Level 5 spells','Insect Plague.'],
-      [10,'Moon: Moonlight Step','Bonus action: teleport 30 ft, Wisdom-modifier times a day.'],[11,'Level 6 spells','Heal.'],[12,'Ability Score Improvement','Another +2.'],[12,'Elephant form','Wild Shape into an elephant.'],[13,'Level 7 spells','Fire Storm.'],[14,'Moon: Lunar Form','Once per turn in beast form, a hit deals an extra 2d10 radiant.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Foresight. Four Wild Shape uses.']]},
+      [10,'Moon: Moonlight Step','Bonus action: teleport 30 ft, Wisdom-modifier times a day.'],[11,'Level 6 spells','Heal.'],[12,'Ability Score Improvement','Another +2.'],[12,'Elephant form','Wild Shape into an elephant.'],[13,'Level 7 spells','Fire Storm.'],[14,'Moon: Lunar Form','Once per turn in beast form, a hit deals an extra 2d10 radiant.'],[15,'Level 8 spells','Sunburst.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Foresight. Four Wild Shape uses.'],[18,'Beast Spells','Cast spells while in Wild Shape.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Archdruid','When a fight starts with no Wild Shape uses left, you regain one.']]},
   bard:{name:'Bard',blurb:'Words with teeth. Mock, charm and inspire, cut enemies down with a whisper, and learn magic from anywhere.',hd:8,primary:'cha',saves:['dex','cha'],
     skillPool:['persuasion','performance','deception','insight','perception','acrobatics','stealth','history','investigation'],skillCount:3,
     array:{cha:15,dex:14,con:13,wis:12,int:10,str:8},priority:['cha','dex','con','wis','int','str'],
@@ -475,7 +475,7 @@ const CLASSES={
       [3,'College of Lore: Cutting Words','Reaction: subtract a Bardic Inspiration die from an attack roll against you, possibly turning a hit into a miss.'],
       [4,'Ability Score Improvement','+2 Charisma.'],[5,'Font of Inspiration','Bardic Inspiration returns on a short rest.'],
       [6,'Lore: Magical Discoveries','You learn Fireball and Spirit Guardians.'],[7,'Countercharm','You and your allies resist charm and fear.'],
-      [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Expertise','Two more skills.'],[10,'Magical Secrets','You learn Cone of Cold.'],[11,'Level 6 spells','Otto’s Irresistible Dance.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Prismatic Spray.'],[15,'Level 8 spells','Power Word Stun. Bardic Inspiration becomes a d12.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Power Word Kill, Foresight.']]}
+      [8,'Ability Score Improvement','+2 Charisma, or Constitution once Charisma is 20.'],[9,'Expertise','Two more skills.'],[10,'Magical Secrets','You learn Cone of Cold.'],[11,'Level 6 spells','Otto’s Irresistible Dance.'],[12,'Ability Score Improvement','Another +2.'],[13,'Level 7 spells','Prismatic Spray.'],[15,'Level 8 spells','Power Word Stun. Bardic Inspiration becomes a d12.'],[16,'Ability Score Improvement','Another +2.'],[17,'Level 9 spells','Power Word Kill, Foresight.'],[18,'Superior Inspiration','Start every fight with at least 2 Bardic Inspiration.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Words of Creation','Power Word Heal and Power Word Kill are always prepared.']]}
 };
 
 const SPECIES={
@@ -735,6 +735,16 @@ const ENEMIES={
     ranged:{name:'grey lance',range:24,long:24,atk:9,dmg:'4d8',dtype:'necrotic'},rangedMulti:2,attacks:[{name:'bite',atk:9,dmg:'3d6+4',dtype:'necrotic',drain:true}]},
   aldric:{name:'Lord Aldric Varne',type:'undead',ac:16,hp:'15d8+75',atk:9,dmg:'2d8+4',dtype:'slashing',xp:10000,speed:6,regen:10,regenStop:['radiant'],resistMundane:true,mods:{str:4,dex:4,con:5,int:3,wis:2,cha:4},
     attacks:[{name:'claws',atk:9,dmg:'2d8+4',dtype:'slashing'},{name:'bite',atk:9,dmg:'3d6+4',dtype:'necrotic',drain:true}],burst:{name:'Charming Gaze',dc:17,dmg:'0d1',dtype:'psychic',range:6,charm:true}},
+  stonegolem:{name:'Stone guardian',type:'construct',ac:17,hp:'17d10+85',atk:10,dmg:'3d8+6',dtype:'bludgeoning',xp:5900,speed:6,immune:['poison','psychic'],resistMundane:true,mods:{str:6,dex:-1,con:5,int:-4,wis:0,cha:-5},
+    attacks:[{name:'slam',atk:10,dmg:'3d8+6',dtype:'bludgeoning'},{name:'slam',atk:10,dmg:'3d8+6',dtype:'bludgeoning'}]},
+  boneknight:{name:'Knight of the Bone Choir',type:'undead',ac:18,hp:'14d8+56',atk:10,dmg:'2d6+6',dtype:'slashing',xp:5000,speed:6,immune:['poison','necrotic'],mods:{str:5,dex:1,con:4,int:0,wis:2,cha:2},
+    attacks:[{name:'greatsword',atk:10,dmg:'2d6+6',dtype:'slashing'},{name:'grave chill',atk:10,dmg:'2d8',dtype:'necrotic'}]},
+  isenvyr:{name:'Isenvyr the Glass Wyrm',type:'dragon',ac:20,hp:'18d12+108',atk:13,dmg:'2d10+8',dtype:'piercing',xp:18000,speed:8,reach:2,immune:['cold'],mods:{str:8,dex:0,con:6,int:2,wis:1,cha:3},
+    attacks:[{name:'bite',atk:13,dmg:'2d10+8',dtype:'piercing'},{name:'claw',atk:13,dmg:'2d6+8',dtype:'slashing'},{name:'claw',atk:13,dmg:'2d6+8',dtype:'slashing'}],burst:{name:'Cold Breath',dc:21,dmg:'12d8',dtype:'cold',range:12}},
+  vaelor:{name:'Vaelor the Unwaking',type:'undead',ac:17,hp:'18d8+90',atk:12,dmg:'3d6',dtype:'cold',xp:33000,speed:6,keepAway:true,immune:['poison','necrotic'],mods:{str:1,dex:3,con:5,int:5,wis:3,cha:4},
+    ranged:{name:'necrotic bolt',range:24,long:24,atk:11,dmg:'4d6',dtype:'necrotic'},rangedMulti:2,attacks:[{name:'paralyzing touch',atk:11,dmg:'3d6',dtype:'cold',paralyze:16}],burst:{name:'Unmaking',dc:19,dmg:'10d6',dtype:'necrotic',range:12}},
+  unwakingdream:{name:'The Unwaking Dream',type:'aberration',ac:18,hp:'17d12+85',atk:12,dmg:'3d8+6',dtype:'psychic',xp:33000,speed:8,regen:10,regenStop:['radiant'],immune:['psychic'],mods:{str:7,dex:2,con:6,int:5,wis:4,cha:6},
+    attacks:[{name:'dream-claw',atk:12,dmg:'3d8+6',dtype:'psychic'},{name:'dream-claw',atk:12,dmg:'3d8+6',dtype:'psychic'}],burst:{name:'Nightmare Tide',dc:20,dmg:'8d10',dtype:'psychic',range:12}},
   warden:{name:'The Rot-Warden',type:'undead',ac:14,hp:'5d10',atk:5,dmg:'1d10+2',dtype:'necrotic',xp:300,speed:6,mods:{str:3,dex:0,con:3,int:-2,wis:1,cha:-1}}
 };
 
@@ -1151,7 +1161,7 @@ function checkAct(){if(!S.flags.act1&&act1Ready()){S.flags.act1=true;S.flags.act
 /* ---- adventures ---- */
 function makePatrol(){
   const L=S.hero.level;
-  const opts=L<2?[['rat','rat'],['wolf'],['kobold','rat'],['bandit']]:L<3?[['wolf','wolf'],['kobold','kobold'],['blightrat','rat'],['bandit','bandit']]:L<5?[['madwolf'],['wolf','wolf','rat'],['blightspawn','blightspawn'],['bandit','bandit','kobold'],['ghoul']]:L<6?[['ghoul','blightspawn'],['thug','thug'],['spider'],['wolf','wolf','madwolf'],['blightkobold','blightkobold','kobold']]:L<7?[['ghoul','ghoul'],['thug','thug','bandit'],['spider','spider'],['madwolf','madwolf','wolf']]:L<9?[['wight'],['ghoul','ghoul','ghoul'],['ogrezombie'],['needleblight','needleblight','vineblight'],['skeleton','skeleton','skeleton']]:L<11?[['wight','wight'],['ogrezombie','ghoul'],['vineblight','vineblight','needleblight'],['wight','skeleton','skeleton']]:L<13?[['winterwolf','winterwolf'],['yeti','ghast'],['frostgiant'],['wraith']]:L<15?[['frostgiant'],['wraith','ghast'],['youngblack'],['troll','ghast']]:[['firegiant'],['vampspawn','hellhound'],['salamander','hellhound'],['wraith','vampspawn']];
+  const opts=L<2?[['rat','rat'],['wolf'],['kobold','rat'],['bandit']]:L<3?[['wolf','wolf'],['kobold','kobold'],['blightrat','rat'],['bandit','bandit']]:L<5?[['madwolf'],['wolf','wolf','rat'],['blightspawn','blightspawn'],['bandit','bandit','kobold'],['ghoul']]:L<6?[['ghoul','blightspawn'],['thug','thug'],['spider'],['wolf','wolf','madwolf'],['blightkobold','blightkobold','kobold']]:L<7?[['ghoul','ghoul'],['thug','thug','bandit'],['spider','spider'],['madwolf','madwolf','wolf']]:L<9?[['wight'],['ghoul','ghoul','ghoul'],['ogrezombie'],['needleblight','needleblight','vineblight'],['skeleton','skeleton','skeleton']]:L<11?[['wight','wight'],['ogrezombie','ghoul'],['vineblight','vineblight','needleblight'],['wight','skeleton','skeleton']]:L<13?[['winterwolf','winterwolf'],['yeti','ghast'],['frostgiant'],['wraith']]:L<15?[['frostgiant'],['wraith','ghast'],['youngblack'],['troll','ghast']]:L<18?[['firegiant'],['vampspawn','hellhound'],['salamander','hellhound'],['wraith','vampspawn']]:[['stonegolem'],['boneknight'],['firegiant','hellhound'],['boneknight','wraith']];
   if(d(6)===1)return{name:'Valley patrol',reward:{gold:d(6)+4,xp:25},done:'A quiet day. The valley feels a little safer.',stages:[{t:'text',text:pick(PATROL_INTROS)+' No trouble, but you find a forgotten satchel with a few coins inside.'}]};
   return{name:'Valley patrol',reward:{gold:d(6)+2+(L>=5?d(10)+5:0),xp:0},done:'You head home as the sun sets. The valley feels a little safer.',stages:[{t:'text',text:pick(PATROL_INTROS)},{t:'fight',foes:pick(opts),text:'Trouble finds you.'}]};
 }
@@ -1187,6 +1197,12 @@ function enterStage(){
   if(st.effect==='ch2end'){S.flags.ch2=true;S.flags.ch2Modal=true}
   if(st.effect==='calderRedeemed'&&!S.flags.calderRedeemed){S.flags.calderRedeemed=true;giveItem('oathblade');addLog('Ser Calder’s Oathblade is yours.','good')}
   if(st.effect==='ch3end'){S.flags.ch3=true}
+  if(st.effect==='phylacteryBroken')S.flags.phylacteryBroken=true;
+  if(st.effect==='phylacteryKept')S.flags.phylacteryKept=true;
+  if(st.effect==='ch5end'){S.flags.ch5=true}
+  if(st.effect==='muster'){S.flags.mustered=true}
+  if(st.effect==='siegeCheck'){const d2=defense()+(S.flags.rallied?2:0)+(S.flags.koboldsAllied?1:0)+(S.flags.ysoldeYields?2:0);S.flags.siegeHeld=d2>=8;st.text=S.flags.siegeHeld?`Behind you, Hollowmere’s walls hold (defense ${d2}). Nobody gets past them.`:`Behind you, Hollowmere’s defenses buckle (defense ${d2}). You’ll have to fight your way through the breach.`;if(!S.flags.siegeHeld){const x=roll('8d10').total;S.hero.hp=Math.max(1,S.hero.hp-x);st.text+=` You take ${x} damage forcing your way down.`}}
+  if(st.effect==='finalSeal'||st.effect==='finalWake'||st.effect==='finalBind'){S.flags.finalEnding=st.effect.slice(5).toLowerCase();S.flags.finalModal=true}
   if(st.effect==='ch4end'){S.flags.ch4=true;S.flags.ch4Modal=true}
   if(st.effect==='act2end'){S.flags.act2=true;S.flags.act2Modal=true;S.blight=Math.min(8,S.blight+3);addLog('The second seal is broken. The Blight Clock jumps by 3.','bad')}
   if(st.effect==='kobolds')S.flags.koboldsAllied=true;
@@ -1517,15 +1533,15 @@ function giveItem(id){
 }
 function rollLoot(level,chance){
   if(Math.random()>chance)return null;
-  const rare=level>=5&&Math.random()<(level>=8?.5:.3);
-  const pool=Object.keys(MAGIC).filter(id=>MAGIC[id].rarity===(rare?'rare':'uncommon')&&usable(id)&&(MAGIC[id].consumable||!ownsItem(id)));
+  const rr=Math.random(),rar=level>=17&&rr<.12?'legendary':level>=11&&rr<.35?'very rare':level>=5&&rr<(level>=8?.75:.4)?'rare':'uncommon';
+  const pool=Object.keys(MAGIC).filter(id=>MAGIC[id].price>0&&MAGIC[id].rarity===rar&&usable(id)&&(MAGIC[id].consumable||!ownsItem(id)));
   return pool.length?pick(pool):null;
 }
 
 /* ---- the traveling merchant ---- */
 const merchantHere=()=>S.merchant&&S.day>=S.merchant.arrive&&S.day<=S.merchant.leave;
 function merchantStock(size=5){
-  const L=S.hero.level,pool=Object.keys(MAGIC).filter(id=>usable(id)&&(MAGIC[id].consumable||!ownsItem(id))&&(MAGIC[id].rarity==='uncommon'||L>=4));
+  const L=S.hero.level,pool=Object.keys(MAGIC).filter(id=>MAGIC[id].price>0&&usable(id)&&(MAGIC[id].consumable||!ownsItem(id))&&L>=(RARITY_MIN[MAGIC[id].rarity]||1)&&!(MAGIC[id].rarity==='legendary'&&Math.random()<.6));
   const out=[];while(out.length<size&&pool.length)out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
   if(!out.some(id=>MAGIC[id].consumable))out[out.length-1]='greater';
   return out;
@@ -1949,17 +1965,104 @@ Object.assign(QUESTS,{
 SEQUEL_CHAPTERS.push([6,'Chapter 3: The Burning Court'],[7,'Chapter 4: Greyhallow']);
 const CHAPTER_PREV={5:'s1c',6:'s2c',7:'s3c'};
 
+Object.assign(QUESTS,{
+  s5a:{act:8,name:'Beyond the White Pass',lvl:17,needs:'s4c',
+    blurb:'The First Monastery lies a week beyond the Glacier Shrine, on a road no one has walked in a hundred years.',
+    reward:{gold:3000,xp:25000},done:'You reach the monastery gate. It stands open, and something inside is singing.',
+    stages:[
+      {t:'text',text:'You leave Hollowmere in the snow. Maren gives you her grandmother’s seal key on a cord. “Bring it back,” she says, “or don’t come back at all. Either way, end it.”'},
+      {t:'text',if:'shard',text:'Past the Glacier Shrine the rime shard hums against your chest, pointing the way like a lodestone.'},
+      {t:'check',skill:'survival',dc:20,text:'The old road is buried under a century of snow and rockfall.',
+        pass:{text:'You find the waymarkers the Order carved, one every mile, and follow them through the storm.',set:'ambush'},
+        fail:{text:'You lose two days to dead ends and frostbite.',damage:'6d10',dtype:'cold'}},
+      {t:'fight',foes:['stonegolem'],text:'A stone guardian, carved with the Order’s closed eye, steps out of the cliff face to bar the road.'}
+    ]},
+  s5b:{act:8,name:'The Bone Choir',lvl:18,needs:'s5a',
+    blurb:'The monks of the First Monastery never left. Vaelor raised them, and they still sing the vigil.',
+    reward:{gold:3500,xp:30000},done:'The choir falls silent. Below the chapter house, a stair leads down into the ice.',
+    stages:[
+      {t:'text',text:'The singing comes from the chapel: forty skeletal monks in rotted robes, chanting the Wardens’ vigil in perfect harmony.'},
+      {t:'text',if:'calderRedeemed',set:'ambush',text:'A familiar voice joins the chant, a little off-key: Ser Calder’s ghost, standing at your shoulder. “I know this song,” he says. “Let me lead them astray.” The choir falters.'},
+      {t:'fight',foes:['boneknight'],text:'The choir’s guardian rises from the pews.'},
+      {t:'save',save:'wis',dc:20,text:'The chant swells into a single note that reaches straight into your head.',pass:{text:'You hold on to your own thoughts.'},fail:{text:'For a moment you forget your own name.',damage:'8d8',dtype:'psychic'}},
+      {t:'fight',foes:['boneknight','wraith'],text:'The last knight of the Order draws his sword, a wraith at his side. His eyes are empty and his vows are not.'}
+    ]},
+  s5c:{act:8,name:'The First Monastery',lvl:18,needs:'s5b',rests:2,
+    blurb:'Vaelor’s phylactery lies at the heart of the monastery, guarded by the oldest dragon in the north.',
+    reward:{gold:5000,xp:40000},done:'',
+    stages:[
+      {t:'text',text:'The stair ends in a cavern of blue ice. At its center, frozen into a pillar, is a reliquary of black iron: Vaelor’s phylactery. Coiled around the pillar is a white dragon so old her scales have turned clear as glass.'},
+      {t:'fight',foes:['isenvyr'],text:'Isenvyr opens one eye. “The little Warden,” she says. “He told me you would come. He promised me your bones.”'},
+      {t:'choice',text:'The dragon is dead. The phylactery hums in its ice, and you can feel Vaelor’s attention snap toward you from a hundred miles away.',options:[
+        {label:'Shatter the phylactery',goto:'shatter'},
+        {label:'Keep it',goto:'keep'}]},
+      {id:'shatter',t:'text',effect:'phylacteryBroken',goto:'end',text:'You bring your weapon down on the reliquary. It screams as it breaks. Far to the south, something ancient feels, for the first time in two hundred years, that it can die.'},
+      {id:'keep',t:'text',effect:'phylacteryKept',text:'You wrap the reliquary in your cloak. It’s cold, and heavy, and it whispers. With this, Vaelor will do anything you say. So, one day, might the Sleepers.'},
+      {id:'end',t:'text',effect:'ch5end',text:'On the way out, the monastery bells begin to ring by themselves. Six of seven. Vaelor has broken the sixth seal, and he is marching on the last one: the Sleeper beneath Hollowmere.'}
+    ]},
+  s6a:{act:9,name:'The Sixth Seal',lvl:19,needs:'s5c',
+    blurb:'Vaelor’s host is marching down the valley toward Hollowmere. You have to reach home before he does.',
+    reward:{gold:4000,xp:35000},done:'You beat Vaelor’s vanguard home by a single day. The town is ready to fight.',
+    stages:[
+      {t:'text',text:'You ride for three days without stopping. Behind you, the sky to the north is full of crows.'},
+      {t:'fight',foes:['boneknight','vampspawn'],text:'Vaelor’s outriders catch you at the river crossing.'},
+      {t:'check',skill:'athletics',dc:21,text:'The bridge is down. The river is in flood.',pass:{text:'You swim it, armor and all.'},fail:{text:'The current smashes you against the rocks.',damage:'8d10',dtype:'bludgeoning'}},
+      {t:'fight',foes:['stonegolem'],text:'A stone guardian holds the last ridge before home.'}
+    ]},
+  s6b:{act:9,name:'The Last Muster',lvl:19,needs:'s6a',
+    blurb:'Everyone you’ve helped in Hollowmere has a part to play tonight.',
+    reward:{gold:2000,xp:20000},done:'The whole valley stands on Hollowmere’s walls. Tomorrow, Vaelor comes.',
+    stages:[
+      {t:'text',text:'Maren rings the chapel bell, and Hollowmere gathers in the square: farmers, settlers, Dorrin with a hammer in each hand, Bram rolling out the last barrels.'},
+      {t:'text',if:'koboldsAllied',text:'Tikka’s warren pours out of the mine with picks and slings. “Our home too,” she says.'},
+      {t:'text',if:'ysoldeAlly',text:'Ysolde Varne arrives on a lathered horse with forty Greyhallow militia behind her. “I owe this town,” she says.'},
+      {t:'check',skill:'persuasion',dc:19,text:'You climb onto the well and speak to them all.',pass:{text:'When you finish, nobody speaks. Then the whole town cheers.',set:'rallied'},fail:{text:'They listen, grim and frightened, but they stay.'}},
+      {t:'text',effect:'muster',text:'Through the night, the town makes ready. Every wall you built, every guard you trained, every friend you made: tomorrow, all of it matters.'}
+    ]},
+  s6c:{act:9,name:'The Unwaking',lvl:20,needs:'s6b',rests:3,
+    blurb:'Vaelor has come for the last seal, beneath your own town. End it.',
+    reward:{gold:10000,xp:60000},done:'',
+    stages:[
+      {t:'text',text:'Vaelor’s host breaks against Hollowmere’s walls at dawn. While the town holds them, you take Maren’s key and go down into the mine one last time.'},
+      {t:'text',effect:'siegeCheck',text:''},
+      {t:'fight',foes:['boneknight'],text:'His last guardian waits in Gallery Nine, where it all began.'},
+      {t:'text',if:'phylKept',text:'You lift the phylactery. Vaelor freezes mid-step. “You wouldn’t,” he whispers. You could.'},
+      {t:'fight',foes:['vaelor'],text:'Vaelor the Unwaking waits at the seventh seal, the first Warden, robed in grave-cloth, a crown of seal-keys on his brow. “I guarded them for a hundred years,” he says. “I deserve to be what they are.”'},
+      {t:'text',text:'Vaelor falls, and the seventh seal shatters anyway. The Sleeper beneath Hollowmere opens its eye, and its dream pours out into the mine as a shape made of every nightmare the valley ever had.'},
+      {t:'fight',foes:['unwakingdream'],text:'The Unwaking Dream rises to meet you.'},
+      {t:'choice',text:'The Dream unravels. In the silence, all seven Sleepers are listening. You hold the keys, and the choice, alone.',options:[
+        {label:'Seal them all, forever',goto:'f_seal'},
+        {label:'Wake them gently',goto:'f_wake',req:'canWakeAll'},
+        {label:'Bind them to yourself',goto:'f_bind',req:'canBind'}]},
+      {id:'f_seal',t:'text',effect:'finalSeal',goto:'f_end',text:'You speak the vigil, and every seal in the realm closes at once. The Sleepers sink into a dream so deep they will never wake again. Somewhere, you know, you have become the Last Warden, and you always will be.'},
+      {id:'f_wake',t:'text',effect:'finalWake',goto:'f_end',text:'You do what Ilsa taught you with the first Sleeper: you don’t fight the dream, you answer it. One by one, the seven wake slowly, gently, and their waking spreads through the realm as pale flowers and good harvests and very strange weather.'},
+      {id:'f_bind',t:'text',effect:'finalBind',goto:'f_end',text:'You crush the phylactery in your fist and drink in the dreams of seven Sleepers. Their power floods you, cold and endless. When you climb out of the mine, Hollowmere kneels. You are the Unwaking now.'},
+      {id:'f_end',t:'text',text:'The war is over.'}
+    ]}
+});
+Object.assign(COND,{calderRedeemed:()=>!!S.flags.calderRedeemed,koboldsAllied:()=>!!S.flags.koboldsAllied,phylKept:()=>!!S.flags.phylacteryKept,canWakeAll:()=>S.flags.ending==='bloom'||(S.npcs.ilsa&&S.npcs.ilsa.hearts>=8),canBind:()=>!!S.flags.phylacteryKept&&!!S.flags.rimeShard});
+SEQUEL_CHAPTERS.push([8,'Chapter 5: The First Monastery'],[9,'Chapter 6: The Unwaking']);
+Object.assign(CHAPTER_PREV,{8:'s4c',9:'s5c'});
+const FINAL_ENDINGS={
+  seal:['The Last Warden','Every seal holds. The Sleepers dream forever. You remain in Hollowmere, its Warden, and travelers say a light burns in the chapel tower every night of the year.'],
+  wake:['The Waking World','The seven Sleepers wake gently, and the realm is never quite the same: pale flowers on every hill, harvests twice a year, and dreams that sometimes come true. Hollowmere is the most famous town in the world, and nobody can quite explain why the crops grow so well.'],
+  bind:['The Unwaking','Seven Sleepers dream inside you now. Hollowmere is safe, and prosperous, and very quiet. Nobody in the valley ever raises their voice to you again.']
+};
+
 function renderSequelModal(kind){
   if(kind==='start')return `<div class="adv" role="dialog" aria-modal="true" aria-label="The Seven Seals"><div class="adv-inner">
   <p class="meta">Sequel</p><h1>The Seven Seals</h1>
   <p class="prose">Hollowmere’s Sleeper is no longer a threat. But the Order of the Shut Eye never guarded just one. There were seven Sleepers, sealed across the realm by seven chapterhouses, and this year six of those chapterhouses went silent.</p>
   <p class="prose">Someone is breaking the seals one by one. His name is Vaelor, the Unwaking, and he was the very first Warden of the Order, a hundred years before it had a name.</p>
-  <p class="prose">This is a campaign for levels 10 to 20. Chapters 1 to 4 (levels 10 to 17) are ready now; the last two chapters are still being written. Your hero, your town and everything you’ve built come with you.</p>
+  <p class="prose">This is a campaign for levels 10 to 20. All six chapters (levels 10 to 20) are ready. Your hero, your town and everything you’ve built come with you.</p>
   <div class="actions">${btn('beginsequel','Become the Warden','','btn big')}${btn('closesequel','Not yet','','btn ghost')}</div></div></div>`;
+  if(kind==='final'){const E=FINAL_ENDINGS[S.flags.finalEnding||'seal'];return `<div class="adv" role="dialog" aria-modal="true" aria-label="The end"><div class="adv-inner"><p class="meta">The Seven Seals: ending</p><h1>${E[0]}</h1><p class="prose">${E[1]}</p>
+    <p class="prose">${S.flags.siegeHeld?'Hollowmere’s walls held against the Unwaking host, and every name on them is carved on a stone in the square.':'Hollowmere paid dearly for the siege, but it is still standing, and it will rebuild. It always does.'}${S.flags.ysoldeYields?' Ysolde Varne rebuilds Greyhallow as an honest city.':''}${S.flags.calderRedeemed?' Ser Calder’s sword hangs in the chapel.':''}${S.flags.koboldsAllied?' Tikka’s warren is the richest in the north.':''}</p>
+    <p class="prose">${esc(S.hero.name)}, level ${S.hero.level}. Thank you for playing Hollowmere.</p><div class="actions">${btn('closefinal','Keep playing','','btn big')}</div></div></div>`}
   if(kind==='ch4')return `<div class="adv" role="dialog" aria-modal="true" aria-label="Chapter 4 complete"><div class="adv-inner">
   <p class="meta">End of Chapter 4</p><h1>Five of seven</h1>
   <p class="prose">Five seals hold. House Varne is ash${S.flags.ysoldeYields?', and Ysolde stands among the ruins, the last of her line, trying to work out who she is without them':''}.</p>
-  <p class="prose">Vaelor’s letter points to where the Order began: the First Monastery, lost for a century in the mountains beyond the White Pass. His phylactery is there. Chapters 5 and 6, The First Monastery and The Unwaking, are still to be written.</p>
+  <p class="prose">Vaelor’s letter points to where the Order began: the First Monastery, lost for a century in the mountains beyond the White Pass. His phylactery is there. Chapter 5, The First Monastery, waits on the notice board, and the level cap rises to 20.</p>
   <div class="actions">${btn('closech4','Keep playing','','btn big')}</div></div></div>`;
   return `<div class="adv" role="dialog" aria-modal="true" aria-label="Chapter 2 complete"><div class="adv-inner">
   <p class="meta">End of Chapter 2</p><h1>Three of seven</h1>
@@ -1993,13 +2096,13 @@ function shieldOn(h=S.hero){const r=resolveHand(activeSet(h).off,h);return !!(r&
 function handBonus(base,hand){
   const h=S.hero,st=activeSet(h),pick=v=>{const r=resolveHand(v);return r&&r.base===base?r:null};
   const r=hand==='off'?pick(st.off):(pick(st.main)||pick(st.off));const m=r&&r.item;
-  return{wb:m&&(!m.attune||r.inst.attuned)?m.wb||0:0,fire:m&&m.fire&&(!m.attune||r.inst.attuned),holy:m&&m.holy&&(!m.attune||r.inst.attuned),name:m?`${WEAPONS[base].name}, ${m.name}`:null};
+  return{item:m&&(!m.attune||r.inst.attuned)?m:null,wb:m&&(!m.attune||r.inst.attuned)?m.wb||0:0,fire:m&&m.fire&&(!m.attune||r.inst.attuned),holy:m&&m.holy&&(!m.attune||r.inst.attuned),name:m?`${WEAPONS[base].name}, ${m.name}`:null};
 }
 function weaponLabel(v){const r=resolveHand(v);if(!r)return'Empty';if(r.base==='shield')return r.item?`Shield (${r.item.name})`:'Shield';return r.item?`${WEAPONS[r.base].name} (${r.item.name})`:WEAPONS[r.base].name}
 function tryAttune(inst){const m=MAGIC[inst.id];if(!m.attune||inst.attuned)return true;if(attunedCount()>=attuneMax()){note(`${m.name} needs attunement, and you’re already attuned to ${attuneMax()} items. Unequip one first.`);return false}inst.attuned=true;return true}
 function unequipUid(uid,h=S.hero){for(const k in h.equip)if(h.equip[k]===uid)h.equip[k]=null;h.loadouts.forEach(l=>{if(l.main==='i:'+uid)l.main=null;if(l.off==='i:'+uid)l.off=null});const it=instByUid(uid,h);if(it)it.attuned=false}
 function autoEquip(inst){
-  const h=S.hero,m=MAGIC[inst.id];uidOf(inst);if(m.consumable||!usable(inst.id))return false;const sl=itemSlot(inst.id);
+  const h=S.hero,m=MAGIC[inst.id];if(m.tome)return false;uidOf(inst);if(m.consumable||!usable(inst.id))return false;const sl=itemSlot(inst.id);
   if(sl==='weapon'){const st=activeSet(h);if(!tryAttune(inst))return false;if(st.main&&resolveHand(st.main).base===inst.base&&!st.main.startsWith('i:')){st.main='i:'+inst.uid;return true}
     for(const l of h.loadouts)if(l.main===inst.base){l.main='i:'+inst.uid;return true}inst.attuned=false;return false}
   if(sl==='shield'){for(const l of h.loadouts)if(l.off==='shield'){if(!tryAttune(inst))return false;l.off='i:'+inst.uid;return true}return false}
@@ -2034,7 +2137,7 @@ function renderEquipment(){
   <p class="meta">Attuned: ${attunedCount()} of ${attuneMax()}. Items that need attunement attune when you equip them, and only in town. ${inCombat?'You can switch weapon sets in a fight, once per turn.':''}</p>
   ${h.loadouts.map(setCard).join('')}
   <ul class="ledger" style="margin-top:12px">${GEAR_SLOTS.map(gearRow).join('')}</ul>
-  ${pack.length?`<h3 style="margin-top:16px">In your pack</h3><ul class="ledger">${pack.map(i=>{const m=MAGIC[i.id],ok=usable(i.id);return `<li><div class="row"><span><b>${m.name}${i.base?` (${WEAPONS[i.base].name})`:''}</b> <span class="meta">${m.rarity}${m.attune?', attunement':''}</span></span>${ok?btn('quickequip','Equip',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):'<span class="tag lock">Not for your class</span>'}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>`:''}`;
+  ${pack.length?`<h3 style="margin-top:16px">In your pack</h3><ul class="ledger">${pack.map(i=>{const m=MAGIC[i.id],ok=usable(i.id);return `<li><div class="row"><span><b>${m.name}${i.base?` (${WEAPONS[i.base].name})`:''}</b> <span class="meta">${m.rarity}${m.attune?', attunement':''}</span></span>${m.tome?btn('readtome','Read it',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):ok?btn('quickequip','Equip',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):'<span class="tag lock">Not for your class</span>'}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>`:''}`;
 }
 function attackRows(){
   const h=S.hero;return heroWeapons().map(id=>{let w=WEAPONS[id];if(id==='unarmed'&&h.cls!=='monk')w={...w,dmg:'1d1',abil:'str'};
@@ -2203,10 +2306,13 @@ function alwaysPrepared(h){
   if(h.cls==='ranger')extra.push('huntersmark');
   if(h.cls==='warlock'){h.arcanum=h.arcanum||{};for(const l of arcanumLevels(h)){if(!h.arcanum[l]||!CLASS_LISTS.warlock[l].includes(h.arcanum[l]))h.arcanum[l]=ARC_DEFAULT[l];extra.push(h.arcanum[l])}}
   if(isSub('lore',6,h))extra.push('fireball','spiritguardians');
+  if(h.cls==='cleric'&&h.level>=20)extra.push('wish');
+  if(h.cls==='bard'&&h.level>=20)extra.push('powerwordheal','powerwordkill');
+  if(h.cls==='wizard'&&h.level>=20)extra.push('fireball');
   const SUBSP={illusionist:{5:['hypnoticpattern'],7:['greaterinvisibility']},aberrant:{3:['mindsliver','dissonantwhispers'],9:['synapticstatic']},archfey:{3:['mistystep'],7:['greaterinvisibility']},celestial:{3:['curewounds','guidingbolt'],7:['guardianoffaith'],9:['flamestrike']},greatoldone:{3:['dissonantwhispers'],9:['synapticstatic']},light:{3:['scorchingray'],5:['fireball']},trickery:{5:['hypnoticpattern']},war:{3:['magicweapon']},ancients:{3:['ensnaringstrike'],5:['mistystep','moonbeam']},glory:{3:['guidingbolt','magicweapon']},vengeance:{3:['huntersmark'],5:['mistystep']},feywanderer:{5:['mistystep']},sea:{3:['rayoffrost','shatter'],7:['icestorm']},stars:{3:['guidingbolt']}}[h.sub];
   if(SUBSP)extra.push(...Object.entries(SUBSP).filter(([l])=>h.level>=+l).flatMap(([,a])=>a));
   if(h.sub==='land'&&h.level>=3)extra.push(...Object.entries(LANDS[h.land||'arid'][2]).filter(([l])=>h.level>=+l).flatMap(([,a])=>a));
-  return [...new Set(extra)].filter(id=>SPELLS[id]&&(SPELLS[id].lvl===0||SPELLS[id].lvl<=maxLvl||SPELLS[id].lvl>5));
+  return [...new Set(extra)].filter(id=>SPELLS[id]&&(SPELLS[id].lvl===0||SPELLS[id].lvl<=maxLvl||SPELLS[id].lvl>5||id==='wish'));
 }
 function prepPool(h){const ml=maxSpellLvl(h),out=[];for(let l=1;l<=ml;l++){out.push(...classList(h,l));if(h.cls==='bard'&&h.level>=10)for(const k of ['cleric','druid','wizard'])out.push(...(CLASS_LISTS[k][l]||[]))}return [...new Set(out)].filter(id=>SPELLS[id])}
 function ensurePrepared(h){
@@ -2552,18 +2658,103 @@ add69('wizard',['arcanegate','chainlightning','circleofdeath','contingency','cre
 const ARC_DEFAULT={6:'circleofdeath',7:'fingerofdeath',8:'powerwordstun',9:'powerwordkill'};
 function arcanumLevels(h){return [6,7,8,9].filter(l=>h.level>={6:11,7:13,8:15,9:17}[l])}
 
+Object.assign(FEATS,{
+  boon_prowess:['Boon of Combat Prowess','Epic Boon, +1 to an ability (up to 30). Once per turn, turn a missed attack into a hit.','epic',['str','dex','con','int','wis','cha']],
+  boon_travel:['Boon of Dimensional Travel','Epic Boon, +1 to an ability (up to 30). After you attack or cast, teleport up to 30 ft for free.','epic',['str','dex','con','int','wis','cha']],
+  boon_fate:['Boon of Fate','Epic Boon, +1 to an ability (up to 30). Once per fight, add 2d4 to a missed attack.','epic',['str','dex','con','int','wis','cha']],
+  boon_offense:['Boon of Irresistible Offense','Epic Boon, +1 to Strength or Dexterity (up to 30). Your weapon damage ignores resistance.','epic',['str','dex']],
+  boon_recall:['Boon of Spell Recall','Epic Boon, +1 to Int, Wis or Cha (up to 30). Once a day, cast a spell of level 4 or lower without a slot.','epic',['int','wis','cha']],
+  boon_truesight:['Boon of Truesight','Epic Boon, +1 to an ability (up to 30). Nothing hidden or invisible can give you disadvantage.','epic',['str','dex','con','int','wis','cha']]
+});
+const EPIC_FEATS={
+  fighter:"[18,'Champion: Survivor','Bloodied at the start of your turn, you regain 5 + Con HP. Advantage on death saves.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Three Extra Attacks','Attack four times when you take the Attack action.']",
+  rogue:"[18,'Elusive','No attack against you has advantage while you can act.'],[19,'Epic Boon','A powerful Epic Boon feat. Sneak Attack 10d6.'],[20,'Stroke of Luck','Once per short rest, turn a miss into a hit.']",
+  wizard:"[18,'Spell Mastery','Magic Missile and Scorching Ray at their lowest level cost no slot.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Signature Spells','Cast Fireball at 3rd level twice per short rest without a slot.']",
+  sorcerer:"[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Arcane Apotheosis','While Innate Sorcery is active, one Metamagic option each turn costs no sorcery points.']",
+  warlock:"[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Eldritch Master','Once a day, regain all your pact slots as a bonus action.']",
+  cleric:"[18,'Channel Divinity','Four uses.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Greater Divine Intervention','Wish is always prepared, and once a day you can cast it without a slot.']",
+  druid:"[18,'Beast Spells','Cast spells while in Wild Shape.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Archdruid','When a fight starts with no Wild Shape uses left, you regain one.']",
+  bard:"[18,'Superior Inspiration','Start every fight with at least 2 Bardic Inspiration.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Words of Creation','Power Word Heal and Power Word Kill are always prepared.']",
+  paladin:"[18,'Aura Expansion','Your auras reach 30 ft.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Holy Nimbus','Once a day, bonus action: a blazing aura burns enemies near you for 10 radiant at the start of their turns.']",
+  ranger:"[18,'Feral Senses','Unseen enemies don’t give you disadvantage.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Foe Slayer','Hunter’s Mark deals 1d10 instead of 1d6.']",
+  barbarian:"[18,'Indomitable Might','Strength checks can’t roll below your Strength score.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Primal Champion','+4 Strength and Constitution (up to 25).']",
+  monk:"[18,'Superior Defense','3 Focus Points: resistance to all damage but force for the fight.'],[19,'Epic Boon','A powerful Epic Boon feat.'],[20,'Body and Mind','+4 Dexterity and Wisdom (up to 25).']"
+};
+
+/* ---- expanded magic items ---- */
+const CASTER=h=>!!CLASSES[h.cls].caster;
+Object.assign(MAGIC,{
+  weapon3:{name:'Weapon +3',rarity:'very rare',price:2500,kind:'weapon',wb:3,desc:'Your weapon gains +3 to attack and damage rolls.'},
+  vicious:{name:'Vicious Weapon',rarity:'rare',price:500,kind:'weapon',critBonus:7,desc:'A critical hit deals an extra 7 damage.'},
+  frostbrand:{name:'Frost Brand',rarity:'very rare',price:2200,attune:true,kind:'weapon',extra:{dice:'1d6',type:'cold'},resist:['fire'],desc:'+1d6 cold on a hit, and resistance to fire damage.'},
+  sunblade:{name:'Sun Blade',rarity:'rare',price:900,attune:true,kind:'weapon',base:'longsword',wb:2,extra:{dice:'1d8',type:'radiant',vs:['undead']},desc:'A longsword of sunlight: +2, and +1d8 radiant against undead.'},
+  maceofdisruption:{name:'Mace of Disruption',rarity:'rare',price:800,attune:true,kind:'weapon',base:'mace',extra:{dice:'2d6',type:'radiant',vs:['fiend','undead']},desc:'+2d6 radiant against fiends and undead.'},
+  dragonslayer:{name:'Dragon Slayer',rarity:'rare',price:700,kind:'weapon',wb:1,extra:{dice:'3d6',type:'slashing',vs:['dragon']},desc:'+1, and +3d6 against dragons.'},
+  giantslayer:{name:'Giant Slayer',rarity:'rare',price:700,kind:'weapon',wb:1,extra:{dice:'2d6',type:'slashing',vs:['giant']},desc:'+1, and +2d6 against giants.'},
+  holyavenger:{name:'Holy Avenger',rarity:'legendary',price:12000,attune:true,kind:'weapon',base:'longsword',wb:3,extra:{dice:'2d10',type:'radiant',vs:['fiend','undead']},spellSaveAdv:true,who:h=>h.cls==='paladin',desc:'Paladin only. +3, +2d10 radiant against fiends and undead, and advantage on saves against magical bursts.'},
+  vorpal:{name:'Vorpal Sword',rarity:'legendary',price:12000,attune:true,kind:'weapon',base:'longsword',wb:3,vorpal:true,desc:'+3. On a natural 20 it beheads the target; mighty foes take an extra 6d8 instead.'},
+  defender:{name:'Defender',rarity:'legendary',price:10000,attune:true,kind:'weapon',wb:3,ac:1,desc:'+3, and +1 AC while you hold it.'},
+  staffofpower:{name:'Staff of Power',rarity:'very rare',price:4000,attune:true,kind:'weapon',base:'quarterstaff',wb:2,ac:2,saves:2,spellAtk:2,who:h=>['wizard','sorcerer','warlock'].includes(h.cls),desc:'+2 quarterstaff, +2 AC, +2 to saves and +2 to spell attacks.'},
+  armor2:{name:'Armor +2',rarity:'very rare',price:2000,slot:'armor',ac:2,who:h=>['fighter','rogue','cleric','paladin','ranger','druid','bard'].includes(h.cls),desc:'+2 AC while you wear armor.'},
+  armor3:{name:'Armor +3',rarity:'legendary',price:8000,slot:'armor',ac:3,who:h=>['fighter','rogue','cleric','paladin','ranger','druid','bard'].includes(h.cls),desc:'+3 AC while you wear armor.'},
+  adamantine:{name:'Adamantine Armor',rarity:'uncommon',price:300,slot:'armor',critImmune:true,who:h=>['fighter','cleric','paladin'].includes(h.cls),desc:'Critical hits against you count as normal hits.'},
+  dragonscale:{name:'Dragon Scale Mail',rarity:'very rare',price:3000,attune:true,slot:'armor',ac:1,resist:['fire'],spellSaveAdv:true,who:h=>['fighter','cleric','paladin','ranger'].includes(h.cls),desc:'+1 AC, resistance to fire, and advantage on saves against breath and bursts.'},
+  armorresist:{name:'Armor of Resistance',rarity:'rare',price:700,attune:true,slot:'armor',resist:['cold'],who:h=>['fighter','rogue','cleric','paladin','ranger','druid','bard'].includes(h.cls),desc:'Resistance to cold damage.'},
+  shield2:{name:'Shield +2',rarity:'rare',price:700,kind:'shield',ac:2,who:h=>SHIELD_PROF.includes(h.cls),desc:'+2 AC on top of the shield’s +2.'},
+  shield3:{name:'Shield +3',rarity:'very rare',price:2500,kind:'shield',ac:3,who:h=>SHIELD_PROF.includes(h.cls),desc:'+3 AC on top of the shield’s +2.'},
+  spellguard:{name:'Spellguard Shield',rarity:'very rare',price:3000,attune:true,kind:'shield',ac:0,spellSaveAdv:true,who:h=>SHIELD_PROF.includes(h.cls),desc:'Advantage on saves against magical bursts and breath.'},
+  ringfire:{name:'Ring of Fire Resistance',rarity:'rare',price:600,attune:true,slot:'ring',resist:['fire'],desc:'Resistance to fire damage.'},
+  ringcold:{name:'Ring of Cold Resistance',rarity:'rare',price:600,attune:true,slot:'ring',resist:['cold'],desc:'Resistance to cold damage.'},
+  ringnecro:{name:'Ring of Necrotic Resistance',rarity:'rare',price:600,attune:true,slot:'ring',resist:['necrotic'],desc:'Resistance to necrotic damage.'},
+  ringregen:{name:'Ring of Regeneration',rarity:'very rare',price:3500,attune:true,slot:'ring',regen:true,desc:'You regain 1d6 HP at the start of each fight, and 1 HP at the start of each of your turns while you have at least 1.'},
+  ringfreedom:{name:'Ring of Free Action',rarity:'rare',price:800,attune:true,slot:'ring',freedom:true,desc:'You can’t be paralyzed, restrained or grappled.'},
+  ringevasion:{name:'Ring of Evasion',rarity:'rare',price:900,attune:true,slot:'ring',evasionRing:true,desc:'3 charges a day: turn a failed Dexterity save against a burst into a success.'},
+  ringinvis:{name:'Ring of Invisibility',rarity:'legendary',price:8000,attune:true,slot:'ring',ringInvis:true,desc:'Bonus action: turn invisible until you attack or cast.'},
+  beltstone:{name:'Belt of Stone Giant Strength',rarity:'very rare',price:3000,attune:true,slot:'belt',set:{str:23},desc:'Your Strength becomes 23.'},
+  beltfire:{name:'Belt of Fire Giant Strength',rarity:'very rare',price:4000,attune:true,slot:'belt',set:{str:25},desc:'Your Strength becomes 25.'},
+  beltstorm:{name:'Belt of Storm Giant Strength',rarity:'legendary',price:10000,attune:true,slot:'belt',set:{str:29},desc:'Your Strength becomes 29.'},
+  beltdwarf:{name:'Belt of Dwarvenkind',rarity:'rare',price:900,attune:true,slot:'belt',plus:{con:2},resist:['poison'],desc:'+2 Constitution (up to 20), and resistance to poison.'},
+  periaptpoison:{name:'Periapt of Proof against Poison',rarity:'rare',price:600,slot:'amulet',immunePoison:true,desc:'Immunity to poison damage.'},
+  scarab:{name:'Scarab of Protection',rarity:'legendary',price:8000,attune:true,slot:'amulet',spellSaveAdv:true,resist:['necrotic'],desc:'Advantage on saves against magical bursts, and resistance to necrotic damage.'},
+  amuletpb:{name:'Ioun Stone of Mastery',rarity:'legendary',price:12000,attune:true,slot:'wondrous',pbBonus:1,desc:'+1 to your proficiency bonus.'},
+  iounprot:{name:'Ioun Stone of Protection',rarity:'rare',price:1000,attune:true,slot:'wondrous',ac:1,desc:'+1 AC.'},
+  iounfort:{name:'Ioun Stone of Fortitude',rarity:'very rare',price:2500,attune:true,slot:'wondrous',plus:{con:2},desc:'+2 Constitution (up to 20).'},
+  bootsspeed:{name:'Boots of Speed',rarity:'rare',price:900,attune:true,slot:'wondrous',bootsSpeed:true,desc:'Once a day, bonus action: double your speed for a fight.'},
+  bootselven:{name:'Boots of Elvenkind',rarity:'uncommon',price:250,slot:'wondrous',skillAdv:['stealth'],desc:'Advantage on Stealth checks.'},
+  cloakelven:{name:'Cloak of Elvenkind',rarity:'uncommon',price:300,attune:true,slot:'wondrous',skillAdv:['stealth','perception'],desc:'Advantage on Stealth and Perception checks.'},
+  cloakdisplace:{name:'Cloak of Displacement',rarity:'rare',price:1000,attune:true,slot:'wondrous',displace:true,desc:'Attacks against you have disadvantage until you’re hit; it resets at the start of your turn.'},
+  mantlespell:{name:'Mantle of Spell Resistance',rarity:'rare',price:900,attune:true,slot:'wondrous',spellSaveAdv:true,desc:'Advantage on saves against magical bursts and breath.'},
+  robearchmagi:{name:'Robe of the Archmagi',rarity:'legendary',price:10000,attune:true,slot:'wondrous',robe:true,spellAtk:2,dcBonus:2,spellSaveAdv:true,who:h=>['wizard','sorcerer','warlock'].includes(h.cls),desc:'Unarmored AC of 15 + Dexterity, +2 to spell attacks and spell save DC, and advantage on saves against bursts.'},
+  pearlpower:{name:'Pearl of Power',rarity:'uncommon',price:400,attune:true,slot:'wondrous',pearl:true,who:CASTER,desc:'Once a day, action: regain a spent spell slot of level 3 or lower.'},
+  broochshield:{name:'Brooch of Shielding',rarity:'uncommon',price:300,attune:true,slot:'wondrous',resist:['force'],desc:'Resistance to force damage.'},
+  manualstr:{name:'Manual of Gainful Exercise',rarity:'very rare',price:6000,tome:'str',desc:'Read it: +2 Strength permanently (up to 30).'},
+  manualdex:{name:'Manual of Quickness of Action',rarity:'very rare',price:6000,tome:'dex',desc:'Read it: +2 Dexterity permanently (up to 30).'},
+  manualcon:{name:'Manual of Bodily Health',rarity:'very rare',price:6000,tome:'con',desc:'Read it: +2 Constitution permanently (up to 30).'},
+  tomeint:{name:'Tome of Clear Thought',rarity:'very rare',price:6000,tome:'int',desc:'Read it: +2 Intelligence permanently (up to 30).'},
+  tomewis:{name:'Tome of Understanding',rarity:'very rare',price:6000,tome:'wis',desc:'Read it: +2 Wisdom permanently (up to 30).'},
+  tomecha:{name:'Tome of Leadership and Influence',rarity:'very rare',price:6000,tome:'cha',desc:'Read it: +2 Charisma permanently (up to 30).'},
+  supreme:{name:'Potion of Supreme Healing',rarity:'very rare',price:600,consumable:true,desc:'Heals 10d4 + 20. Bonus action to drink.'},
+  speedpot:{name:'Potion of Speed',rarity:'very rare',price:800,consumable:true,desc:'For the fight: +2 AC, double speed and an extra attack each turn, with no lethargy after.'},
+  invispot:{name:'Potion of Invisibility',rarity:'very rare',price:500,consumable:true,desc:'Turn invisible until you attack or cast.'},
+  giantpot:{name:'Potion of Fire Giant Strength',rarity:'rare',price:300,consumable:true,desc:'For the quest, your Strength becomes 25.'},
+  resistpot:{name:'Potion of Resistance',rarity:'uncommon',price:150,consumable:true,desc:'For the quest: resistance to the energy damage your enemies favor.'}
+});
+const RARITY_MIN={uncommon:1,rare:4,'very rare':11,legendary:17};
+const itemFlag=(k,h=S.hero)=>activeItems(h).some(m=>m[k]);
+const itemResists=(type,h=S.hero)=>activeItems(h).some(m=>(m.resist||[]).includes(type));
+
 /* ---- hero rules ---- */
 const mod=s=>Math.floor((s-10)/2);
 const sgn=n=>(n>=0?'+':'−')+Math.abs(n);
-const pb=(h=S.hero)=>h.level>=17?6:h.level>=13?5:h.level>=9?4:h.level>=5?3:2;
-const effAbil=(k,h=S.hero)=>Math.max(h.abil[k],...((typeof activeItems==='function'&&h.items)?activeItems(h).filter(m=>m.set&&m.set[k]).map(m=>m.set[k]):[]));
+const pb=(h=S.hero)=>(h.level>=17?6:h.level>=13?5:h.level>=9?4:h.level>=5?3:2)+((h.items||[]).some(i=>i.id==='amuletpb'&&i.attuned)?1:0);
+const effAbil=(k,h=S.hero)=>{const it=(typeof activeItems==='function'&&h.items)?activeItems(h):[];const plus=it.reduce((a,m)=>a+((m.plus&&m.plus[k])||0),0);return Math.max(Math.min(Math.max(20,h.abil[k]),h.abil[k]+plus),...it.filter(m=>m.set&&m.set[k]).map(m=>m.set[k]),...(h.conds&&h.conds.giantpot&&k==='str'?[25]:[]))};
 const am=(k,h=S.hero)=>mod(effAbil(k,h));
 const hasFeat=(f,h=S.hero)=>h.feats.includes(f);
 const isCaster=(h=S.hero)=>!!CLASSES[h.cls].caster||featSpells(h).length>0;
 const spellMod=(h=S.hero)=>am(CLASSES[h.cls].caster||(THIRD_SPELLS[h.sub]?'int':null)||h.featCaster||'cha',h);
-const spellDC=(h=S.hero)=>8+pb(h)+spellMod(h)+(S&&S.run&&S.run.combat&&S.run.combat.innate?1:0);
+const spellDC=(h=S.hero)=>8+pb(h)+spellMod(h)+(h.items?itemSum('dcBonus',h):0)+(S&&S.run&&S.run.combat&&S.run.combat.innate?1:0);
 const spellAtk=(h=S.hero)=>pb(h)+spellMod(h)+itemSum('spellAtk',h);
-const heroSpeed=(h=S.hero)=>(S&&S.run&&S.run.combat&&h.conc==='haste'?Math.floor(baseSpeed(h)):0)+(h.conds&&h.conds.longstrider?2:0)+(isSub('glory',7,h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.round===1&&isSub('gloomstalker',3,h)?2:0)+(h.species==='elf'&&h.lineage==='wood'?1:0)+(hasFeat('mobile',h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.large?2:0)+(h.conds&&h.conds.shape?FORMS[h.conds.shape].speed-SPECIES[h.species].speed:0)+SPECIES[h.species].speed+(h.cls==='monk'?(h.level>=10?4:h.level>=6?3:h.level>=2?2:0):0)+(h.cls==='ranger'&&h.level>=6?2:0)+(h.cls==='barbarian'&&h.level>=5?2:0);
+const heroSpeed=(h=S.hero)=>(S&&S.run&&S.run.combat&&S.run.combat.bootsOn?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&S.run.combat.speedPot?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&h.conc==='haste'?Math.floor(baseSpeed(h)):0)+(h.conds&&h.conds.longstrider?2:0)+(isSub('glory',7,h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.round===1&&isSub('gloomstalker',3,h)?2:0)+(h.species==='elf'&&h.lineage==='wood'?1:0)+(hasFeat('mobile',h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.large?2:0)+(h.conds&&h.conds.shape?FORMS[h.conds.shape].speed-SPECIES[h.species].speed:0)+SPECIES[h.species].speed+(h.cls==='monk'?(h.level>=10?4:h.level>=6?3:h.level>=2?2:0):0)+(h.cls==='ranger'&&h.level>=6?2:0)+(h.cls==='barbarian'&&h.level>=5?2:0);
 function skillMod(k,h=S.hero){let m=am(SKILLS[k][1],h)+(SKILLS[k][1]==='cha'&&isSub('feywanderer',3,h)?Math.max(1,am('wis',h)):0);if(h.skills.includes(k))m+=pb(h)*(h.expertise.includes(k)?2:1);else if(h.cls==='bard'&&h.level>=2)m+=Math.floor(pb(h)/2);return m+(h.gear.check||0)+itemSum('checks',h)}
 function saveMod(k,h=S.hero){return am(k,h)+(CLASSES[h.cls].saves.includes(k)||(h.cls==='monk'&&h.level>=14)||(h.cls==='rogue'&&h.level>=15&&(k==='wis'||k==='cha'))||h.resilient===k||(k==='wis'&&isSub('gloomstalker',7,h))?pb(h):0)+itemSum('saves',h)+(h.cls==='paladin'&&h.level>=6?Math.max(1,am('cha',h)):0)+(isSub('moon',6,h)&&k==='con'?Math.max(0,am('wis',h)):0)}
 function baseAC(h=S.hero){
@@ -2582,12 +2773,13 @@ function baseAC(h=S.hero){
     case 'sorcerer':ac=Math.max((h.mageArmor?13:10)+dex,isSub('draconic',3,h)?10+dex+am('cha',h):0);break;
     default:ac=(h.mageArmor?13:10)+dex;
   }
+  if(activeItems(h).some(m=>m.robe))ac=Math.max(ac,15+dex);
   const sh=h.loadouts&&shieldOn(h);
   const armored=['fighter','cleric','paladin','rogue','bard','druid','ranger'].includes(h.cls);
   return ac+(armored&&hasStyle('defense',h)?1:0)+(sh?2:0)+(h.gear.ac||0)+activeItems(h).filter(m=>!(m.name==='Bracers of Defense'&&sh)).reduce((a,m)=>a+(m.ac||0),0)+(h.loadouts&&sh?(resolveHand(activeSet(h).off,h)?.item?.ac||0):0);
 }
 const baseSpeed=h=>SPECIES[h.species].speed;
-function heroAC(){const h=S.hero,c=S.run&&S.run.combat,sh=shape(h);return (c&&h.conc==='haste'?2:0)+(c&&c.surgeAC?2:0)+(c&&c.sanctuary?2:0)+(c&&c.bulwark?2:0)+Math.max(h.conds.barkskin?17:0,sh?Math.max(sh.ac,isSub('moon',3,h)?13+am('wis'):0):baseAC(h))+(c&&c.shieldUp?5:0)+(h.conc==='shieldoffaith'?2:0)}
+function heroAC(){const h=S.hero,c=S.run&&S.run.combat,sh=shape(h);return (c&&c.speedPot?2:0)+(c&&h.conc==='haste'?2:0)+(c&&c.surgeAC?2:0)+(c&&c.sanctuary?2:0)+(c&&c.bulwark?2:0)+Math.max(h.conds.barkskin?17:0,sh?Math.max(sh.ac,isSub('moon',3,h)?13+am('wis'):0):baseAC(h))+(c&&c.shieldUp?5:0)+(h.conc==='shieldoffaith'?2:0)}
 function maxHP(h){
   const die=CLASSES[h.cls].hd,con=am('con',h);
   return (h.feastHP||0)+die+con+(h.level-1)*(die/2+1+con)+(hasFeat('tough',h)?2*h.level:0)+(h.species==='dwarf'?h.level:0)+(isSub('draconic',3,h)?h.level:0);
@@ -2602,13 +2794,23 @@ function maxPools(h){
   if(h.cls==='barbarian'){p.rage=h.level>=17?6:h.level>=12?5:h.level>=6?4:h.level>=3?3:2;p.relentless2=h.level>=11?1:0;p.intim=isSub('berserker',14,h)?1:0}
   if(h.cls==='druid'){p.ws=h.level>=17?4:h.level>=6?3:h.level>=2?2:0;p.lunar=isSub('moon',14,h)?1:0;p.resurge=h.level>=5?1:0;p.mstep=isSub('moon',10,h)?Math.max(1,am('wis',h)):0}
   if(h.cls==='bard'){p.bi=Math.max(1,am('cha',h))}
-  if(h.cls==='paladin'){p.loh=5*h.level;p.freesmite=h.level>=2?1:0;p.cd=h.level>=3?2:0}
+  if(h.cls==='paladin'){p.loh=5*h.level;p.freesmite=h.level>=2?1:0;p.cd=h.level>=18?4:h.level>=3?2:0}
   if(h.cls==='ranger'){p.veil=h.level>=14?Math.max(1,am('wis',h)):0;p.favored=h.level>=9?4:h.level>=5?3:2;p.tireless=h.level>=10?Math.max(1,am('wis',h)):0}
   if(h.cls==='warlock'){if(h.level>=11)p.arc6=1;if(h.level>=13)p.arc7=1;if(h.level>=15)p.arc8=1;if(h.level>=17)p.arc9=1;p.hurl=isSub('fiend',14,h)?1:0;p.pact=PACT[h.level][0];p.cunning=h.level>=2?1:0;p.dol=isSub('fiend',6,h)?Math.max(1,am('cha',h)):0}
   if(h.cls==='sorcerer'){p.sp=h.level>=2?h.level:0;p.innate=2;p.restore=h.level>=5?1:0}
   if(h.cls==='monk'){p.focus=h.level>=2?h.level:0;p.metab=h.level>=2?1:0;p.wholeness=isSub('openhand',6,h)?Math.max(1,am('wis',h)):0}
   if(hasFeat('lucky',h))p.luck=pb(h);
   if(miSpell(h))p.mi=1;
+  if((h.items||[]).some(i=>i.attuned&&MAGIC[i.id].evasionRing))p.ringev=3;
+  if((h.items||[]).some(i=>i.attuned&&MAGIC[i.id].pearl))p.pearl=1;
+  if((h.items||[]).some(i=>i.attuned&&MAGIC[i.id].bootsSpeed))p.bootspd=1;
+  if(hasFeat('boon_recall',h))p.recall=1;
+  if(h.cls==='rogue'&&h.level>=20)p.stroke=1;
+  if(h.cls==='wizard'&&h.level>=20)p.sig=2;
+  if(h.cls==='warlock'&&h.level>=20)p.emaster=1;
+  if(h.cls==='cleric'&&h.level>=20)p.gdi=1;
+  if(h.cls==='paladin'&&h.level>=20)p.nimbus=1;
+  if(h.cls==='monk'&&h.level>=18)p.supdef=1;
   if(isSub('illusionist',10,h))p.illself=1;
   if(isSub('clockwork',3,h))p.balance=Math.max(1,am('cha',h));
   if(isSub('clockwork',14,h))p.trance=1;
@@ -2683,7 +2885,8 @@ function buildHero(o){
   longRest(h);return h;
 }
 function defaultStyle(cls){return{fighter:'gwf',paladin:'dueling',ranger:'archery'}[cls]}
-const ASI_AT=cls=>[4,8,12,16,19].concat(cls==='fighter'?[6,14]:cls==='rogue'?[10]:[]);
+const ASI_AT0=cls=>[4,8,12,16,19].concat(cls==='fighter'?[6,14]:cls==='rogue'?[10]:[]);
+const ASI_AT=cls=>ASI_AT0(cls);
 function applyAsi(h){const k=CLASSES[h.cls].primary;if(h.abil[k]<=18)h.abil[k]+=2;else if(h.abil[k]===19){h.abil[k]=20;h.abil.con=Math.min(20,h.abil.con+1)}else h.abil.con=Math.min(20,h.abil.con+2)}
 function levelFeatures(h,l,silent){
   if(l===2&&h.cls==='wizard'&&h.skills.includes('arcana')&&!h.expertise.includes('arcana'))h.expertise.push('arcana');
@@ -2691,6 +2894,8 @@ function levelFeatures(h,l,silent){
   if(ASI_AT(h.cls).includes(l)&&!h.asiDone.includes(l)){h.asiDone.push(l);if(silent)applyAsi(h);else h.pendingAsi=(h.pendingAsi||0)+1}
   if(!silent&&CLASSES[h.cls].caster){h.swaps=(h.swaps||0)+1;h.cswaps=(h.cswaps||0)+1;if(h.cls==='wizard')h.bookPicks=(h.bookPicks||0)+2}
   if(STYLE_AT[h.cls]===l&&!h.style){if(silent)h.style=defaultStyle(h.cls);else h.pendingStyle=true}
+  if(l===20&&h.cls==='barbarian'&&!h.champ20){h.champ20=true;h.abil.str=Math.min(25,h.abil.str+4);h.abil.con=Math.min(25,h.abil.con+4)}
+  if(l===20&&h.cls==='monk'&&!h.champ20){h.champ20=true;h.abil.dex=Math.min(25,h.abil.dex+4);h.abil.wis=Math.min(25,h.abil.wis+4)}
   if(l===3&&!h.sub){if(silent)h.sub=DEFAULT_SUB[h.cls];else h.pendingSub=true}
   if(h.cls==='ranger'&&l===2&&!h.expertise.includes('survival')){if(!h.skills.includes('survival'))h.skills.push('survival');h.expertise.push('survival')}
   if(h.cls==='ranger'&&l===9&&!h.expertise.includes('perception')){if(!h.skills.includes('perception'))h.skills.push('perception');h.expertise.push('perception')}
@@ -2714,7 +2919,7 @@ function autoResolvePending(h){
 function chooseFeat(h,id,abil){
   const f=FEATS[id];if(!f||h.feats.includes(id)&&id!=='resilient')return false;
   h.feats.push(id);
-  const opts=f[3]||[];const a=abil&&opts.includes(abil)?abil:opts.find(x=>h.abil[x]<20);if(a)h.abil[a]=Math.min(20,h.abil[a]+1);
+  const opts=f[3]||[],cap=f[2]==='epic'?30:20;const a=abil&&opts.includes(abil)?abil:[CLASSES[h.cls].primary,...opts].find(x=>opts.includes(x)&&h.abil[x]<cap);if(a)h.abil[a]=Math.min(cap,h.abil[a]+1);
   if(id==='resilient')h.resilient=a;
   if(id==='skilled'){for(const s of ['perception','insight','persuasion','athletics','stealth','survival'].filter(x=>!h.skills.includes(x)).slice(0,3))h.skills.push(s)}
   if(MI_SPELLS[id]&&!h.featCaster)h.featCaster=MI_SPELLS[id][2];
@@ -2729,7 +2934,7 @@ function renderPending(){
   else if(h.pendingAsi){html+=`<p><b>Ability Score Improvement or a feat</b> (${h.pendingAsi} to choose).</p>
     <p class="meta">+2 to one ability:</p><div class="actions">${ABIL.map(k=>btn('pickAsi',`${ABIL_SHORT[k]} ${h.abil[k]}`,`data-k="2:${k}" ${disab(h.abil[k]>=20)}`,'btn ghost small')).join('')}</div>
     <p class="meta">Or +1 to two different abilities${asiFirst?`: ${ABIL_NAME[asiFirst]} chosen, pick the second`:''}:</p><div class="actions">${ABIL.map(k=>btn('pickAsi',`${ABIL_SHORT[k]} ${h.abil[k]}`,`data-k="1:${k}" ${disab(h.abil[k]>=20||asiFirst===k)}`,asiFirst===k?'btn small':'btn ghost small')).join('')}</div>
-    <p class="meta">Or a feat:</p><ul class="ledger">${Object.entries(FEATS).filter(([k,f])=>!h.feats.includes(k)||k==='resilient').filter(([k])=>!MI_SPELLS[k]).map(([k,f])=>`<li><div class="row"><b>${f[0]}</b>${btn('pickAsi','Take it',`data-k="f:${k}"`,'btn small')}</div><p class="meta">${f[1]}</p></li>`).join('')}</ul>`}
+    <p class="meta">Or a feat:</p><ul class="ledger">${Object.entries(FEATS).filter(([k,f])=>!h.feats.includes(k)||k==='resilient').filter(([k])=>!MI_SPELLS[k]).filter(([k,f])=>f[2]!=='epic'||h.level>=19).map(([k,f])=>`<li><div class="row"><b>${f[0]}</b>${btn('pickAsi','Take it',`data-k="f:${k}"`,'btn small')}</div><p class="meta">${f[1]}</p></li>`).join('')}</ul>`}
   return html+'</div>';
 }
 function featSpells(h){
@@ -2754,6 +2959,7 @@ function rollCheck(spec){
   const h=S.hero;let adv=false,dis=false;
   if(spec.skill==='athletics'&&isSub('champion',3,h))adv=true;
   if(spec.adv)adv=true;
+  if(spec.skill&&activeItems(h).some(m=>(m.skillAdv||[]).includes(spec.skill)))adv=true;
   if(spec.skill==='athletics'&&S.run&&S.run.combat&&(S.run.combat.large||h.conc==='enlargereduce'))adv=true;
   if(spec.save&&['int','wis','cha'].includes(spec.save)&&h.species==='gnome')adv=true;
   if(spec.save==='con'&&spec.vs==='poison'&&h.species==='dwarf')adv=true;
@@ -2849,6 +3055,8 @@ function finishRun(success,reason){
     if(r.qid==='s2c')r.result.text='The third seal holds. Three of seven.';
     if(r.qid==='s3c')r.result.text=S.flags.calderRedeemed?'Four of seven. Ser Calder’s sword hangs at your side, warm as a hearth.':'Four of seven. Ser Calder is finally at rest.';
     if(r.qid==='s4c')r.result.text='Five of seven.';
+    if(r.qid==='s5c')r.result.text=S.flags.phylacteryKept?'You carry the phylactery home. It whispers to you on the road.':'The phylactery is dust. Vaelor can die now.';
+    if(r.qid==='s6c')r.result.text=FINAL_ENDINGS[S.flags.finalEnding||'seal'][1];
     addLog(`Completed: ${q.name}.`,'good');checkLevel();
   }else if(reason==='fled'){
     r.result={success:false,text:'You break away and make it back to town. The trouble will keep for another day.',lines:[]};addLog(`Retreated from ${q.name}.`);
@@ -2883,7 +3091,7 @@ const ck=(x,y)=>x+','+y;
 const cheb=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
 const ft=n=>n*5;
 function clog(text,kind){const c=S.run.combat;c.log.push({text,kind:kind||''});if(c.log.length>80)c.log.splice(0,c.log.length-80)}
-const fn=f=>f.key==='calder'?'Ser Calder':f.key==='ashgar'?'Thane Ashgar':f.key==='aldric'?'Lord Aldric':f.key==='ysoldevamp'?'Ysolde':f.key==='jarl'?'Jarl Hrimgar':f.key==='morvath'?'Morvath':f.key==='warden'?'the Rot-Warden':f.key==='captain'?'Captain Harl':f.key==='ysolde'?'Ysolde':f.key==='dream'?'the Dream of the Sleeper':f.key==='heart'?'the Heart of the Sleeper':'the '+f.name.toLowerCase();
+const fn=f=>f.key==='isenvyr'?'Isenvyr':f.key==='vaelor'?'Vaelor':f.key==='unwakingdream'?'the Unwaking Dream':f.key==='calder'?'Ser Calder':f.key==='ashgar'?'Thane Ashgar':f.key==='aldric'?'Lord Aldric':f.key==='ysoldevamp'?'Ysolde':f.key==='jarl'?'Jarl Hrimgar':f.key==='morvath'?'Morvath':f.key==='warden'?'the Rot-Warden':f.key==='captain'?'Captain Harl':f.key==='ysolde'?'Ysolde':f.key==='dream'?'the Dream of the Sleeper':f.key==='heart'?'the Heart of the Sleeper':'the '+f.name.toLowerCase();
 const Fn=f=>{const t=fn(f);return t[0].toUpperCase()+t.slice(1)};
 function liveFoes(){return S.run.combat.foes.filter(f=>f.hp>0&&!f.caged&&!(f.banished&&S.hero.conc===f.banished))}
 function curTarget(){const c=S.run.combat;const t=c.foes[c.target];return t&&t.hp>0?t:liveFoes()[0]}
@@ -2922,7 +3130,7 @@ function makeBoard(n){
   return{rocks:[],hero:{x:3,y:GH-1},spots:Array.from({length:n},(_,i)=>({x:i*2%GW,y:Math.floor(i/4)}))};
 }
 function retarget(){const c=S.run.combat;let best=-1,bd=99;c.foes.forEach((f,i)=>{if(f.hp>0&&cheb(f,c.hero)<bd){bd=cheb(f,c.hero);best=i}});if(best>=0)c.target=best}
-const TOKEN={rat:'R',blightrat:'R',wolf:'W',madwolf:'W',kobold:'K',bandit:'B',blightspawn:'S',warden:'W',ghoul:'G',spider:'X',blightkobold:'K',thug:'T',captain:'H',arcanist:'A',skeleton:'K',wight:'W',ogrezombie:'O',needleblight:'N',vineblight:'V',thornwarden:'T',ysolde:'Y',dream:'D',heart:'H',goblin:'Go',hobgoblin:'Hb',worg:'Wg',ogre:'O',troll:'Tr',hillgiant:'Gi',frostgiant:'FG',winterwolf:'WW',yeti:'Ye',jarl:'Ja',ghast:'Gh',wraith:'Wr',youngblack:'YD',morvath:'M',hellhound:'HH',salamander:'Sa',firegiant:'Fi',calder:'C',ashgar:'As',vampspawn:'VS',ysoldevamp:'Y',aldric:'AV'};
+const TOKEN={rat:'R',blightrat:'R',wolf:'W',madwolf:'W',kobold:'K',bandit:'B',blightspawn:'S',warden:'W',ghoul:'G',spider:'X',blightkobold:'K',thug:'T',captain:'H',arcanist:'A',skeleton:'K',wight:'W',ogrezombie:'O',needleblight:'N',vineblight:'V',thornwarden:'T',ysolde:'Y',dream:'D',heart:'H',goblin:'Go',hobgoblin:'Hb',worg:'Wg',ogre:'O',troll:'Tr',hillgiant:'Gi',frostgiant:'FG',winterwolf:'WW',yeti:'Ye',jarl:'Ja',ghast:'Gh',wraith:'Wr',youngblack:'YD',morvath:'M',hellhound:'HH',salamander:'Sa',firegiant:'Fi',calder:'C',ashgar:'As',vampspawn:'VS',ysoldevamp:'Y',aldric:'AV',stonegolem:'SG',boneknight:'BK',isenvyr:'Is',vaelor:'Vl',unwakingdream:'UD'};
 function startCombat(keys){
   if(S.run.thin&&keys.length>1){keys=keys.slice(0,-1);S.run.thin=false}
   const b=makeBoard(keys.length),counts={},h=S.hero,ambush=S.run.ambush;S.run.ambush=false;
@@ -2936,6 +3144,9 @@ function startCombat(keys){
   if(h.cls==='barbarian'&&h.level>=15&&!h.pools.rage&&!h.persistUsed){h.persistUsed=true;h.pools.rage=maxPools(h).rage;clog('Persistent Rage: your fury returns in full.','good')}
   if(h.cls==='monk'&&h.level>=15&&h.pools.focus<4){h.pools.focus=4;clog('Perfect Focus: you center yourself. 4 Focus Points.','good')}
   if(isSub('thief',17,h)){c.thiefExtra=true}
+  if(itemFlag('regen')&&h.hp>0){const x=d(6);h.hp=Math.min(h.hpMax,h.hp+x)}
+  if(h.cls==='bard'&&h.level>=18&&(h.pools.bi||0)<2){h.pools.bi=2;clog('Superior Inspiration: your inspiration returns.','good')}
+  if(h.cls==='druid'&&h.level>=20&&!h.pools.ws){h.pools.ws=1;clog('Archdruid: nature refills your Wild Shape.','good')}
   if(isSub('beastmaster',3,h)){const sp=[[1,0],[-1,0],[0,1],[1,1],[-1,1]].map(([dx,dy])=>({x:c.hero.x+dx,y:c.hero.y+dy})).find(p=>inBounds(p.x,p.y)&&!isRock(c,p.x,p.y)&&!foeAt(c,p.x,p.y));h.petHp=h.petHp==null?5+5*h.level:h.petHp;if(sp)c.pet={x:sp.x,y:sp.y}}
   if(h.cls==='monk'&&h.pools.metab&&(h.pools.focus<h.level||h.hp<h.hpMax)){h.pools.metab=0;h.pools.focus=h.level;const hl=d(maDie())+h.level;h.hp=Math.min(h.hpMax,h.hp+hl);clog(`Uncanny Metabolism: Focus restored and ${hl} HP regained.`,'good')}
   const ir=heroD20(hadv,false),im=am('dex')+(hasFeat('alert')?pb():0)+(isSub('gloomstalker',3,h)?am('wis'):0)+(h.cls==='bard'&&h.level>=2?Math.floor(pb()/2):0),hi=ir.nat+im;
@@ -2995,14 +3206,18 @@ function heroTurnStart(){
   c.foes.forEach(f=>{f.sapped=false;f.slowed=false;f.stunned=false});
   if(h.cls==='monk'&&h.level>=10&&h.conds.poisoned){delete h.conds.poisoned;clog('Self-Restoration: the poison fades.','good')}
   if(c.thiefExtra&&c.round===1){c.thiefExtra=false;c.actionsBonusRound=1}
-  c.blinked=false;
+  c.blinked=false;c.displHit=false;
+  if(itemFlag('regen')&&h.hp>0&&h.hp<h.hpMax)h.hp++;
   if(c.bead&&h.conc==='delayedblast'&&c.round>1)c.bead.dice++;
   if(c.bead&&h.conc!=='delayedblast'){clog('Your concentration broke, and the bead explodes.','info');feature('detonate')}
   if(h.conds.regen&&h.hp>0&&h.hp<h.hpMax){h.hp++;clog('Regenerate: +1 HP.','good')}
   if(c.hasteOn&&h.conc!=='haste'){c.hasteOn=false;c.lethargic=true}
+  if(isSub('champion',18,h)&&h.hp>0&&h.hp<=h.hpMax/2){const x=5+am('con');h.hp=Math.min(h.hpMax,h.hp+x);clog(`Survivor: +${x} HP.`,'good')}
+  if(c.nimbus){for(const f of liveFoes().filter(f=>cheb(f,c.hero)<=2)){clog(`Holy Nimbus sears ${fn(f)} for 10.`,'good');hurt(f,10,'radiant',false)}checkWin()}
   if(h.conc==='heroism'){const tp=Math.max(1,spellMod());if(tp>h.temp)h.temp=tp}
-  Object.assign(c,{resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
+  Object.assign(c,{travelUsed:false,apoUsed:false,prowessUsed:false,resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
   clog(`Round ${c.round}: your turn`,'head');c.head='h'+c.round;
+  if(c.speedPot)c.hasteAtk=true;
   if(c.lethargic){c.lethargic=false;c.actions=0;c.bonus=false;c.move=0;clog('Haste ends: a wave of lethargy. You lose this turn.','bad')}
   if(c.hasteOn)c.hasteAtk=true;
   if(c.actionsBonusRound){c.actions++;c.actionsBonusRound=0;clog('Thief’s Reflexes: you move faster than anyone else. An extra action this round.','good')}
@@ -3145,6 +3360,9 @@ function weaponAttack(wid,reroll,o={}){
     if(c.rage&&strAtk){total2+=rageDmg();txt+=` + ${rageDmg()} Rage`}
     if(c.rage&&c.reckless&&isSub('berserker',3,h)&&!c.frenzyUsed&&strAtk){c.frenzyUsed=true;const fr=rollDice(crit?rageDmg()*2:rageDmg(),6);total2+=fr.reduce((a,b)=>a+b,0);txt+=` + Frenzy [${fr.join(', ')}]`}
     if(brutal){const br=rollDice((crit?2:1)*(h.level>=17?2:1),10);total2+=br.reduce((a,b)=>a+b,0);txt+=` + Brutal Strike [${br.join(', ')}]`}
+    if(wi.item&&wi.item.extra&&(!wi.item.extra.vs||wi.item.extra.vs.includes(t.type))){const ex=wi.item.extra,xr=roll(crit?ex.dice.replace(/^(\d+)/,(q,a)=>String(2*a)):ex.dice);total2+=xr.total;txt+=` + ${wi.item.name} ${xr.total} ${ex.type}`}
+    if(wi.item&&wi.item.critBonus&&crit){total2+=wi.item.critBonus;txt+=` + ${wi.item.critBonus} vicious`}
+    if(wi.item&&wi.item.vorpal&&r.nat===20){if((ENEMIES[t.key]||{}).xp>=7000||['ooze','elemental','construct'].includes(t.type)){const xr=roll('6d8');total2+=xr.total;txt+=` + Vorpal ${xr.total}`}else{total2+=t.hp+999;txt+=', and the Vorpal Sword takes its head'}}
     if(wi.holy&&w.kind==='melee'){const hr=rollDice(crit?4:2,8);total2+=hr.reduce((a,b)=>a+b,0);txt+=` + Oathblade [${hr.join(', ')}]`}
     if(wi.fire&&w.kind==='melee'){const fr=rollDice(crit?4:2,6);total2+=fr.reduce((a,b)=>a+b,0);txt+=` + Flame Tongue [${fr.join(', ')}]`}
     {const hx=hexBonus(t,crit);if(hx){total2+=hx;txt+=` + Hex ${hx}`}}
@@ -3158,7 +3376,7 @@ function weaponAttack(wid,reroll,o={}){
     if(shape()&&h.level>=14&&h.pools.lunar&&!c.lunarUsed){c.lunarUsed=true;const x=rollDice(crit?4:2,10).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Lunar Form ${x}`}
     if(hasStyle('dueling',h)&&w.kind==='melee'&&!w.twoHanded&&!(resolveHand(activeSet(h).off)||{}).base?.match?.(/^(?!shield)/)){total2+=2;txt+=' + 2 Dueling'}
     if(hasStyle('thrown',h)&&['javelin','handaxe','throwdagger'].includes(wid)){total2+=2;txt+=' + 2 Thrown'}
-    if(h.conc==='huntersmark'&&c.markTarget!=null&&c.foes[c.markTarget]===t){const r=rollDice(crit?2:1,6),x=r.reduce((a,b)=>a+b,0);total2+=x;txt+=` + Hunter’s Mark ${x}`;
+    if(h.conc==='huntersmark'&&c.markTarget!=null&&c.foes[c.markTarget]===t){const r=rollDice(crit?2:1,h.cls==='ranger'&&h.level>=20?10:6),x=r.reduce((a,b)=>a+b,0);total2+=x;txt+=` + Hunter’s Mark ${x}`;
       if(isSub('hunter',11,h)&&!c.preyUsed){const o2=liveFoes().find(f=>f!==t&&cheb(f,t)<=6);if(o2){c.preyUsed=true;const y=d(6);clog(`Superior Hunter’s Prey: ${y} force leaps to ${fn(o2)}.`,'good');hurt(o2,y,'force',false)}}}
     if(isSub('hunter',3,h)&&!c.colossusUsed&&t.hp<t.hpMax){const r=rollDice(crit?2:1,8),x=r.reduce((a,b)=>a+b,0);c.colossusUsed=true;total2+=x;txt+=` + Colossus Slayer ${x}`}
     if(h.conc==='holyweapon'){const x=rollDice(crit?4:2,8).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Holy Weapon ${x}`;radiant=true}
@@ -3213,6 +3431,7 @@ function weaponAttack(wid,reroll,o={}){
 }
 function hurt(f,n,type,crit){
   if(f.hp<=0)return;
+  {const c=S.run&&S.run.combat;if(c&&c.turn==='hero'&&hasFeat('boon_offense')&&['bludgeoning','piercing','slashing'].includes(type))f._irres=true;else f._irres=false}
   {const c=S.run&&S.run.combat;if(c&&c.timestop>0&&c.turn==='hero'){c.timestop=0;clog('You harm another creature, and time lurches back into motion.','info')}}
   if(f.poly&&n>0){unpoly(f);clog('The blow breaks the polymorph.','info');return}
   if(f.charmed&&n>0){f.charmed=false;clog(`${Fn(f)} is no longer charmed.`,'info')}
@@ -3222,7 +3441,7 @@ function hurt(f,n,type,crit){
   const BPS=['bludgeoning','piercing','slashing'];
   if(f.immune&&f.immune.includes(type)){clog(`${Fn(f)} is immune to ${type}.`,'info');n=0}
   else if(f.vuln&&f.vuln.includes(type)){n*=2;clog(`${Fn(f)} is vulnerable to ${type}: double damage (${n}).`,'good')}
-  else if((f.resist&&f.resist.includes(type))||(f.resistMundane&&BPS.includes(type)&&!S.hero.gear.moon)){n=Math.floor(n/2);clog(`${Fn(f)} resists ${type}: half damage (${n}).${f.resistMundane&&!S.hero.gear.moon?' Moonsilver would cut through.':''}`,'info')}
+  else if(!f._irres&&((f.resist&&f.resist.includes(type))||(f.resistMundane&&BPS.includes(type)&&!S.hero.gear.moon))){n=Math.floor(n/2);clog(`${Fn(f)} resists ${type}: half damage (${n}).${f.resistMundane&&!S.hero.gear.moon?' Moonsilver would cut through.':''}`,'info')}
   if(f.regenStop&&f.regenStop.includes(type))f.noRegen=true;
   f.hp-=n;if(f.turned&&n>0){f.turned=false}if(f.charmed&&n>0)f.charmed=false;
   if(f.hp<=0&&f.fortitude&&type!=='radiant'&&!crit){
@@ -3259,7 +3478,9 @@ function spellIssue(id){
   const c=S.run.combat,h=S.hero,sp=SPELLS[id];
   if(sp.form==='reaction'||sp.form==='auto')return'automatic';
   if(shape())return'in beast form';
-  const favored=(id==='guidingbolt'&&isSub('stars',3,h)&&h.pools.starbolt>0)||(id==='huntersmark'&&h.pools.favored>0)||(id===miSpell(h)&&h.pools.mi>0);
+  const mastery=h.cls==='wizard'&&h.level>=18&&['magicmissile','scorchingray'].includes(id);
+  const sig=h.cls==='wizard'&&h.level>=20&&id==='fireball'&&h.pools.sig>0;
+  const favored=mastery||sig||(id==='wish'&&h.pools.gdi>0)||(h.pools.recall>0&&sp.lvl>0&&sp.lvl<=4)||(id==='guidingbolt'&&isSub('stars',3,h)&&h.pools.starbolt>0)||(id==='huntersmark'&&h.pools.favored>0)||(id===miSpell(h)&&h.pools.mi>0);
   if(sp.lvl>0&&!slotFor(sp.lvl)&&!c.freeCast&&!favored)return'no slots';
   if(sp.lvl>0&&c.slotUsed&&!c.freeCast&&!favored)return'one slot spell per turn';
   const asBonus=sp.cast==='bonus'||(sp.cast==='action'&&c.quicken);
@@ -3293,7 +3514,7 @@ function castSpellInner(id,o={}){
   const t=curTarget();
   let lvl=0;
   if(!o.reroll){
-    if(sp.lvl>0){if(id==='guidingbolt'&&isSub('stars',3,h)&&h.pools.starbolt>0){h.pools.starbolt--;lvl=1;clog('Star Map: a free Guiding Bolt.','info')}else if(id===miSpell(h)&&h.pools.mi>0&&!(CLASSES[h.cls].caster&&slotFor(sp.lvl)&&!c.slotUsed)){h.pools.mi--;lvl=1;clog(`Magic Initiate: a free ${sp.name}.`,'info')}else if(id==='huntersmark'&&h.pools.favored>0){h.pools.favored--;lvl=1;clog(`Favored Enemy: a free Hunter’s Mark (${h.pools.favored} left today).`,'info')}else if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=pickSlot(sp.lvl,o.slot);useSlot(lvl);c.slotUsed=true}}
+    if(sp.lvl>0){const mastery=h.cls==='wizard'&&h.level>=18&&['magicmissile','scorchingray'].includes(id)&&!(o.slot>sp.lvl),sig=h.cls==='wizard'&&h.level>=20&&id==='fireball'&&h.pools.sig>0&&!(o.slot>3);if(mastery){lvl=sp.lvl;clog('Spell Mastery: no slot needed.','info')}else if(sig){h.pools.sig--;lvl=3;clog('Signature Spell: a free Fireball.','info')}else if(id==='wish'&&h.pools.gdi>0){h.pools.gdi--;lvl=9;clog('Greater Divine Intervention: a free Wish.','info')}else if(h.pools.recall>0&&sp.lvl<=4&&!slotFor(sp.lvl)){h.pools.recall--;lvl=sp.lvl;clog('Boon of Spell Recall: no slot needed.','info')}else if(id==='guidingbolt'&&isSub('stars',3,h)&&h.pools.starbolt>0){h.pools.starbolt--;lvl=1;clog('Star Map: a free Guiding Bolt.','info')}else if(id===miSpell(h)&&h.pools.mi>0&&!(CLASSES[h.cls].caster&&slotFor(sp.lvl)&&!c.slotUsed)){h.pools.mi--;lvl=1;clog(`Magic Initiate: a free ${sp.name}.`,'info')}else if(id==='huntersmark'&&h.pools.favored>0){h.pools.favored--;lvl=1;clog(`Favored Enemy: a free Hunter’s Mark (${h.pools.favored} left today).`,'info')}else if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=pickSlot(sp.lvl,o.slot);useSlot(lvl);c.slotUsed=true}}
     if(c.wishAction&&sp.lvl>0&&!sp.internal&&id!=='wish'){c.wishAction=false;clog('Wish: no action needed.','info')}else if(sp.cast==='action'&&c.quicken){c.bonus=false;c.quicken=false;clog('Quickened Spell: cast as a bonus action.','info')}else if(sp.cast==='action'&&c.actions<1&&c.attacksLeft>0&&sp.lvl===0&&isSub('eldritchknight',7,h)){c.attacksLeft--;clog('War Magic: a cantrip in place of an attack.','info')}else if(sp.cast==='action')c.actions--;else if(sp.cast==='bonus')c.bonus=false;
   }
   c.ambushCast=isSub('arcanetrickster',9,h)&&c.hidden;
@@ -3627,7 +3848,7 @@ function castCone(sp,lvl,dir){
 }
 function rollMax(expr){const m=/^(\d+)d(\d+)([+-]\d+)?$/.exec(expr);if(!m)return roll(expr);const t=(+m[1])*(+m[2])+(+(m[3]||0));return{total:t,rolls:Array(+m[1]).fill(+m[2]),expr:expr+' (maximized)'}}
 function aoeHero(total,dc){
-  const h=S.hero,sv=heroSave('dex',dc,isSub('abjurer',14,h)),ev=((h.cls==='rogue'||h.cls==='monk')&&h.level>=7)||isSub('dance',14,h);
+  const h=S.hero;let sv=heroSave('dex',dc,isSub('abjurer',14,h)||itemFlag('spellSaveAdv'));if(!sv.pass&&itemFlag('evasionRing')&&(h.pools.ringev||0)>0){h.pools.ringev--;sv={...sv,pass:true,txt:sv.txt+' (Ring of Evasion)'}}const ev=((h.cls==='rogue'||h.cls==='monk')&&h.level>=7)||isSub('dance',14,h);
   const n0=0;const n=sv.pass?(ev?0:Math.floor(total/2)):(ev?Math.floor(total/2):total);
   clog(`${sv.txt}. ${sv.pass?'Success':'Failure'}${ev?' (Evasion)':''}.`,'info');return n;
 }
@@ -3664,6 +3885,13 @@ function feature(id,arg){
   if(id==='quiver'){if(!c.bonus||h.conc!=='swiftquiver')return;c.bonus=false;for(let i=0;i<2;i++){const t2=curTarget();if(!t2||rangeIssue('ranged',30,120,t2))break;weaponAttack('longbow',true)}return}
   if(id==='hurl'){if(!h.pools.hurl||c.hurlNext)return;c.hurlNext=true;clog('Hurl Through Hell is ready for your next hit.','info');return}
   if(id.startsWith('man:')){if(!h.pools.sup)return;c.maneuver=c.maneuver===id.slice(4)?null:id.slice(4);clog(c.maneuver?`${MANEUVERS[c.maneuver][0]} readied for your next hit.`:'Maneuver put away.','info');return}
+  if(id==='prowess'||id==='stroke'||id==='fate'){const lm=c.lastMiss;if(!lm||lm.kind!=='weapon')return;const t2=c.foes[lm.ti];if(!t2||t2.hp<=0)return;
+    if(id==='prowess'){if(c.prowessUsed||!hasFeat('boon_prowess'))return;c.prowessUsed=true}else if(id==='stroke'){if(!h.pools.stroke)return;h.pools.stroke--}else{if(!hasFeat('boon_fate')||c.fateUsed)return;c.fateUsed=true;const x=roll('2d4').total;if(lm.total+x<lm.ac){c.lastMiss=null;clog(`Boon of Fate: +${x} isn’t enough.`,'info');return}}
+    c.lastMiss=null;if(lm.graze)t2.hp+=lm.graze;const sv=c.target;c.target=lm.ti;weaponAttack(lm.id,true,{forceHit:id==='prowess'?'Boon of Combat Prowess':id==='stroke'?'Stroke of Luck':'Boon of Fate'});c.target=sv;return}
+  if(id==='btravel'){if(!hasFeat('boon_travel')||c.travelUsed||!c.attackedThisTurn)return;c.travelUsed=true;c.aim='feystep';return}
+  if(id==='emaster'){if(!c.bonus||!h.pools.emaster)return;h.pools.emaster--;c.bonus=false;h.pools.pact=PACT[h.level][0];clog('Eldritch Master: your patron restores every pact slot.','good');return}
+  if(id==='nimbus'){if(!c.bonus||!h.pools.nimbus||c.nimbus)return;h.pools.nimbus--;c.bonus=false;c.nimbus=true;clog('Holy Nimbus: holy light blazes from you.','good');return}
+  if(id==='supdef'){if(!h.pools.supdef||(h.pools.focus||0)<3||c.supdef)return;h.pools.supdef--;h.pools.focus-=3;c.supdef=true;clog('Superior Defense: you steel yourself against everything.','good');return}
   if(id==='precision'||id==='homing'){const lm=c.lastMiss,pool=id==='precision'?'sup':'psi';if(!lm||lm.kind!=='weapon'||!h.pools[pool])return;if(id==='homing'&&!['psiblade','psithrow'].includes(lm.id))return;
     const x=d(id==='precision'?supDie():psiDie()),t2=c.foes[lm.ti];if(!t2||t2.hp<=0)return;c.lastMiss=null;
     if(lm.total+x>=lm.ac){h.pools[pool]--;if(lm.graze)t2.hp+=lm.graze;const sv=c.target;c.target=lm.ti;weaponAttack(lm.id,true,{forceHit:`${id==='precision'?'Precision Attack':'Homing Strikes'} (+${x})`});c.target=sv}
@@ -3705,7 +3933,15 @@ function feature(id,arg){
   if(id==='heat'){const t=c.foes[c.heatTarget];if(!c.bonus||h.conc!=='heatmetal'||!t||t.hp<=0)return;c.bonus=false;const x=roll(addDice('2d8',(c.heatLvl||2)-2)).total;clog(`Heat Metal burns ${fn(t)} again: ${x} fire.`,'good');hurt(t,x,'fire',false);checkWin();return}
   if(id==='vamp'){const t=curTarget();if(c.actions<1||h.conc!=='vampirictouch'||!t)return;c.actions--;vampTouch(t);return}
   if(id==='vitality'){if(!c.bonus||h.conc!=='auraofvitality')return;c.bonus=false;const x=h.conc==='beaconofhope'?12:roll('2d6').total;h.hp=Math.min(h.hpMax,h.hp+x);clog(`Aura of Vitality: +${x} HP.`,'good');return}
-  if(id==='hasteatk'){if(!c.hasteAtk||h.conc!=='haste')return;const m=heroWeapons().find(k=>WEAPONS[k]&&!rangeIssue(WEAPONS[k].kind,1,WEAPONS[k].long||WEAPONS[k].range));if(!m)return;c.hasteAtk=false;clog('Haste: an extra attack.','info');weaponAttack(m,true);return}
+  if(id==='hasteatk'){if(!c.hasteAtk||(h.conc!=='haste'&&!c.speedPot))return;const m=heroWeapons().find(k=>WEAPONS[k]&&!rangeIssue(WEAPONS[k].kind,1,WEAPONS[k].long||WEAPONS[k].range));if(!m)return;c.hasteAtk=false;clog('Haste: an extra attack.','info');weaponAttack(m,true);return}
+  if(id==='p_supreme'){if(!c.bonus||!S.inv.supreme)return;S.inv.supreme--;c.bonus=false;const r=roll('10d4+20');h.hp=Math.min(h.hpMax,h.hp+r.total);clog(`Potion of Supreme Healing: +${r.total} HP.`,'good');return}
+  if(id==='p_speed'){if(!c.bonus||!S.inv.speedpot||c.speedPot)return;S.inv.speedpot--;c.bonus=false;c.speedPot=true;c.move+=baseSpeed(h);clog('Potion of Speed: the world slows around you.','good');return}
+  if(id==='p_invis'){if(!c.bonus||!S.inv.invispot)return;S.inv.invispot--;c.bonus=false;c.hidden=true;clog('Potion of Invisibility: you vanish.','good');return}
+  if(id==='p_giant'){if(!c.bonus||!S.inv.giantpot||h.conds.giantpot)return;S.inv.giantpot--;c.bonus=false;h.conds.giantpot=true;clog('Potion of Fire Giant Strength: Strength 25 for the quest.','good');return}
+  if(id==='p_resist'){if(!c.bonus||!S.inv.resistpot)return;S.inv.resistpot--;c.bonus=false;const types=['acid','cold','fire','lightning','thunder','poison','necrotic'],cnt={};liveFoes().forEach(f=>[f.dtype,f.burst&&f.burst.dtype,...(f.attacks||[]).map(a=>a.dtype)].forEach(tp=>{if(types.includes(tp))cnt[tp]=(cnt[tp]||0)+1}));const pk=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];h.conds.energy=pk?pk[0]:'fire';clog(`Potion of Resistance: resistance to ${h.conds.energy}.`,'good');return}
+  if(id==='ringinvis'){if(!c.bonus||!itemFlag('ringInvis'))return;c.bonus=false;c.hidden=true;clog('You turn the ring and vanish.','good');return}
+  if(id==='bootspd'){if(!c.bonus||!h.pools.bootspd||c.bootsOn)return;h.pools.bootspd--;c.bonus=false;c.bootsOn=true;c.move+=baseSpeed(h);clog('Boots of Speed: you click your heels together.','good');return}
+  if(id==='pearl'){if(c.actions<1||!h.pools.pearl)return;const mp=maxPools(h),l=[3,2,1].find(x=>(h.pools['slot'+x]||0)<(mp['slot'+x]||0));if(!l)return;h.pools.pearl--;c.actions--;h.pools['slot'+l]++;clog(`Pearl of Power: you regain a level ${l} spell slot.`,'good');return}
   if(id==='witch'){const t=c.foes[c.witchTarget];if(!c.bonus||h.conc!=='witchbolt'||!t||t.hp<=0||cheb(t,c.hero)>6)return;c.bonus=false;const x=d(12);clog(`Witch Bolt arcs again: ${x} lightning to ${fn(t)}.`,'good');hurt(t,x,'lightning',false);checkWin();return}
   if(id==='berry'){if(!c.bonus||!h.berries)return;c.bonus=false;h.berries--;h.hp=Math.min(h.hpMax,h.hp+1);clog('You eat a goodberry: +1 HP.','good');return}
   if(id==='dashx'){if(!c.bonus||h.conc!=='expeditiousretreat')return;c.bonus=false;c.move+=heroSpeed();clog('Expeditious Retreat: you Dash.','info');return}
@@ -3784,8 +4020,8 @@ function feature(id,arg){
   if(id==='wholeness'){if(!c.bonus||!h.pools.wholeness)return;h.pools.wholeness--;c.bonus=false;const n=Math.max(1,d(maDie())+am('wis'));h.hp=Math.min(h.hpMax,h.hp+n);clog(`Wholeness of Body: +${n} HP.`,'good');return}
   if(id==='stun'){if(h.level<5||!h.pools.focus||c.stunUsed)return;c.stunNext=!c.stunNext;clog(c.stunNext?'Stunning Strike readied for your next hit.':'Stunning Strike put away.','info');return}
   if(id==='innate'){if(!c.bonus||c.innate)return;if(h.pools.innate)h.pools.innate--;else if(h.level>=7&&h.pools.sp>=2)h.pools.sp-=2;else return;c.bonus=false;c.innate=true;clog('Innate Sorcery: your spells blaze. +1 to your spell save DC and advantage on spell attacks.','good');return}
-  if(id==='quicken'){if(c.quicken||(h.pools.sp||0)<2)return;h.pools.sp-=2;c.quicken=true;clog('Quickened Spell: your next action spell is cast as a bonus action.','info');return}
-  if(id==='careful'){if(c.careful||(h.pools.sp||0)<1)return;h.pools.sp--;c.careful=true;clog('Careful Spell: your next area spell won’t touch you.','info');return}
+  if(id==='quicken'){if(c.quicken)return;if(h.cls==='sorcerer'&&h.level>=20&&c.innate&&!c.apoUsed){c.apoUsed=true}else{if((h.pools.sp||0)<2)return;h.pools.sp-=2}c.quicken=true;clog('Quickened Spell: your next action spell is cast as a bonus action.','info');return}
+  if(id==='careful'){if(c.careful)return;if(h.cls==='sorcerer'&&h.level>=20&&c.innate&&!c.apoUsed){c.apoUsed=true}else{if((h.pools.sp||0)<1)return;h.pools.sp--}c.careful=true;clog('Careful Spell: your next area spell won’t touch you.','info');return}
   if(id.startsWith('font')){const l=+id.slice(4),cost={1:2,2:3,3:5}[l];if(!c.bonus||(h.pools.sp||0)<cost)return;h.pools.sp-=cost;h.pools['slot'+l]=(h.pools['slot'+l]||0)+1;c.bonus=false;clog(`Font of Magic: ${cost} Sorcery Points become a level ${l} slot.`,'good');return}
   if(id==='movehex'){if(!c.bonus||h.conc!=='hex'||!t)return;const cur=c.foes[c.hexTarget];if(cur&&cur.hp>0)return;c.bonus=false;c.hexTarget=c.foes.indexOf(t);clog(`You move your Hex to ${fn(t)}.`,'good');return}
   if(id==='vigor'){if(c.actions<1||h.level<5)return;c.actions--;h.temp=Math.max(h.temp,12);clog('Fiendish Vigor: 12 temporary HP.','good');return}
@@ -3871,10 +4107,13 @@ function dealHero(n,type){
   if(hasFeat('heavyarmor')&&['fighter','cleric','paladin'].includes(h.cls)&&['bludgeoning','piercing','slashing'].includes(type)){n=Math.max(0,n-pb());clog(`Heavy Armor Master: ${pb()} less damage.`,'info')}
   if(c&&c.rage&&c.rageAspect==='bear'&&!['force','necrotic','psychic','radiant','bludgeoning','piercing','slashing'].includes(type)){n=Math.floor(n/2);clog('The bear spirit shrugs it off: half damage.','info')}
   if(c&&c.godRage&&['necrotic','psychic','radiant'].includes(type)){n=Math.floor(n/2);clog('Rage of the Gods: half damage.','info')}
+  if(c&&c.supdef&&type!=='force'){n=Math.floor(n/2);clog('Superior Defense: half damage.','info')}
   if(isSub('war',17,h)&&['bludgeoning','piercing','slashing'].includes(type)&&!(c&&c.rage)){n=Math.floor(n/2);clog('Avatar of Battle: half damage.','info')}
   if(c&&c.starForm&&isSub('stars',14,h)&&['bludgeoning','piercing','slashing'].includes(type)&&!(c&&c.rage)){n=Math.floor(n/2);clog('Full of Stars: half damage.','info')}
   if(c&&c.seaAura&&isSub('sea',10,h)&&['cold','lightning','thunder'].includes(type)){n=Math.floor(n/2);clog('Stormborn: half damage.','info')}
   if((h.conc==='stoneskin'&&['bludgeoning','piercing','slashing'].includes(type)&&!(c&&c.rage))||(type==='cold'&&h.conds.fireshield)||(type==='necrotic'&&h.conc==='auraoflife')||(type==='poison'&&h.conc==='auraofpurity')||(h.conds.energy===type)||(type==='poison'&&h.conds.protpoison)){n=Math.floor(n/2);clog(`Your spell halves the ${type} damage.`,'info')}
+  if(type==='poison'&&itemFlag('immunePoison')){n=0;clog('Your periapt makes you immune to poison.','info')}
+  else if(itemResists(type)){n=Math.floor(n/2);clog(`Your magic item halves the ${type} damage.`,'info')}
   if(type==='psychic'&&h.conds.mindblank){n=0;clog('Mind Blank: no psychic damage.','info')}
   if(type==='psychic'&&(isSub('aberrant',6,h)||isSub('greatoldone',10,h))){n=Math.floor(n/2);clog('Your mind shrugs off half the psychic damage.','info')}
   if(type==='radiant'&&isSub('celestial',6,h)){n=Math.floor(n/2);clog('Radiant Soul: half radiant damage.','info')}
@@ -3968,7 +4207,7 @@ function foeTurn(f){
   if(f.burst&&f.burstReady===false&&d(6)>=5){f.burstReady=true;clog(`${Fn(f)} gathers power again.`,'info')}
   let dist=cheb(f,c.hero);
   if(f.burst&&f.burstReady!==false&&dist<=(f.burst.range||12)&&los(c,f,c.hero)){
-    if(f.burst.charm){f.burstReady=false;const sv=heroSave('wis',f.burst.dc);if(!sv.pass&&!c.heroPara){c.heroPara=!S.hero.conds.freedom;c.paraEnding=false;clog(`${Fn(f)} meets your eyes. ${sv.txt}. You’re charmed and lose your next turn.`,'bad')}else clog(`${Fn(f)} tries to catch your eye. ${sv.txt}. You resist.`,'info');foeMelee(f);f.acted=true;endFoeTurn(f);return}
+    if(f.burst.charm){f.burstReady=false;const sv=heroSave('wis',f.burst.dc);if(!sv.pass&&!c.heroPara){c.heroPara=!(S.hero.conds.freedom||itemFlag('freedom'));c.paraEnding=false;clog(`${Fn(f)} meets your eyes. ${sv.txt}. You’re charmed and lose your next turn.`,'bad')}else clog(`${Fn(f)} tries to catch your eye. ${sv.txt}. You resist.`,'info');foeMelee(f);f.acted=true;endFoeTurn(f);return}
     f.burstReady=false;const r=roll(f.burst.dmg),bt=f.burst.dtype||'fire';clog(`${Fn(f)} casts ${f.burst.name}: ${rtxt(r)} = ${r.total} ${bt}.`,'bad');
     let n=(h.conc==='globeofinvulnerability'||h.conc==='antimagicfield')?0:h.conc==='circleofpower'?(heroSave('dex',f.burst.dc,true).pass?0:r.total):aoeHero(r.total,f.burst.dc);if(n&&isSub('ancients',7,h)){n=Math.floor(n/2);clog('Aura of Warding: half damage.','info')}if(n){clog(`You take ${n} ${bt} damage.`,'bad');dealHero(n,bt)}else clog('You dive clear.','good');
     f.acted=true;endFoeTurn(f);return;
@@ -4052,6 +4291,7 @@ function foeAttack(f,mode,atkObj){
   if(h.conc==='shadowdark'){dis=true;why.push('magical darkness')}
   if(c.heroPara){adv=true;why.push('you’re paralyzed')}
   if(c.grappledBy!=null){adv=true;why.push('you’re restrained')}
+  if(adv&&h.cls==='rogue'&&h.level>=18&&!h.dying){adv=false;why.push('Elusive')}
   if(adv&&(c.trance||(isSub('clockwork',3,h)&&c.react&&h.pools.balance>0&&!dis))){if(!c.trance){c.react=false;h.pools.balance--}adv=false;why.push(c.trance?'Trance of Order':'Restore Balance')}
   if(c.clairTarget!=null&&c.foes[c.clairTarget]===f){dis=true;why.push('Clairvoyant Combatant')}
   if(c.react&&!dis&&!h.dying&&((isSub('light',3,h)&&h.pools.flare>0)||isSub('gloomstalker',15,h))){c.react=false;dis=true;if(isSub('light',3,h)&&h.pools.flare>0){h.pools.flare--;why.push('Warding Flare')}else why.push('Shadowy Dodge')}
@@ -4066,8 +4306,9 @@ function foeAttack(f,mode,atkObj){
   if(mode==='ranged'&&h.conc==='windwall'){clog(`${Fn(f)}’s ${f.ranged.name} is torn away by your Wind Wall.`,'good');return}
   if(h.conc==='holyaura'){dis=true;why.push('Holy Aura')}
   if((h.conc==='protectionfromevil'||h.conc==='dispelevilandgood')&&['aberration','celestial','elemental','fey','fiend','undead'].includes(f.type)){dis=true;why.push('Protection from Evil')}
+  if(itemFlag('displace')&&!c.displHit){dis=true;why.push('Cloak of Displacement')}
   if(c.portentFoe!=null){nat=c.portentFoe;rt=`portent [${nat}]`;c.portentFoe=null}
-  let total=nat+r.atk,crit=nat===20;
+  let total=nat+r.atk,crit=nat===20;if(crit&&itemFlag('critImmune')){crit=false;rt+=' (adamantine armor)'}
   if(h.conc==='bladeward'){const x=d(4);total-=x;rt+=` − Blade Ward ${x}`}
   if(f.baned&&h.conc==='bane'){const x=d(4);total-=x;rt+=` − Bane ${x}`}
   let hit=crit||(nat!==1&&total>=ac);
@@ -4096,6 +4337,7 @@ function foeAttack(f,mode,atkObj){
   if(h.mirror>0){let ok=false;for(let i=0;i<h.mirror;i++)if(d(6)>=3)ok=true;if(ok){h.mirror--;clog(`The blow strikes one of your mirror images instead. ${h.mirror} left.`,'good');return}}
   if(f.enfeebled&&h.conc==='rayofenfeeblement'){const x=d(8);n=Math.max(0,n-x);clog(`Ray of Enfeeblement: ${x} less damage.`,'info')}
   if(isSub('archfey',10,h)&&c.react&&h.pools.beguile&&n>=10){c.react=false;h.pools.beguile--;n=Math.floor(n/2);clog(`Beguiling Defenses: half damage, and ${fn(f)} takes ${n} psychic.`,'good');hurt(f,n,'psychic',false)}
+  if(itemFlag('displace'))c.displHit=true;
   const tempBefore=h.temp;dealHero(n,r.dtype||(mode==='ranged'?'piercing':f.dtype));
   if(c.vowStrike&&!c.over&&!h.dying&&f.hp>0&&c.react){c.vowStrike=false;c.react=false;clog('Soul of Vengeance!','info');const sv=c.target;c.target=c.foes.indexOf(f);const m=heroWeapons().find(k=>WEAPONS[k]&&WEAPONS[k].kind==='melee');if(m)weaponAttack(m,true);c.target=sv;checkWin()}
   if(!c.over&&!h.dying&&n>0&&h.species==='goliath'&&h.lineage==='storm'&&c.react&&h.pools.giant&&cheb(f,c.hero)<=12&&f.hp>0){c.react=false;h.pools.giant--;const x=d(8);clog(`Storm’s Thunder: ${fn(f)} takes ${x} thunder.`,'good');hurt(f,x,'thunder',false);checkWin()}
@@ -4106,12 +4348,12 @@ function foeAttack(f,mode,atkObj){
     const l=slotFor(1);useSlot(l);c.react=false;const rr=roll(`${1+l}d10`),s2=d(20),tot=s2+f.mods.dex,sv=tot>=spellDC(),dd=sv?Math.floor(rr.total/2):rr.total;
     clog(`Hellish Rebuke (level ${l}): flames engulf ${fn(f)}. DEX save ${s2} ${sgn(f.mods.dex)} = ${tot}. ${dd} fire.`,'good');hurt(f,dd,'fire',false);checkWin()}
   if(!c.over&&!h.dying&&r.drain){h.hpMax=Math.max(1,h.hpMax-n);h.hp=Math.min(h.hp,h.hpMax);clog(`Life Drain: your maximum HP drops by ${n} until you finish a long rest (now ${h.hpMax}).`,'bad')}
-  if(!c.over&&!h.dying&&mode==='melee'&&f.grapple&&c.grappledBy==null&&!S.hero.conds.freedom){c.grappledBy=c.foes.indexOf(f);clog(`${Fn(f)} wraps around you. You’re grappled and restrained (escape DC ${f.grapple}).`,'bad')}
+  if(!c.over&&!h.dying&&mode==='melee'&&f.grapple&&c.grappledBy==null&&!S.hero.conds.freedom&&!itemFlag('freedom')){c.grappledBy=c.foes.indexOf(f);clog(`${Fn(f)} wraps around you. You’re grappled and restrained (escape DC ${f.grapple}).`,'bad')}
   if(!c.over&&!h.dying&&r.rider){const sv=heroSave(r.rider.save,r.rider.dc);const rr=roll(r.rider.dmg),m=sv.pass?Math.floor(rr.total/2):rr.total;
     clog(`Venom: ${sv.txt}. ${m} ${r.rider.dtype} damage.`,'bad');dealHero(m,r.rider.dtype)}
   if(!c.over&&!h.dying&&r.paralyze&&!c.heroPara){
     if(h.species==='elf')clog('Your elven blood shrugs off the ghoul’s paralysis.','info');
-    else{const sv=heroSave('con',r.paralyze);if(!sv.pass){c.heroPara=!S.hero.conds.freedom;c.paraEnding=false;clog(`Your muscles lock. ${sv.txt}. You’re paralyzed until the end of your next turn.`,'bad')}else clog(`You fight off the numbness. ${sv.txt}.`,'info')}}
+    else{const sv=heroSave('con',r.paralyze);if(!sv.pass){c.heroPara=!(S.hero.conds.freedom||itemFlag('freedom'));c.paraEnding=false;clog(`Your muscles lock. ${sv.txt}. You’re paralyzed until the end of your next turn.`,'bad')}else clog(`You fight off the numbness. ${sv.txt}.`,'info')}}
   if(!c.over&&!h.dying&&mode==='melee'&&f.knock&&!c.heroProne){const sv=heroSave('str',f.knock);
     if(!sv.pass){c.heroProne=true;clog(`It drags you down. ${sv.txt}. You’re prone.`,'bad')}else clog(`You keep your footing. ${sv.txt}.`,'info')}
 }
@@ -4148,7 +4390,7 @@ function renderInner(app){
   const body={town:renderTown,farm:renderFarm,quests:renderQuests,folk:renderFolk,hero:renderHero,journal:renderJournal}[S.tab]||renderTown;
   app.innerHTML=`<div class="wrap">${renderHeader()}${S.flags.note?`<div class="note" role="status">${S.flags.note.split('\n\n').map(p=>`<p>${esc(p)}</p>`).join('')}<div class="actions">${btn('note','Got it','','btn ghost small')}</div></div>`:''}<main>${body()}</main></div>
   <nav class="tabs" aria-label="Sections">${tabs.map(([k,l])=>`<button data-a="tab" data-t="${k}" aria-current="${S.tab===k}">${l}</button>`).join('')}</nav>
-  ${S.run?renderRun():''}${S.flags.actModal?renderActModal():''}${S.flags.act2Modal?renderAct2Modal():''}${S.flags.endModal&&!S.run?renderEndModal():''}${S.flags.sequelModal?renderSequelModal('start'):''}${S.flags.ch2Modal&&!S.run?renderSequelModal('ch2'):''}${S.flags.ch4Modal&&!S.run?renderSequelModal('ch4'):''}`;
+  ${S.run?renderRun():''}${S.flags.actModal?renderActModal():''}${S.flags.act2Modal?renderAct2Modal():''}${S.flags.endModal&&!S.run?renderEndModal():''}${S.flags.sequelModal?renderSequelModal('start'):''}${S.flags.ch2Modal&&!S.run?renderSequelModal('ch2'):''}${S.flags.ch4Modal&&!S.run?renderSequelModal('ch4'):''}${S.flags.finalModal&&!S.run?renderSequelModal('final'):''}`;
 }
 function playFX(){
   const board=document.querySelector('.board'),c=S&&S.run&&S.run.combat;
@@ -4945,12 +5187,21 @@ function renderCombat(st){
     if(h.conc==='graspingvine')f.push(btn('act','Grasping Vine (bonus)',`data-k="vine" ${disab(!c.bonus)}`,'btn ghost small'));
     if(h.conc==='bigbyshand')f.push(btn('act','Bigby’s Hand: punch (bonus)',`data-k="bigby" ${disab(!c.bonus)}`,'btn ghost small'));
     if(h.conc==='telekinesis')f.push(btn('act','Telekinesis: hurl',`data-k="tk" ${disab(c.actions<1)}`,'btn ghost small'));
+    if(S.inv.supreme)f.push(btn('act',`Potion of Supreme Healing (${S.inv.supreme})`,`data-k="p_supreme" ${disab(!c.bonus)}`,'btn ghost small'));
+    if(S.inv.speedpot)f.push(btn('act',`Potion of Speed (${S.inv.speedpot})`,`data-k="p_speed" ${disab(!c.bonus||c.speedPot)}`,'btn ghost small'));
+    if(S.inv.invispot)f.push(btn('act',`Potion of Invisibility (${S.inv.invispot})`,`data-k="p_invis" ${disab(!c.bonus)}`,'btn ghost small'));
+    if(S.inv.giantpot)f.push(btn('act',`Potion of Giant Strength (${S.inv.giantpot})`,`data-k="p_giant" ${disab(!c.bonus||h.conds.giantpot)}`,'btn ghost small'));
+    if(S.inv.resistpot)f.push(btn('act',`Potion of Resistance (${S.inv.resistpot})`,`data-k="p_resist" ${disab(!c.bonus)}`,'btn ghost small'));
+    if(itemFlag('ringInvis'))f.push(btn('act','Ring of Invisibility (bonus)',`data-k="ringinvis" ${disab(!c.bonus)}`,'btn ghost small'));
+    if(h.pools.bootspd||c.bootsOn)f.push(btn('act',c.bootsOn?'Boots of Speed':'Boots of Speed (bonus)',`data-k="bootspd" ${disab(!c.bonus||c.bootsOn)}`,'btn ghost small'));
+    if(h.pools.pearl)f.push(btn('act','Pearl of Power',`data-k="pearl" ${disab(c.actions<1)}`,'btn ghost small'));
     if(h.conc==='dragonsbreath')f.push(btn('act','Dragon’s Breath (action)',`data-k="dbreath" ${disab(c.actions<1)}`,'btn ghost small'));
     if(h.conc==='flameblade')f.push(btn('act','Flame Blade attack',`data-k="fblade" ${disab(c.actions<1)}`,'btn ghost small'));
     if(h.conc==='flamingsphere')f.push(btn('act','Ram the flaming sphere (bonus)',`data-k="fsphere" ${disab(!c.bonus)}`,'btn ghost small'));
     if(h.conc==='heatmetal')f.push(btn('act','Heat Metal again (bonus)',`data-k="heat" ${disab(!c.bonus)}`,'btn ghost small'));
     if(h.conc==='vampirictouch')f.push(btn('act','Vampiric Touch',`data-k="vamp" ${disab(c.actions<1)}`,'btn ghost small'));
     if(h.conc==='auraofvitality')f.push(btn('act','Aura of Vitality heal (bonus)',`data-k="vitality" ${disab(!c.bonus)}`,'btn ghost small'));
+    if(c.speedPot&&h.conc!=='haste'&&c.hasteAtk)f.push(btn('act','Potion of Speed: extra attack','data-k="hasteatk"','btn small'));
     if(h.conc==='haste'&&c.hasteAtk)f.push(btn('act','Haste: extra attack',`data-k="hasteatk"`,'btn small'));
     if(h.conc==='witchbolt')f.push(btn('act','Witch Bolt arc (bonus)',`data-k="witch" ${disab(!c.bonus)}`,'btn ghost small'));
     if(h.berries)f.push(btn('act',`Eat a goodberry (bonus), ${h.berries}`,`data-k="berry" ${disab(!c.bonus)}`,'btn ghost small'));
@@ -4965,6 +5216,11 @@ function renderCombat(st){
     if(isSub('greatoldone',6,h))f.push(btn('act',c.clairTarget!=null?'Clairvoyant Combatant active':'Clairvoyant Combatant',`data-k="clair" ${disab(!h.pools.clair||c.clairTarget!=null)}`,'btn ghost small'));
     if(isSub('glamour',3,h)){f.push(btn('act',`Mantle of Inspiration (bonus, ${h.pools.bi} BI)`,`data-k="mantle" ${disab(!c.bonus||!h.pools.bi)}`,'btn ghost small'));if(h.level>=6)f.push(btn('act',c.majesty?'Command: grovel (bonus)':'Mantle of Majesty (bonus)',`data-k="${c.majesty?'command':'majesty'}" ${disab(!c.bonus||(!c.majesty&&!h.pools.majesty))}`,'btn ghost small'))}
     if(isSub('valor',3,h)){f.push(btn('act',c.valorNext?'Combat Inspiration: ready':`Combat Inspiration (${h.pools.bi} BI)`,`data-k="valorstrike" ${disab(!h.pools.bi||c.valorNext)}`,c.valorNext?'btn small':'btn ghost small'));if(c.battleMagic)f.push(btn('act','Battle Magic: bonus attack',`data-k="battlemagic" ${disab(!c.bonus)}`,'btn small'))}
+    if(c.lastMiss&&c.lastMiss.kind==='weapon'){if(hasFeat('boon_prowess'))f.push(btn('act','Boon of Combat Prowess: hit instead',`data-k="prowess" ${disab(c.prowessUsed)}`,'btn small'));if(h.pools.stroke)f.push(btn('act','Stroke of Luck: hit instead','data-k="stroke"','btn small'));if(hasFeat('boon_fate'))f.push(btn('act','Boon of Fate: +2d4',`data-k="fate" ${disab(c.fateUsed)}`,'btn small'))}
+    if(hasFeat('boon_travel')&&c.attackedThisTurn)f.push(btn('act','Dimensional Travel: teleport',`data-k="btravel" ${disab(c.travelUsed)}`,'btn ghost small'));
+    if(h.cls==='warlock'&&h.level>=20)f.push(btn('act','Eldritch Master (bonus)',`data-k="emaster" ${disab(!c.bonus||!h.pools.emaster)}`,'btn ghost small'));
+    if(h.cls==='paladin'&&h.level>=20)f.push(btn('act',c.nimbus?'Holy Nimbus':'Holy Nimbus (bonus)',`data-k="nimbus" ${disab(!c.bonus||!h.pools.nimbus||c.nimbus)}`,'btn ghost small'));
+    if(h.cls==='monk'&&h.level>=18)f.push(btn('act',c.supdef?'Superior Defense':'Superior Defense (3)',`data-k="supdef" ${disab(!h.pools.supdef||c.supdef||(h.pools.focus||0)<3)}`,'btn ghost small'));
     if(isSub('light',3,h)){f.push(btn('act',`Radiance of the Dawn (${h.pools.cd} CD)`,`data-k="dawn" ${disab(c.actions<1||!h.pools.cd)}`,'btn ghost small'));if(h.level>=17)f.push(btn('act','Corona of Light',`data-k="corona" ${disab(c.actions<1||!h.pools.corona||c.corona)}`,'btn ghost small'))}
     if(isSub('trickery',3,h)){f.push(btn('act',c.duplicity?'Your double is up':`Invoke Duplicity (bonus, ${h.pools.cd} CD)`,`data-k="duplicity" ${disab(!c.bonus||!h.pools.cd||c.duplicity)}`,'btn ghost small'));if(h.level>=6&&c.duplicity)f.push(btn('act','Swap places with your double (bonus)',`data-k="transpose" ${disab(!c.bonus)}`,'btn ghost small'))}
     if(isSub('war',3,h)){f.push(btn('act',`War Priest attack (bonus), ${h.pools.wpriest}`,`data-k="wpriest" ${disab(!c.bonus||!h.pools.wpriest)}`,'btn ghost small'));if(c.lastMiss&&c.lastMiss.kind==='weapon')f.push(btn('act','Guided Strike: +10 to that miss',`data-k="guided" ${disab(!h.pools.cd)}`,'btn small'))}
@@ -5173,7 +5429,8 @@ const A={
   closesequel(){S.flags.sequelModal=false;render()},
   beginsequel(){S.flags.sequelModal=false;S.flags.sequel=true;addLog('You accept the Abbess’s charge. You are the Warden of the Shut Eye.','good');note('The Seven Seals has begun. The level cap rises to 14, and Chapter 1 is waiting on the notice board.');checkLevel();commit()},
   closech2(){S.flags.ch2Modal=false;checkLevel();commit()},
-  closech4(){S.flags.ch4Modal=false;commit()},
+  closech4(){S.flags.ch4Modal=false;checkLevel();commit()},
+  closefinal(){S.flags.finalModal=false;commit()},
   smith(ds){buySmithy(ds.k)},
   tcant(ds){const h=S.hero;if(S.run)return;ensurePrepared(h);const i=h.cantrips.indexOf(ds.k),free=canFreeEdit(h);
     if(i>=0){if(!free){if(!(h.cswaps>0))return;h.cswaps--}h.cantrips.splice(i,1)}else{if(h.cantrips.length>=cantripCount(h)||!classList(h,0).includes(ds.k))return;h.cantrips.push(ds.k)}commit()},
@@ -5186,6 +5443,7 @@ const A={
   useset(ds){if(S.run&&S.run.combat)return;S.hero.activeSet=+ds.i;commit()},
   setslot(ds){if(S.run)return;const h=S.hero,k=ds.k,cur=h.equip[k];if(cur){const it=instByUid(cur);if(it)it.attuned=false;h.equip[k]=null}
     if(ds.u){const inst=instByUid(ds.u);if(inst&&tryAttune(inst))h.equip[k]=ds.u}equipPick=null;const om=h.hpMax;h.hpMax=maxHP(h);h.hp=Math.min(h.hpMax,h.hp+Math.max(0,h.hpMax-om));commit()},
+  readtome(ds){const h=S.hero;if(S.run)return;const i=(h.items||[]).findIndex(x=>x.uid===ds.u);if(i<0)return;const m=MAGIC[h.items[i].id];if(!m.tome)return;h.abil[m.tome]=Math.min(30,h.abil[m.tome]+2);h.items.splice(i,1);const om=h.hpMax;h.hpMax=maxHP(h);h.hp+=Math.max(0,h.hpMax-om);addLog(`You study ${m.name} for a week of evenings. +2 ${ABIL_NAME[m.tome]}.`,'good');commit()},
   quickequip(ds){if(S.run)return;const inst=instByUid(ds.u);if(!inst)return;if(!autoEquip(inst)){const sl=itemSlot(inst.id);if(sl==='weapon'){if(tryAttune(inst))S.hero.loadouts[S.hero.activeSet||0].main='i:'+inst.uid}else note('No free slot for that item. Take something off first.')}const h=S.hero,om=h.hpMax;h.hpMax=maxHP(h);h.hp=Math.min(h.hpMax,h.hp+Math.max(0,h.hpMax-om));commit()},
   upgrade(ds){startUpgrade(ds.k)},
   lohq(){const h=S.hero;if(!S.run||S.run.combat||h.cls!=='paladin'||!h.pools.loh)return;if(h.conds.poisoned&&h.pools.loh>=5){h.pools.loh-=5;delete h.conds.poisoned}else{const n=Math.min(h.pools.loh,h.hpMax-h.hp);h.pools.loh-=n;h.hp+=n}commit()},
