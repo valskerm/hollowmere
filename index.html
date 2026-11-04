@@ -221,6 +221,7 @@ details.fold>summary.foldhead h2{flex:1;margin-bottom:6px}
 details.fold>summary.foldhead::after{content:'▾';color:var(--muted);font-size:1.1rem;transition:transform .15s}
 details.fold:not([open])>summary.foldhead::after{transform:rotate(-90deg)}
 details.fold:not([open])>summary.foldhead h2{margin-bottom:0}
+.linkbtn{background:none;border:none;padding:0;font:inherit;color:var(--lantern);text-decoration:underline;cursor:pointer}
 .pickrow{margin-top:10px;padding:10px 12px;border:2px solid var(--lantern);border-radius:10px;background:var(--surface)}
 .plotpanel{margin-top:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:56px}
 /* act 2 bits */
@@ -931,7 +932,7 @@ function updateAppIcon(){
   }catch(e){}
 }
 
-document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.matches&&d.matches('details.fold')&&S&&S.flags){S.flags.fold=S.flags.fold||{};const k=d.dataset.fold;if(d.open)delete S.flags.fold[k];else S.flags.fold[k]=true;save()}},true);
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.matches&&d.matches('details.sfold')&&S&&S.flags){S.flags.sopen=S.flags.sopen||{};S.flags.sopen[d.dataset.sf]=d.open;return}if(d&&d.matches&&d.matches('details.fold')&&S&&S.flags){S.flags.fold=S.flags.fold||{};const k=d.dataset.fold;if(d.open)delete S.flags.fold[k];else S.flags.fold[k]=true;save()}},true);
 function commit(){checkAct();save();render();updateAppIcon()}
 
 function newState(dr){
@@ -1525,7 +1526,7 @@ const MAGIC={
 };
 const usable=(id,h=S.hero)=>!MAGIC[id].who||MAGIC[id].who(h);
 const ownsItem=id=>(S.hero.items||[]).some(i=>i.id===id);
-function activeItems(h=S.hero){const eq=typeof equippedUids==='function'&&h.equip?equippedUids(h):null;return (h.items||[]).filter(i=>(!eq||eq.has(i.uid))&&MAGIC[i.id].kind!=='shield'&&(!MAGIC[i.id].attune||i.attuned)&&(!MAGIC[i.id].who||MAGIC[i.id].who(h))).map(i=>MAGIC[i.id])}
+function activeItems(h=S.hero){const eq=typeof equippedUids==='function'&&h.equip?equippedUids(h):null;return (h.items||[]).filter(i=>(!eq||eq.has(i.uid))&&(MAGIC[i.id].kind!=='shield'||(h.loadouts&&activeSet(h).off==='i:'+i.uid))&&(!MAGIC[i.id].attune||i.attuned)&&(!MAGIC[i.id].who||MAGIC[i.id].who(h))).map(i=>MAGIC[i.id])}
 const itemSum=(key,h=S.hero)=>activeItems(h).reduce((a,m)=>a+(m[key]||0),0);
 const attuneMax=()=>isSub('thief',13)?4:3;
 const attunedCount=()=>(S.hero.items||[]).filter(i=>i.attuned).length;
@@ -2120,7 +2121,7 @@ function autoEquip(inst){
   const keys=GEAR_SLOTS.map(x=>x[0]).filter(k=>slotKind(k)===sl&&!h.equip[k]);if(!keys.length)return false;if(!tryAttune(inst))return false;h.equip[keys[0]]=inst.uid;return true;
 }
 function setHand(set,hand,v){
-  const h=S.hero,l=h.loadouts[set];if(!l)return;const r=resolveHand(v);
+  const h=S.hero,l=h.loadouts[set];if(!l)return;const r=resolveHand(v);if(hand==='main'&&r&&r.base==='shield')return;
   if(v&&v.startsWith('i:')){const inst=instByUid(v.slice(2));if(!inst||!tryAttune(inst))return;h.loadouts.forEach(x=>{if(x.main===v)x.main=null;if(x.off===v)x.off=null})}
   if(hand==='main'){l.main=v;if(r&&TWOHAND.has(r.base))l.off=null}else{if(l.main&&TWOHAND.has(resolveHand(l.main)?.base))return;l.off=v}
 }
@@ -2147,7 +2148,7 @@ function renderEquipment(){
       ${equipPick===key?`<div class="actions">${cands.map(i=>btn('setslot',MAGIC[i.id].name,`data-k="${k}" data-u="${i.uid}"`,'btn ghost small')).join('')}${m?btn('setslot','Take it off',`data-k="${k}" data-u=""`,'btn ghost small'):''}</div>`:''}</li>`};
   const pack=(h.items||[]).filter(i=>!isEquippedAnywhere(uidOf(i)));
   return `<h2>Equipment</h2>
-  <p class="meta">Attuned: ${attunedCount()} of ${attuneMax()}. Items that need attunement attune when you equip them, and only in town. ${inCombat?'You can switch weapon sets in a fight, once per turn.':''}</p>
+  <p class="meta">Attuned: ${attunedCount()} of ${attuneMax()}. Items that need attunement attune when you equip them, and only in town. A shield only protects you in the left (off) hand of the set you’re holding. ${inCombat?'You can switch weapon sets in a fight, once per turn.':''}</p>
   ${h.loadouts.map(setCard).join('')}
   <ul class="ledger" style="margin-top:12px">${GEAR_SLOTS.map(gearRow).join('')}</ul>
   ${pack.length?`<h3 style="margin-top:16px">In your pack</h3><ul class="ledger">${pack.map(i=>{const m=MAGIC[i.id],ok=usable(i.id);return `<li><div class="row"><span><b>${m.name}${i.base?` (${WEAPONS[i.base].name})`:''}</b> <span class="meta">${m.rarity}${m.attune?', attunement':''}</span></span>${m.tome?btn('readtome','Read it',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):ok?btn('quickequip','Equip',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):'<span class="tag lock">Not for your class</span>'}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>`:''}`;
@@ -2330,14 +2331,14 @@ function alwaysPrepared(h){
   return [...new Set(extra)].filter(id=>SPELLS[id]&&(SPELLS[id].lvl===0||SPELLS[id].lvl<=maxLvl||SPELLS[id].lvl>5||id==='wish'));
 }
 function prepPool(h){const ml=maxSpellLvl(h),out=[];for(let l=1;l<=ml;l++){out.push(...classList(h,l));if(h.cls==='bard'&&h.level>=10)for(const k of ['cleric','druid','wizard'])out.push(...(CLASS_LISTS[k][l]||[]))}return [...new Set(out)].filter(id=>SPELLS[id])}
-function ensurePrepared(h){
+function ensurePrepared(h,fill){
   const C=CLASSES[h.cls];if(!C.caster)return;
-  const cl=classList(h,0),cn=cantripCount(h);h.cantrips=(h.cantrips||[]).filter(id=>cl.includes(id));
-  for(const id of [...C.cantrips,...cl]){if(h.cantrips.length>=cn)break;if(cl.includes(id)&&!h.cantrips.includes(id))h.cantrips.push(id)}
+  const cl=classList(h,0),cn=cantripCount(h),fillC=fill||!h.cantrips,fillP=fill||!h.prepared;h.cantrips=(h.cantrips||[]).filter(id=>cl.includes(id)).slice(0,cn);
+  if(fillC)for(const id of [...C.cantrips,...cl]){if(h.cantrips.length>=cn)break;if(cl.includes(id)&&!h.cantrips.includes(id))h.cantrips.push(id)}
   if(h.cls==='wizard'){const fill=!h.book;h.book=(h.book||[]).filter(id=>SPELLS[id]);if(fill){const want=6+2*(h.level-1),pool=prepPool(h);for(const id of [...C.spells,...pool]){if(h.book.length>=want)break;if(pool.includes(id)&&!h.book.includes(id))h.book.push(id)}}}
   const pool=h.cls==='wizard'?h.book.filter(id=>SPELLS[id].lvl<=maxSpellLvl(h)):prepPool(h),al=alwaysPrepared(h),pm=prepMax(h);
-  h.prepared=(h.prepared||[]).filter(id=>pool.includes(id)&&!al.includes(id));
-  for(const id of [...C.spells,...pool]){if(h.prepared.length>=pm)break;if(pool.includes(id)&&!al.includes(id)&&!h.prepared.includes(id)&&SPELLS[id].lvl>0)h.prepared.push(id)}
+  h.prepared=(h.prepared||[]).filter(id=>pool.includes(id)&&!al.includes(id)).slice(0,pm);
+  if(fillP)for(const id of [...C.spells,...pool]){if(h.prepared.length>=pm)break;if(pool.includes(id)&&!al.includes(id)&&!h.prepared.includes(id)&&SPELLS[id].lvl>0)h.prepared.push(id)}
 }
 function utilityFor(skill){const h=S.hero;return knownSpells().filter(id=>{const sp=SPELLS[id];return sp.form==='utility'&&sp.util&&(sp.util==='any'||sp.util==='anyadv'||sp.util.includes(skill))})}
 
@@ -2352,18 +2353,18 @@ function renderSpellbook(){
   const free=canFreeEdit(h),al=alwaysPrepared(h),cn=cantripCount(h),pm=prepMax(h);
   const swapNote=free?'You can change anything until your first quest.':FREE_SWAP.includes(h.cls)?'You can change prepared spells any time you’re in town.':`Swaps left: ${h.swaps||0} spell, ${h.cswaps||0} cantrip. You earn one of each when you level up.`;
   let html=head+`<p class="meta">${swapNote}${inQuest?' Changes wait until you’re back in town.':''}</p>`;
-  if(cn){const cl=classList(h,0);html+=`<details><summary>Cantrips: ${h.cantrips.length} of ${cn}</summary><ul class="ledger">${cl.map(id=>{const on=h.cantrips.includes(id);return row(id,btn('tcant',on?'Known':'Learn',`data-k="${id}" ${disab(inQuest||(!on&&h.cantrips.length>=cn)||(on&&!free&&!(h.cswaps>0)))}`,on?'btn small':'btn ghost small'))}).join('')}</ul></details>`}
+  if(cn){const cl=classList(h,0);html+=`<details ${so('cantrips',false)}><summary>Cantrips: ${h.cantrips.length} of ${cn}</summary><ul class="ledger">${cl.map(id=>{const on=h.cantrips.includes(id);return row(id,btn('tcant',on?'Known':'Learn',`data-k="${id}" ${disab(inQuest||(!on&&h.cantrips.length>=cn)||(on&&!free&&!(h.cswaps>0)))}`,on?'btn small':'btn ghost small'))}).join('')}</ul></details>`}
   if(h.cls==='wizard'){const pool=prepPool(h).filter(id=>!h.book.includes(id));
-    html+=`<details ${h.bookPicks?'open':''}><summary>Spellbook: ${h.book.length} spells${h.bookPicks?`, ${h.bookPicks} to add`:''}</summary>${h.bookPicks?`<p class="meta">Choose ${h.bookPicks} new spell${h.bookPicks>1?'s':''} to copy into your book.</p><ul class="ledger">${pool.map(id=>row(id,btn('tbook','Copy',`data-k="${id}" ${disab(inQuest)}`,'btn small'))).join('')}</ul>`:''}</details>`}
+    html+=`<details ${so('book',!!h.bookPicks)}><summary>Spellbook: ${h.book.length} spells${h.bookPicks?`, ${h.bookPicks} to add`:''}</summary>${h.bookPicks?`<p class="meta">Choose ${h.bookPicks} new spell${h.bookPicks>1?'s':''} to copy into your book.</p><ul class="ledger">${pool.map(id=>row(id,btn('tbook','Copy',`data-k="${id}" ${disab(inQuest)}`,'btn small'))).join('')}</ul>`:''}</details>`}
   const pool=h.cls==='wizard'?h.book.filter(id=>SPELLS[id].lvl<=maxSpellLvl(h)):prepPool(h);
-  if(h.cls==='warlock'&&arcanumLevels(h).length){h.arcanum=h.arcanum||{};html+=`<details><summary>Mystic Arcanum</summary>${arcanumLevels(h).map(l=>`<p class="meta"><b>Level ${l}:</b></p><div class="actions">${CLASS_LISTS.warlock[l].map(id=>btn('tarc',SPELLS[id].name,`data-k="${l}:${id}" ${disab(inQuest||(h.arcanum[l]!==id&&!free&&!(h.swaps>0)))}`,h.arcanum[l]===id?'btn small':'btn ghost small')).join('')}</div>`).join('')}</details>`}
-  if(h.cls==='warlock'){ensureInv(h);html+=`<details><summary>Eldritch Invocations: ${h.inv.length} of ${invCount(h)}</summary><ul class="ledger">${Object.entries(INVOCATIONS).map(([k,v])=>{const on=h.inv.includes(k),ok=invOK(h,k);return `<li><div class="row"><span><b>${v[0]}</b> <span class="meta">${v[2]>1?`level ${v[2]}+`:''}${v[3]?` (${INVOCATIONS[v[3]][0]})`:''}</span></span>${btn('tinvk',on?'Known':'Learn',`data-k="${k}" ${disab(inQuest||(!on&&(!ok||h.inv.length>=invCount(h)))||(on&&!free&&!(h.swaps>0)))}`,on?'btn small':'btn ghost small')}</div><p class="meta">${v[1]}</p></li>`}).join('')}</ul></details>`}
+  if(h.cls==='warlock'&&arcanumLevels(h).length){h.arcanum=h.arcanum||{};html+=`<details ${so('arcanum',false)}><summary>Mystic Arcanum</summary>${arcanumLevels(h).map(l=>`<p class="meta"><b>Level ${l}:</b></p><div class="actions">${CLASS_LISTS.warlock[l].map(id=>btn('tarc',SPELLS[id].name,`data-k="${l}:${id}" ${disab(inQuest||(h.arcanum[l]!==id&&!free&&!(h.swaps>0)))}`,h.arcanum[l]===id?'btn small':'btn ghost small')).join('')}</div>`).join('')}</details>`}
+  if(h.cls==='warlock'){ensureInv(h);html+=`<details ${so('inv',h.inv.length<invCount(h))}><summary>Eldritch Invocations: ${h.inv.length} of ${invCount(h)}</summary><ul class="ledger">${Object.entries(INVOCATIONS).map(([k,v])=>{const on=h.inv.includes(k),ok=invOK(h,k);return `<li><div class="row"><span><b>${v[0]}</b> <span class="meta">${v[2]>1?`level ${v[2]}+`:''}${v[3]?` (${INVOCATIONS[v[3]][0]})`:''}</span></span>${btn('tinvk',on?'Known':'Learn',`data-k="${k}" ${disab(inQuest||(!on&&(!ok||h.inv.length>=invCount(h)))||(on&&!free&&!(h.swaps>0)))}`,on?'btn small':'btn ghost small')}</div><p class="meta">${v[1]}</p></li>`}).join('')}</ul></details>`}
   if(isGW(h)){if(h.hum==null)h.hum=humMax(h);if(h.level>=20){h.pools.charge=Math.min(chargeMax(h),(h.pools.charge||0)+4);clog('Living Legend: +4 Charge.','good')}}
   if(knowsFamiliar(h)){const forms=Object.entries(FAMILIARS).filter(([,F])=>!F[4]||hasInv('pactchain',h));h.familiar=h.familiar||{form:hasInv('pactchain',h)?'imp':'owl',hp:null};html+=`<p class="meta" style="margin-top:10px"><b>Familiar:</b> ${FAMILIARS[h.familiar.form][0]}${h.familiar.hp===0?' (fell in battle; it returns after a long rest)':''}. In fights it helps you (advantage on your next attack) and carries your touch spells.</p><div class="actions">${forms.map(([k,F])=>btn('famform',F[0],`data-k="${k}" ${disab(inQuest)}`,h.familiar.form===k?'btn small':'btn ghost small')).join('')}</div>`}
   if(h.cls==='bard'&&h.level>=10)html+=`<p class="meta">Magical Secrets: you can also prepare Cleric, Druid and Wizard spells.</p>`;
   html+=`<p class="meta" style="margin-top:12px"><b>Prepared: ${h.prepared.length} of ${pm}.</b>${al.length?` Always prepared: ${al.map(id=>SPELLS[id].name).join(', ')}.`:''}</p>`;
   for(let l=1;l<=maxSpellLvl(h);l++){const ids=pool.filter(id=>SPELLS[id].lvl===l);if(!ids.length)continue;const n=ids.filter(id=>h.prepared.includes(id)).length;
-    html+=`<details ${n?'open':''}><summary>Level ${l}: ${n} prepared of ${ids.length}</summary><ul class="ledger">${ids.map(id=>{if(al.includes(id))return row(id,'<span class="tag done">Always</span>');const on=h.prepared.includes(id),canDrop=free||FREE_SWAP.includes(h.cls)||(h.swaps||0)>0;
+    html+=`<details ${so('lvl'+l,!!n)}><summary>Level ${l}: ${n} prepared of ${ids.length}</summary><ul class="ledger">${ids.map(id=>{if(al.includes(id))return row(id,'<span class="tag done">Always</span>');const on=h.prepared.includes(id),canDrop=free||FREE_SWAP.includes(h.cls)||(h.swaps||0)>0;
       return row(id,btn('tprep',on?'Prepared':'Prepare',`data-k="${id}" ${disab(inQuest||(!on&&h.prepared.length>=pm)||(on&&!canDrop))}`,on?'btn small':'btn ghost small'))}).join('')}</ul></details>`}
   return html;
 }
@@ -2803,7 +2804,8 @@ const INVOCATIONS={
 const invCount=h=>h.level>=18?10:h.level>=15?9:h.level>=12?8:h.level>=9?7:h.level>=7?6:h.level>=5?5:h.level>=2?3:1;
 const invOK=(h,k)=>{const v=INVOCATIONS[k];return h.level>=v[2]&&(!v[3]||(h.inv||[]).includes(v[3]))};
 function ensureInv(h){if(h.cls!=='warlock')return;if(!h.inv){h.inv=['armorshadows'];if(h.level>=2)h.inv.push('agonizing','repelling');if(h.level>=5)h.inv.push('fiendishvigor')}
-  h.inv=h.inv.filter(k=>INVOCATIONS[k]&&invOK(h,k));for(const k of ['devilsight','eldritchmind','maskofmanyfaces','pacttome']){if(h.inv.length>=invCount(h))break;if(!h.inv.includes(k)&&invOK(h,k))h.inv.push(k)}h.inv=h.inv.slice(0,invCount(h))}
+  h.inv=h.inv.filter(k=>INVOCATIONS[k]&&invOK(h,k)).slice(0,invCount(h))}
+function fillInv(h){ensureInv(h);for(const k of ['devilsight','eldritchmind','maskofmanyfaces','pacttome','agonizing','repelling','fiendishvigor']){if(h.inv.length>=invCount(h))break;if(!h.inv.includes(k)&&invOK(h,k))h.inv.push(k)}}
 const hasInv=(k,h=S.hero)=>h.cls==='warlock'&&(ensureInv(h),(h.inv||[]).includes(k));
 const knowsFamiliar=(h=S.hero)=>hasInv('pactchain',h)||(typeof knownSpells==='function'&&knownSpells(h).includes('findfamiliar'));
 function famStats(h=S.hero){const F=FAMILIARS[(h.familiar&&h.familiar.form)||'owl'];return{name:F[0],hpMax:F[1],ac:F[2],atk:F[3]}}
@@ -2984,11 +2986,11 @@ function renderGraftwright(){
   let html=`<h2>Grafts and Humanity</h2><p class="meta">Humanity ${h.hum}/${humMax(h)} · Charge ${h.pools.charge||0}/${chargeMax(h)} · Strain ${strainTotal(h)} · Graft DC ${8+pb(h)+am('int',h)}${h.exh?` · Exhaustion ${h.exh} (−${exhPen(h)} to d20 tests)`:''}${h.burnouts?` · Burnouts since resting: ${h.burnouts}`:''}</p>
   <p class="meta">Grafts installed: ${used} of ${cap}${h.level>=3&&h.sub?`, plus your core graft (${SUBNAME(h.sub)})`:''}. Change them in town.</p><ul class="ledger">${GSLOTS.map(sl=>{const cur=h.grafts[sl],opts=Object.entries(GRAFTS).filter(([k,g])=>g[1]===sl&&h.level>=g[2]);
     return `<li><div class="row"><span><span class="meta">${sl[0].toUpperCase()+sl.slice(1)}</span><br><b>${cur?GRAFTS[cur][0]:'Empty'}</b>${cur?` <span class="meta">Strain ${GRAFTS[cur][3]}</span>`:''}</span></div>${cur?`<p class="meta">${GRAFTS[cur][4]}</p>`:''}<div class="actions">${opts.map(([k,g])=>btn('setgraft',g[0]+` (${g[3]})`,`data-k="${sl}:${k}" ${disab(inQ||(cur!==k&&!cur&&used>=cap)||(cur!==k&&humMaxWith(h,sl,k)<1))}`,cur===k?'btn small':'btn ghost small')).join('')}${cur?btn('setgraft','Remove',`data-k="${sl}:"`,'btn ghost small'):''}</div></li>`}).join('')}</ul>`;
-  html+=`<details ${h.gperks.length<pn?'open':''}><summary>Perks: ${h.gperks.length} of ${pn}</summary><p class="meta">${free?'':'Level up to swap a perk. '}Tier 2 needs level 5 and 1 perk in the tree; tier 3 level 11 and 2; tier 4 level 17 and 3.</p>`;
+  html+=`<details ${so('perks',h.gperks.length<pn)}><summary>Perks: ${h.gperks.length} of ${pn}</summary><p class="meta">${free?'':'Level up to swap a perk. '}Tier 2 needs level 5 and 1 perk in the tree; tier 3 level 11 and 2; tier 4 level 17 and 3.</p>`;
   for(const tree of ['Forged','Swift','Artifice','Mind','Nerve']){const n=h.gperks.filter(p=>PERKS[p][0]===tree).length;html+=`<h3>${tree} (${n})</h3><ul class="ledger">${Object.entries(PERKS).filter(([,p])=>p[0]===tree).map(([k,p])=>{const on=h.gperks.includes(k),ok=perkOK(h,k);return `<li><div class="row"><span><b>${p[2]}</b> <span class="meta">Tier ${p[1]}</span></span>${btn('tperk',on?'Known':'Learn',`data-k="${k}" ${disab(inQ||(!on&&(!ok||h.gperks.length>=pn))||(on&&!free))}`,on?'btn small':'btn ghost small')}</div><p class="meta">${p[3]}</p></li>`}).join('')}</ul>`}
   html+='</details>';
   if(h.sub==='weavethief'&&h.level>=3){ensureThreads(h);const tn=3+(h.level>=6)+(h.level>=10)+(h.level>=14);
-    html+=`<details open><summary>Threads: ${h.threads.length} of ${tn}</summary><ul class="ledger">${Object.entries(THREADS).filter(([,t])=>h.level>=t[1]).map(([k,t])=>{const on=h.threads.includes(k);return `<li><div class="row"><span><b>${t[0]}</b> <span class="meta">${t[2]} Charge, ${ABIL_SHORT[t[3]]} save</span></span>${btn('tthread',on?'Known':'Learn',`data-k="${k}" ${disab(inQ||(!on&&h.threads.length>=tn))}`,on?'btn small':'btn ghost small')}</div><p class="meta">${t[4]}</p></li>`}).join('')}</ul></details>`}
+    html+=`<details ${so('threads',true)}><summary>Threads: ${h.threads.length} of ${tn}</summary><ul class="ledger">${Object.entries(THREADS).filter(([,t])=>h.level>=t[1]).map(([k,t])=>{const on=h.threads.includes(k);return `<li><div class="row"><span><b>${t[0]}</b> <span class="meta">${t[2]} Charge, ${ABIL_SHORT[t[3]]} save</span></span>${btn('tthread',on?'Known':'Learn',`data-k="${k}" ${disab(inQ||(!on&&h.threads.length>=tn))}`,on?'btn small':'btn ghost small')}</div><p class="meta">${t[4]}</p></li>`}).join('')}</ul></details>`}
   return html;
 }
 function humMaxWith(h,sl,k){const g={...h.grafts};g[sl]=k;return humMax({...h,grafts:g})}
@@ -3013,6 +3015,50 @@ function gwThread(id){const c=S.run.combat,h=S.hero,T=THREADS[id],t=curTarget();
     else if(id==='unravel'){f.disabled={by:'unravel',save:'con'};clog(`${head} Unravelled: it can’t act until it saves.`,'good')}}
   checkWin()}
 
+/* ---- AC breakdown ---- */
+let acOpen=false;
+function so(key,def){const m=(S&&S.flags&&S.flags.sopen)||{};const open=key in m?m[key]:def;return `class="sfold" data-sf="${key}" ${open?'open':''}`}
+function acSources(h=S.hero){
+  const total=baseAC(h),parts=[];const its=activeItems(h).filter(m=>m.ac&&!(m.name==='Bracers of Defense'&&h.loadouts&&shieldOn(h)));
+  its.forEach(m=>parts.push([m.name,m.ac]));
+  if(h.loadouts&&shieldOn(h))parts.push(['Shield (left hand)',2]);
+  const armored=['fighter','cleric','paladin','rogue','bard','druid','ranger'].includes(h.cls);if(armored&&hasStyle('defense',h))parts.push(['Defense fighting style',1]);
+  if(h.gear&&h.gear.ac)parts.push(['Smithy upgrades',h.gear.ac]);
+  if(isGW(h)){if(hasG('scaleweave',h))parts.push(['Scaleweave Skin graft',1]);if(hasGP('livingconstruct',h))parts.push(['Living Construct perk',1])}
+  const rest=total-parts.reduce((a,p)=>a+p[1],0);
+  const dex=am('dex',h);let baseName=ARMOR_NAME[h.cls]||'Base';
+  if(h.cls==='monk')baseName=`Unarmored Defense (10 + Dex ${sgn(dex)} + Wis ${sgn(am('wis',h))})`;
+  else if(h.cls==='barbarian')baseName=`Unarmored Defense (10 + Dex ${sgn(dex)} + Con ${sgn(am('con',h))})`;
+  else if(isSub('draconic',3,h))baseName=`Draconic Resilience (10 + Dex ${sgn(dex)} + Cha ${sgn(am('cha',h))})`;
+  else if(isSub('dance',3,h))baseName=`Dazzling Footwork or leather, whichever is higher`;
+  else if(h.mageArmor||hasInv('armorshadows',h))baseName=`Mage Armor (13 + Dex ${sgn(dex)})`;
+  else if(['fighter','cleric','paladin'].includes(h.cls))baseName='Chain mail (16)';
+  else if(h.cls==='graftwright')baseName=`Studded leather (12 + Dex ${sgn(dex)})`;
+  else if(h.cls==='ranger')baseName=`Studded leather (12 + Dex ${sgn(dex)})`;
+  else if(['rogue','bard','druid','warlock'].includes(h.cls))baseName=`Leather armor (11 + Dex ${sgn(dex)})`;
+  else baseName=`No armor (10 + Dex ${sgn(dex)})`;
+  return {total,rows:[[baseName,rest],...parts]};
+}
+/* ---- creation: spells, invocations, grafts ---- */
+function creatorSpells(preview,lvl){
+  const h=preview,C=CLASSES[h.cls];let html='';
+  const row=(id,on,act,dis)=>btn(act,SPELLS[id].name,`data-k="${id}" ${disab(dis)}`,on?'btn small':'btn ghost small');
+  if(C.caster&&CANTRIP_N[h.cls]){
+    draft.cantrips=draft.cantrips||h.cantrips.slice();const cl=classList(h,0),cn=cantripCount(h);draft.cantrips=draft.cantrips.filter(x=>cl.includes(x)).slice(0,cn);
+    html+=`<p class="meta"><b>Cantrips:</b> ${draft.cantrips.length} of ${cn}.</p><div class="actions">${cl.map(id=>row(id,draft.cantrips.includes(id),'dcant',!draft.cantrips.includes(id)&&draft.cantrips.length>=cn)).join('')}</div>`;
+    if(h.cls==='wizard'){const want=6+2*(lvl-1),pool=prepPool(h);draft.book=(draft.book||h.book.slice()).filter(x=>pool.includes(x)).slice(0,want);
+      html+=`<p class="meta"><b>Spellbook:</b> ${draft.book.length} of ${want}.</p><div class="actions">${pool.map(id=>row(id,draft.book.includes(id),'dbook',!draft.book.includes(id)&&draft.book.length>=want)).join('')}</div>`}
+    const pool=h.cls==='wizard'?(draft.book||[]):prepPool(h),pm=prepMax(h),al=alwaysPrepared(h);draft.prepared=(draft.prepared||h.prepared.slice()).filter(x=>pool.includes(x)&&!al.includes(x)).slice(0,pm);
+    html+=`<p class="meta"><b>Prepared spells:</b> ${draft.prepared.length} of ${pm}.${al.length?` Always prepared: ${al.map(x=>SPELLS[x].name).join(', ')}.`:''}</p><div class="actions">${pool.filter(id=>!al.includes(id)).map(id=>row(id,draft.prepared.includes(id),'dprep',!draft.prepared.includes(id)&&draft.prepared.length>=pm)).join('')}</div>`;
+  }
+  if(h.cls==='warlock'){const n=invCount(h);draft.inv=(draft.inv||h.inv.slice()).filter(k=>INVOCATIONS[k]&&invOK({...h,inv:draft.inv||[]},k)).slice(0,n);
+    html+=`<p class="meta"><b>Eldritch Invocations:</b> ${draft.inv.length} of ${n}.</p><div class="actions">${Object.entries(INVOCATIONS).filter(([k])=>invOK({...h,inv:draft.inv},k)||draft.inv.includes(k)).map(([k,v])=>btn('dinv',v[0],`data-k="${k}" title="${esc(v[1])}" ${disab(!draft.inv.includes(k)&&draft.inv.length>=n)}`,draft.inv.includes(k)?'btn small':'btn ghost small')).join('')}</div><p class="meta">${draft.inv.map(k=>`${INVOCATIONS[k][0]}: ${INVOCATIONS[k][1]}`).join(' ')}</p>`}
+  if(h.cls==='graftwright'){const cap=GRAFT_CAP[lvl];draft.grafts=draft.grafts||{};const cnt=Object.keys(draft.grafts).length;
+    html+=`<p class="meta"><b>Grafts:</b> ${cnt} of ${cap}. One per body slot.</p><div class="actions">${Object.entries(GRAFTS).filter(([,g])=>lvl>=g[2]).map(([k,g])=>{const on=draft.grafts[g[1]]===k;return btn('dgraft',`${g[0]} (${g[1]})`,`data-k="${k}" title="${esc(g[4])}" ${disab(!on&&(draft.grafts[g[1]]?false:cnt>=cap))}`,on?'btn small':'btn ghost small')}).join('')}</div><p class="meta">${Object.values(draft.grafts).map(k=>`${GRAFTS[k][0]}: ${GRAFTS[k][4]}`).join(' ')}</p>`}
+  return html?`<h2>6. Spells and options</h2>${html}`:'';
+}
+function classInfo(cls){const C=CLASSES[cls];return `<div class="raidbox" style="margin:8px 0"><p><b>${C.name}</b> · d${C.hd} Hit Die · saves ${C.saves.map(a=>ABIL_SHORT[a]).join(' and ')}</p><p class="meta">${C.blurb}</p><ul class="ledger">${C.features.map(f=>`<li><b>Level ${f[0]}: ${f[1]}</b><p class="meta">${f[2]}</p></li>`).join('')}</ul><p class="meta">Subclasses at level 3: ${(SUBCLASSES[cls]||[]).map(x=>x[1]).join(', ')}.</p></div>`}
+
 /* ---- hero rules ---- */
 const mod=s=>Math.floor((s-10)/2);
 const sgn=n=>(n>=0?'+':'−')+Math.abs(n);
@@ -3034,7 +3080,7 @@ function baseAC(h=S.hero){
     case 'cleric':ac=16;break;
     case 'rogue':ac=11+dex;break;
     case 'monk':ac=10+dex+am('wis',h);break;
-    case 'warlock':ac=hasInv('armorshadows',h)?13+dex:10+dex;break;
+    case 'warlock':ac=hasInv('armorshadows',h)?13+dex:11+dex;break;
     case 'paladin':ac=16;break;
     case 'barbarian':ac=10+dex+am('con',h);break;
     case 'druid':ac=11+dex;break;
@@ -3047,7 +3093,7 @@ function baseAC(h=S.hero){
   if(activeItems(h).some(m=>m.robe))ac=Math.max(ac,15+dex);
   const sh=h.loadouts&&shieldOn(h);
   const armored=['fighter','cleric','paladin','rogue','bard','druid','ranger'].includes(h.cls);
-  return ac+(armored&&hasStyle('defense',h)?1:0)+(sh?2:0)+(h.gear.ac||0)+activeItems(h).filter(m=>!(m.name==='Bracers of Defense'&&sh)).reduce((a,m)=>a+(m.ac||0),0)+(h.loadouts&&sh?(resolveHand(activeSet(h).off,h)?.item?.ac||0):0);
+  return ac+(armored&&hasStyle('defense',h)?1:0)+(sh?2:0)+(h.gear.ac||0)+activeItems(h).filter(m=>!(m.name==='Bracers of Defense'&&sh)).reduce((a,m)=>a+(m.ac||0),0)
 }
 const baseSpeed=h=>SPECIES[h.species].speed;
 function heroAC(){const h=S.hero,c=S.run&&S.run.combat,sh=shape(h);return (c&&c.speedPot?2:0)+(c&&h.conc==='haste'?2:0)+(c&&c.surgeAC?2:0)+(c&&c.sanctuary?2:0)+(c&&c.bulwark?2:0)+Math.max(h.conds.barkskin?17:0,sh?Math.max(sh.ac,isSub('moon',3,h)?13+am('wis'):0):baseAC(h))+(c&&c.shieldUp?5:0)+(h.conc==='shieldoffaith'?2:0)}
@@ -3158,7 +3204,8 @@ function buildHero(o){
   if(h.level>=3&&!h.sub)h.sub=DEFAULT_SUB[h.cls];
   newEquip(h);
   for(let l=2;l<=h.level;l++)levelFeatures(h,l,true);
-  ensurePrepared(h);h.freeEditXp=h.xp;
+  if(o.cantrips)h.cantrips=o.cantrips.slice();if(o.book&&h.cls==='wizard')h.book=o.book.slice();if(o.prepared)h.prepared=o.prepared.slice();if(o.inv&&h.cls==='warlock')h.inv=o.inv.slice();if(o.grafts&&h.cls==='graftwright')h.grafts={...o.grafts};
+  ensurePrepared(h);if(h.cls==='warlock'&&!o.inv)fillInv(h);h.freeEditXp=h.xp;
   longRest(h);return h;
 }
 function defaultStyle(cls){return{fighter:'gwf',paladin:'dueling',ranger:'archery'}[cls]}
@@ -3188,6 +3235,7 @@ function classFeatures(h){
   return base.concat(SUB_FEATS[h.sub]||[]).sort((a,b)=>a[0]-b[0]);
 }
 function autoResolvePending(h){
+  ensurePrepared(h,true);if(h.cls==='warlock')fillInv(h);
   if(h.cls==='graftwright'){h.gperks=h.gperks||[];h.grafts=h.grafts||{};const order=['coldblooded','tinkerer','patternrec','arcstrikes','deadeye','juggernaut','hardwired','killerinstinct','flowstate','secondheart','livingconstruct','untouchable','unbreakable'];for(const k of order){if(h.gperks.length>=PERK_N[h.level])break;if(!h.gperks.includes(k)&&perkOK(h,k)){h.gperks.push(k);applyPerkStat(h,k)}}
     for(const [sl,k] of [['bones','mithral'],['skin','scaleweave'],['heart','periaptheart'],['arms','blades'],['legs','clocklegs'],['eyes','seekerlens'],['mind','iounsocket'],['nerves','wardglyph']]){if(graftCount(h)>=GRAFT_CAP[h.level])break;if(!h.grafts[sl]&&h.level>=GRAFTS[k][2]&&humMaxWith(h,sl,k)>=4)h.grafts[sl]=k}}
   if(h.bookPicks&&h.book){const pp=prepPool(h),pool=[...CLASSES[h.cls].spells.filter(id=>pp.includes(id)),...pp].filter((id,i,arr)=>!h.book.includes(id)&&arr.indexOf(id)===i);while(h.bookPicks>0&&pool.length){h.book.push(pool.shift());h.bookPicks--}h.bookPicks=0}
@@ -5380,9 +5428,10 @@ function renderCreate(){
   <div class="avatarpick">${avatarHTML(draft.avatar,draft.name||'?','avatar big')}<div><p class="field" style="margin:0 0 6px">Token</p><p class="meta">Your picture on the battle map. Square images work best.</p><div class="actions">${btn('avatar',draft.avatar?'Change image':'Choose image','','btn ghost small')}${draft.avatar?btn('avatarclear','Remove','','btn ghost small'):''}</div></div></div>
   <label class="field">Name<input id="hname" maxlength="24" placeholder="Wanderer" autocomplete="off" value="${esc(draft.name)}"></label>
   <h2>1. Class</h2>
-  <div class="formgrid"><label class="field">Class ${sel('cls',Object.entries(CLASSES).map(([k,c])=>[k,c.name]))}</label>
+  <div class="formgrid"><label class="field">Class <span style="display:flex;gap:8px;align-items:center">${sel('cls',Object.entries(CLASSES).map(([k,c])=>[k,c.name]))}${btn('classinfo',draft.showInfo?'×':'?',`aria-label="${draft.showInfo?'Hide':'Show'} class features"`,'btn ghost small')}</span></label>
   ${STYLE_AT[draft.cls]&&lvl>=STYLE_AT[draft.cls]?`<label class="field">Fighting style ${sel('style',Object.entries(FIGHTING_STYLES).map(([k,v])=>[k,v[0]]),draft.style||defaultStyle(draft.cls))}</label>`:''}
   ${lvl>=3?`<label class="field">Subclass ${sel('sub',SUBCLASSES[draft.cls].filter(x=>subAvail(x[0])).map(x=>[x[0],x[1]]),draft.sub&&subAvail(draft.sub)&&SUBCLASSES[draft.cls].some(x=>x[0]===draft.sub)?draft.sub:DEFAULT_SUB[draft.cls])}</label>`:''}
+  ${draft.showInfo?classInfo(draft.cls):''}
   ${lvl>=3&&draft.cls==='druid'&&(draft.sub==='land')?`<label class="field">Land ${sel('land',Object.entries(LANDS).map(([k,v])=>[k,v[0]]))}</label>`:''}</div>
   <p class="meta">${C.blurb}${STYLE_AT[draft.cls]&&lvl>=STYLE_AT[draft.cls]?` ${FIGHTING_STYLES[draft.style||defaultStyle(draft.cls)][1]}`:''}${lvl<3?' You choose a subclass at level 3.':''}</p>
   <h2>2. Species</h2>
@@ -5403,6 +5452,7 @@ function renderCreate(){
   <p class="meta">From your class, choose ${C.skillCount} (${cls.length} chosen). Your background gives ${B.skills.map(s=>SKILL[s]).join(' and ')}.</p>
   <div class="actions">${C.skillPool.map(k=>B.skills.includes(k)?'':skillBtn(k,'c',cls.includes(k),!cls.includes(k)&&cls.length>=C.skillCount)).join('')}</div>
   ${bonusN?`<p class="meta">Bonus skills from your species and feats: choose ${bonusN} (${draft.bonusSkills.length} chosen).</p><div class="actions">${Object.keys(SKILLS).filter(k=>!B.skills.includes(k)&&!cls.includes(k)).map(k=>skillBtn(k,'b',draft.bonusSkills.includes(k),!draft.bonusSkills.includes(k)&&draft.bonusSkills.length>=bonusN)).join('')}</div>`:''}
+  ${creatorSpells(preview,lvl)}
   <h2>Your hero</h2>
   <p>${preview.hpMax} HP, AC ${baseAC(preview)}, speed ${ft(heroSpeed(preview))} ft. Skills: ${preview.skills.map(s=>SKILL[s]+(preview.expertise.includes(s)?' (expertise)':'')).join(', ')}.</p>
   <p class="meta">Feats: ${preview.feats.map(f=>FEATS[f][0]).join(', ')}.${featSpells(preview).length?` Spells from your feats and species: ${featSpells(preview).map(id=>SPELLS[id].name).join(', ')}.`:''}</p>
@@ -5422,7 +5472,8 @@ function renderHeroRaw(){
   const h=S.hero,C=CLASSES[h.cls],p=h.pools;
   const sp=knownSpells();
   return `${renderPending()}<div class="avatarpick sheethead">${avatarHTML(h.avatar,h.name,'avatar big')}<div><h2 style="margin:0">${esc(h.name)}</h2><div class="actions">${btn('avatar',h.avatar?'Change token':'Add a token image','','btn ghost small')}${h.avatar?btn('avatarclear','Remove','','btn ghost small'):''}</div></div></div>
-  <p>Level ${h.level} ${SPECIES[h.species].name.toLowerCase()} ${C.name.toLowerCase()}, ${BACKGROUNDS[h.bg].name.toLowerCase()} background. ${h.hp}/${h.hpMax} HP${h.temp?` + ${h.temp} temporary`:''}. AC ${baseAC()}. Speed ${ft(heroSpeed())} ft. Proficiency ${sgn(pb())}. Hit Dice ${p.hd}/${h.level} d${C.hd}.${isCaster()?` Spell save DC ${spellDC()}, spell attack ${sgn(spellAtk())}.`:''}</p>
+  <p>Level ${h.level} ${SPECIES[h.species].name.toLowerCase()} ${C.name.toLowerCase()}, ${BACKGROUNDS[h.bg].name.toLowerCase()} background. ${h.hp}/${h.hpMax} HP${h.temp?` + ${h.temp} temporary`:''}. ${btn('acinfo',`AC ${baseAC()}`,'aria-label="Show where your AC comes from"','linkbtn')}. Speed ${ft(heroSpeed())} ft. Proficiency ${sgn(pb())}. Hit Dice ${p.hd}/${h.level} d${C.hd}.${isCaster()?` Spell save DC ${spellDC()}, spell attack ${sgn(spellAtk())}.`:''}</p>
+  ${acOpen?(()=>{const a=acSources();return `<div class="raidbox"><p><b>Armor Class ${a.total}</b></p><ul class="ledger">${a.rows.map((r,i)=>`<li class="row"><span>${esc(r[0])}</span><b>${i?'+':''}${r[1]}</b></li>`).join('')}</ul><p class="meta">In a fight, spells and features such as Shield, Haste or Dilation can add more.</p></div>`})():''}
   <div class="abilgrid sheet">${ABIL.map(k=>`<div><span>${ABIL_SHORT[k]}</span><b>${h.abil[k]}</b><span>${sgn(am(k))}</span><small>Save ${sgn(saveMod(k))}${C.saves.includes(k)?' ●':''}</small></div>`).join('')}</div>
   ${renderEquipment()}
   <h2>Attacks</h2>
@@ -5754,6 +5805,12 @@ const A={
     }else{S=normalize(newState(draft));S.flags.note=INTRO;addLog(`${name} arrives in Hollowmere.`)}
     draft=null;commit();window.scrollTo(0,0);
   },
+  classinfo(){draft.showInfo=!draft.showInfo;render()},
+  dcant(ds){const a=draft.cantrips||[],i=a.indexOf(ds.k);if(i>=0)a.splice(i,1);else a.push(ds.k);draft.cantrips=a;render()},
+  dprep(ds){const a=draft.prepared||[],i=a.indexOf(ds.k);if(i>=0)a.splice(i,1);else a.push(ds.k);draft.prepared=a;render()},
+  dbook(ds){const a=draft.book||[],i=a.indexOf(ds.k);if(i>=0){a.splice(i,1);draft.prepared=(draft.prepared||[]).filter(x=>x!==ds.k)}else a.push(ds.k);draft.book=a;render()},
+  dinv(ds){const a=draft.inv||[],i=a.indexOf(ds.k);if(i>=0){a.splice(i,1);for(const [k,v] of Object.entries(INVOCATIONS))if(v[3]===ds.k){const j=a.indexOf(k);if(j>=0)a.splice(j,1)}}else a.push(ds.k);draft.inv=a;render()},
+  dgraft(ds){const g=GRAFTS[ds.k];if(!g)return;draft.grafts=draft.grafts||{};if(draft.grafts[g[1]]===ds.k)delete draft.grafts[g[1]];else draft.grafts[g[1]]=ds.k;render()},
   dmethod(ds){draft.method=ds.k;if(ds.k==='point')draft.abil={str:8,dex:8,con:8,int:8,wis:8,cha:8};else if(ds.k==='array')draft.abil={...CLASSES[draft.cls].array};else{draft.rolled=null}render()},
   droll(){const r=()=>{const x=[d(6),d(6),d(6),d(6)].sort((a,b)=>a-b);return x[1]+x[2]+x[3]};draft.rolled=Array.from({length:6},r).sort((a,b)=>b-a);const pri=CLASSES[draft.cls].priority;draft.abil={};pri.forEach((k,i)=>draft.abil[k]=draft.rolled[i]);render()},
   dpb(ds){const [k,dlt]=ds.k.split(':');const v=draft.abil[k]+(+dlt);if(v<8||v>15)return;const nxt={...draft.abil,[k]:v};if(pbSpent(nxt)>27)return;draft.abil=nxt;render()},
@@ -5767,6 +5824,7 @@ const A={
     else if(kind==='2'){if(h.abil[v]>=20)return;h.abil[v]=Math.min(20,h.abil[v]+2)}else if(!chooseFeat(h,v))return;
     h.pendingAsi--;const om=h.hpMax;h.hpMax=maxHP(h);h.hp+=Math.max(0,h.hpMax-om);h.pools=Object.assign(maxPools(h),h.pools);if(kind!=='1')addLog(kind==='2'?`+2 ${ABIL_NAME[v]}.`:`New feat: ${FEATS[v][0]}.`,'good');commit()},
   avatar(){const n=$('#hname');if(n&&draft)draft.name=n.value;$('#avatarfile').click()},
+  acinfo(){acOpen=!acOpen;render()},
   avatarclear(){if(draft&&(!S||S.flags.rebuild||S.flags.fallen)){draft.avatar=null;render()}else{S.hero.avatar=null;commit()}},
   plot(ds){if(placing)return;selPlot=selPlot===ds.k?null:ds.k;render()},
   placebuild(ds){if(S.run)return;placing=ds.k;selPlot=null;render();const m=document.querySelector('.townmap');if(m&&m.scrollIntoView)m.scrollIntoView({behavior:'smooth',block:'center'})},
@@ -5888,7 +5946,7 @@ document.addEventListener('change',e=>{
   if(t.matches('[data-assign]')){const w=S.workers.find(x=>x.id==t.dataset.assign);if(w){w.assign=t.value;commit()}}
   if(t.matches('[data-flag]')){S.flags[t.dataset.flag]=t.checked;commit()}
   if(t.matches('[data-act]')&&S&&S.run&&S.run.combat){A.act({k:t.dataset.act});return}
-  if(t.matches('[data-draft]')){const f=t.dataset.draft;draft[f]=t.value;if(f==='cls'){draft.abil=draft.method==='point'?{str:8,dex:8,con:8,int:8,wis:8,cha:8}:draft.method==='roll'&&draft.rolled?draft.abil:{...CLASSES[t.value].array};draft.classSkills=[];draft.style=null;draft.sub=null}if(f==='species'){draft.lineage=null;draft.bonusSkills=[]}if(f==='bg'){draft.bgPlus2=null;draft.bgPlus1=null;draft.classSkills=draft.classSkills.filter(x=>!BACKGROUNDS[t.value].skills.includes(x));draft.bonusSkills=[]}render()}
+  if(t.matches('[data-draft]')){const f=t.dataset.draft;draft[f]=t.value;if(f==='cls'){draft.cantrips=null;draft.prepared=null;draft.book=null;draft.inv=null;draft.grafts=null;draft.abil=draft.method==='point'?{str:8,dex:8,con:8,int:8,wis:8,cha:8}:draft.method==='roll'&&draft.rolled?draft.abil:{...CLASSES[t.value].array};draft.classSkills=[];draft.style=null;draft.sub=null}if(f==='species'){draft.lineage=null;draft.bonusSkills=[]}if(f==='bg'){draft.bgPlus2=null;draft.bgPlus1=null;draft.classSkills=draft.classSkills.filter(x=>!BACKGROUNDS[t.value].skills.includes(x));draft.bonusSkills=[]}render()}
   if(t.matches('[data-abil]')){const k=t.dataset.abil,v=+t.value,other=ABIL.find(a=>a!==k&&draft.abil[a]===v&&(draft.method!=='roll'||true));if(other)draft.abil[other]=draft.abil[k];draft.abil[k]=v;render()}
   if(t.id==='avatarfile'&&t.files[0]){loadAvatar(t.files[0]);t.value=''}
   if(t.id==='importfile'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const o=JSON.parse(fr.result);if(o&&(o.v===1||o.v===2)&&o.hero){S=normalize(migrate(o));commit()}else alert('That file isn’t a Hollowmere save.')}catch(err){alert('That file couldn’t be read as a save.')}t.value=''};fr.readAsText(t.files[0])}
