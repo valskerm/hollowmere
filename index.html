@@ -2830,7 +2830,7 @@ function summonAct(){const c=S.run.combat,h=S.hero;if(c.over)return;
   checkWin()}
 function allyTarget(f){const c=S.run.combat;const al=allies(c).filter(a=>a.hp>0&&cheb(a,f)<=(f.reach||1));return al.sort((a,b)=>a.hp-b.hp)[0]||null}
 function foeHitAlly(f,a){const c=S.run.combat,list=f.attacks||[{atk:f.atk,dmg:f.dmg,dtype:f.dtype}];
-  for(const at of list){if(a.hp<=0||f.hp<=0)break;const r1=d(20),r=(a.kind==='summon'&&c.allyCmd==='dodge')?Math.min(r1,d(20)):r1,tot=r+at.atk,hit=r===20||(r!==1&&tot>=a.ac);
+  for(const at of list){if(a.hp<=0||f.hp<=0)break;const r1=d(20),r=((a.kind==='summon'&&c.allyCmd==='dodge')||(a.kind==='pet'&&c.petDodge))?Math.min(r1,d(20)):r1,tot=r+at.atk,hit=r===20||(r!==1&&tot>=a.ac);
     if(!hit){clog(`${Fn(f)} attacks your ${a.name.toLowerCase()}: ${tot} vs AC ${a.ac}. Miss.`,'info');continue}
     const n=roll(at.dmg).total;a.hp-=n;clog(`${Fn(f)} hits your ${a.name.toLowerCase()} for ${n} (${Math.max(0,a.hp)}/${a.hpMax} HP).`,'bad');
     if(a.hp<=0){clog(`Your ${a.name.toLowerCase()} is destroyed.`,'bad');if(a.kind==='pet'){S.hero.petHp=0;c.pet=null}if(a.kind==='familiar'){S.hero.familiar.hp=0}if(a.kind==='summon')c.summons=c.summons.filter(x=>x!==a)}}
@@ -2844,6 +2844,7 @@ function stepTriggers(f,prev){const c=S.run.combat,h=S.hero;
     if(z.perStep&&now){const r=roll(z.dmg);clog(`${SPELLS[z.spell].name} tears at ${fn(f)} as it moves: ${r.total} ${z.type}.`,'good');hurt(f,r.total,z.type,false);checkWin();continue}
     if(!was&&now&&zoneOnce(f,z.spell))zoneApply(f,z)}
   if(f.hp>0&&!c.over&&h.conc==='spiritguardians'&&cheb(prev,c.hero)>3&&inGuardians(f)&&zoneOnce(f,'sg'))sgHit(f);
+  if(f.hp>0&&!c.over)petOA(f,prev);
   return f.hp>0&&!c.over}
 function heroMovedAuras(prev){const c=S.run.combat,h=S.hero;if(!c||c.over)return;c.tk=c.tk||('h:'+c.round);
   for(const f of liveFoes()){const rel={x:f.x-c.hero.x+prev.x,y:f.y-c.hero.y+prev.y};
@@ -3089,6 +3090,46 @@ function castCheck(id,h=S.hero){
   if(needS){const sOK=free||wc||(needM&&focusHand);if(!sOK)return'needs a free hand (somatic)'}
   return null;
 }
+
+/* ---- Beast Master: Primal Companion (2024) ---- */
+const PET_TYPES={
+  land:{name:'Beast of the Land',hp:L=>5+5*L,speed:8,dmg:'1d8',bonus:2,desc:'Speed 40 ft. Charge: after moving 20 ft toward a target, a hit deals +1d6 and it makes a Strength save or falls prone.'},
+  sea:{name:'Beast of the Sea',hp:L=>5+5*L,speed:1,dmg:'1d6',bonus:2,dtype:'bludgeoning',desc:'Speed 5 ft on land (it swims 60 ft, but these maps are dry). Binding Strike: a hit grapples the target until it escapes.'},
+  sky:{name:'Beast of the Sky',hp:L=>4+4*L,speed:12,dmg:'1d4',bonus:3,dtype:'slashing',desc:'Flies 60 ft. Flyby: it never provokes opportunity attacks.'}
+};
+function petType(h=S.hero){return PET_TYPES[h.petType||'land']}
+function petHpMax(h=S.hero){return petType(h).hp(h.level)}
+function petName(h=S.hero){return h.petName||petType(h).name}
+function petDmgType(h=S.hero){if(isSub('beastmaster',7,h)&&h.petForce)return'force';return petType(h).dtype||h.petDmgType||'piercing'}
+function petStepToward(goal,steps){const c=S.run.combat,p=c.pet;let moved=0,straight=true,lastD=null;
+  for(let i=0;i<steps&&cheb(p,goal)>1;i++){const o=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].map(([dx,dy])=>({x:p.x+dx,y:p.y+dy,dx,dy})).filter(q=>inBounds(q.x,q.y)&&(h=>true)()&&!isRock(c,q.x,q.y)&&!foeAt(c,q.x,q.y)&&!(q.x===c.hero.x&&q.y===c.hero.y)&&!(c.summons||[]).some(a=>a.x===q.x&&a.y===q.y)).sort((a,b)=>cheb(a,goal)-cheb(b,goal));
+    if(!o.length||cheb(o[0],goal)>=cheb(p,goal))break;const dir=o[0].dx+','+o[0].dy;if(lastD&&dir!==lastD)straight=false;lastD=dir;p.x=o[0].x;p.y=o[0].y;moved++}
+  return{moved,straight}}
+function petStrikeOnce(t,charge){const c=S.run.combat,h=S.hero,T=petType(h),r=d(20),tot=r+spellAtk(),hit=r===20||(r!==1&&tot>=t.ac);
+  if(!hit){clog(`${petName()} attacks ${fn(t)}: d20 [${r}] ${sgn(spellAtk())} = ${tot}. Miss.`,'info');return}
+  let x=roll(r===20?T.dmg.replace(/^1d/,'2d'):T.dmg).total+T.bonus+am('wis');let extra='';
+  if(charge&&(h.petType||'land')==='land'){const y=d(6);x+=y;extra+=` Charge +${y}.`}
+  if(isSub('beastmaster',11,h)&&h.conc==='huntersmark'&&c.markTarget!=null&&c.foes[c.markTarget]===t&&!c.petMarkUsed){c.petMarkUsed=true;const y=d(h.level>=20?10:6);x+=y;extra+=` Bestial Fury +${y}.`}
+  clog(`${petName()} hits ${fn(t)}: d20 [${r}] ${sgn(spellAtk())} = ${tot}. ${x} ${petDmgType()}.${extra}`,'good');hurt(t,x,petDmgType(),r===20);
+  if(t.hp>0){const dc=spellDC();if(charge&&(h.petType||'land')==='land'){const sv=d(20)+t.mods.str;if(sv<dc){t.prone=true;clog(`${Fn(t)} is knocked prone (STR ${sv}).`,'good')}}
+    if((h.petType)==='sea'&&!t.petGrab){t.petGrab=true;clog(`${petName()} clamps onto ${fn(t)}: it’s grappled.`,'good')}}}
+function petCommandStrike(viaAttack){const c=S.run.combat,h=S.hero,t=curTarget();if(!c.pet||!t)return false;
+  const mv=petStepToward(t,petType(h).speed+(c.petDash?petType(h).speed:0));if(cheb(c.pet,t)>1){clog(`${petName()} can’t reach ${fn(t)}.`,'info');return true}
+  const charge=mv.moved>=4&&mv.straight,n=isSub('beastmaster',11,h)?2:1;c.petCommanded=true;
+  for(let i=0;i<n&&t.hp>0;i++)petStrikeOnce(t,charge&&i===0);checkWin();return true}
+function petAuto(){const c=S.run.combat,h=S.hero;if(!c.pet||c.over)return;
+  if(c.petCommanded){c.petCommanded=false;return}
+  const incap=h.dying||c.heroPara;
+  if(incap){const t=liveFoes().sort((a,b)=>cheb(a,c.pet)-cheb(b,c.pet))[0];if(t){petStepToward(t,petType(h).speed);if(cheb(c.pet,t)<=1){clog(`With you down, ${petName()} fights on its own.`,'info');petStrikeOnce(t,false);checkWin()}}return}
+  const goal=(h.petMode==='harry'&&curTarget())||c.hero;petStepToward(goal,petType(h).speed);c.petDodge=true;clog(`${petName()} ${h.petMode==='harry'?'circles your target':'stays at your side'} and takes the Dodge action.`,'info')}
+function renderCompanion(){const h=S.hero;if(!isSub('beastmaster',3,h))return'';const T=petType(h),inQ=!!S.run,hp=h.petHp==null?petHpMax(h):h.petHp;
+  return `<h2>Primal Companion</h2><p class="meta">${esc(petName(h))}: ${T.name}, AC ${13+am('wis',h)}, ${hp}/${petHpMax(h)} HP. Beast’s Strike: +${spellAtk(h)} to hit, ${T.dmg} + ${T.bonus+am('wis',h)} ${petDmgType(h)}. ${T.desc}</p>
+  <p class="meta">It moves and makes opportunity attacks on its own, but only Dodges unless you command it: a bonus action, or one of your attacks. If you’re down, it fights on its own.${hp===0?' It has fallen. Spend a spell slot to revive it, or it returns after a long rest.':''}</p>
+  <div class="actions">${Object.entries(PET_TYPES).map(([k,v])=>btn('pettype',v.name,`data-k="${k}" ${disab(inQ)}`,(h.petType||'land')===k?'btn small':'btn ghost small')).join('')}</div>
+  ${(h.petType||'land')==='land'?`<div class="actions">${['piercing','bludgeoning','slashing'].map(k=>btn('petdmg',k,`data-k="${k}" ${disab(inQ)}`,(h.petDmgType||'piercing')===k?'btn small':'btn ghost small')).join('')}${isSub('beastmaster',7,h)?btn('petforce',h.petForce?'Force damage: on':'Force damage: off','','btn ghost small'):''}</div>`:isSub('beastmaster',7,h)?`<div class="actions">${btn('petforce',h.petForce?'Force damage: on':'Force damage: off','','btn ghost small')}</div>`:''}
+  <label class="field">Name<input data-petname value="${esc(h.petName||'')}" placeholder="${T.name}" maxlength="20" ${inQ?'disabled':''}></label>
+  ${hp===0&&!inQ?`<div class="actions">${btn('petrevivetown','Revive with a spell slot',dis(![1,2,3,4,5].some(x=>h.pools['slot'+x]>0)),'btn small')}</div>`:''}`}
+function petOA(f,prev){const c=S.run.combat;if(!c.pet||c.petReacted||c.over||f.hp<=0)return;if(cheb(prev,c.pet)<=1&&cheb(f,c.pet)>1&&!f.disengagedFromPet){c.petReacted=true;clog(`${Fn(f)} pulls away from ${petName()}, which lunges at it.`,'info');petStrikeOnce(f,false);checkWin()}}
 
 /* ---- hero rules ---- */
 const mod=s=>Math.floor((s-10)/2);
@@ -3515,7 +3556,7 @@ function startCombat(keys){
   if(itemFlag('regen')&&h.hp>0){const x=d(6);h.hp=Math.min(h.hpMax,h.hp+x)}
   if(h.cls==='bard'&&h.level>=18&&(h.pools.bi||0)<2){h.pools.bi=2;clog('Superior Inspiration: your inspiration returns.','good')}
   if(h.cls==='druid'&&h.level>=20&&!h.pools.ws){h.pools.ws=1;clog('Archdruid: nature refills your Wild Shape.','good')}
-  if(isSub('beastmaster',3,h)){const sp=[[1,0],[-1,0],[0,1],[1,1],[-1,1]].map(([dx,dy])=>({x:c.hero.x+dx,y:c.hero.y+dy})).find(p=>inBounds(p.x,p.y)&&!isRock(c,p.x,p.y)&&!foeAt(c,p.x,p.y));h.petHp=h.petHp==null?5+5*h.level:h.petHp;if(sp&&h.petHp>0)c.pet={kind:'pet',name:'Beast companion',x:sp.x,y:sp.y,hp:h.petHp,hpMax:5+5*h.level,ac:13+am('wis')}}
+  if(isSub('beastmaster',3,h)){const sp=[[1,0],[-1,0],[0,1],[1,1],[-1,1]].map(([dx,dy])=>({x:c.hero.x+dx,y:c.hero.y+dy})).find(p=>inBounds(p.x,p.y)&&!isRock(c,p.x,p.y)&&!foeAt(c,p.x,p.y));h.petHp=h.petHp==null?petHpMax(h):Math.min(h.petHp,petHpMax(h));if(sp&&h.petHp>0)c.pet={kind:'pet',name:petName(h),x:sp.x,y:sp.y,hp:h.petHp,hpMax:petHpMax(h),ac:13+am('wis')}}
   if(knowsFamiliar(h)){if(!h.familiar)h.familiar={form:hasInv('pactchain',h)?'imp':'owl',hp:null};const F=famStats(h);if(h.familiar.hp==null)h.familiar.hp=F.hpMax;const fp=freeSpotNear(c,c.hero);if(fp&&h.familiar.hp>0)c.fam={kind:'familiar',name:F.name,x:fp.x,y:fp.y,hp:h.familiar.hp,hpMax:F.hpMax,ac:F.ac,atk:F.atk}}
   if(hasInv('fiendishvigor',h))h.temp=Math.max(h.temp,12);
   if(h.cls==='monk'&&h.pools.metab&&(h.pools.focus<h.level||h.hp<h.hpMax)){h.pools.metab=0;h.pools.focus=h.level;const hl=d(maDie())+h.level;h.hp=Math.min(h.hpMax,h.hp+hl);clog(`Uncanny Metabolism: Focus restored and ${hl} HP regained.`,'good')}
@@ -3588,7 +3629,7 @@ function heroTurnStart(){
     if(c.dilated&&c.round>c.dilateEnd){c.dilated=false;clog('Dilation ends. The world speeds back up.','info')}if(c.dilated)c.dilAtk=true;if(c.zero&&c.round>c.zeroEnd){c.zero=false;h.exh=Math.min(6,(h.exh||0)+1);clog('Zero Point ends. You gain a level of Exhaustion.','bad')}
     if(c.grab!=null&&(!c.foes[c.grab]||c.foes[c.grab].hp<=0))c.grab=null}
   if(h.conc==='heroism'){const tp=Math.max(1,spellMod());if(tp>h.temp)h.temp=tp}
-  Object.assign(c,{redlined:false,calcUsed:false,pistonUsed:false,arcUsed:false,ffUsed:false,fistPush:false,blurUsed:false,prUsed:false,flowUsed:false,killUsed:false,frozenRound:false,esmiteUsed:false,travelUsed:false,apoUsed:false,prowessUsed:false,resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
+  Object.assign(c,{petDodge:false,petReacted:false,petMarkUsed:false,petDash:false,redlined:false,calcUsed:false,pistonUsed:false,arcUsed:false,ffUsed:false,fistPush:false,blurUsed:false,prUsed:false,flowUsed:false,killUsed:false,frozenRound:false,esmiteUsed:false,travelUsed:false,apoUsed:false,prowessUsed:false,resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
   clog(`Round ${c.round}: your turn`,'head');c.head='h'+c.round;c.tk='h:'+c.round;
   if(c.speedPot)c.hasteAtk=true;
   c.moveBudget=c.move;
@@ -3609,6 +3650,7 @@ function endTurn(){
   if(c.heroPara&&c.paraEnding){c.heroPara=false;c.paraEnding=false;clog('The paralysis wears off.','info')}
   if(c.stolenNext){c.stolenNext=false;clog('Stolen Moment: you take another turn before anyone can blink.','good');heroTurnStart();return}
   if(c.timestop>0){c.timestop--;clog(c.timestop?`Time is still frozen (${c.timestop} more).`:'Time is still frozen: your last stolen turn.','info');heroTurnStart();return}
+  if(c.pet)petAuto();
   if((c.summons&&c.summons.length)||c.fam)summonAct();
   if(S.hero.conds.blink&&!c.over){const r=d(20);if(r>=11){c.blinked=true;clog(`Blink (${r}): you vanish into the Ethereal Plane.`,'good')}else clog(`Blink (${r}): you stay put.`,'info')}
   c.turn='others';c.aim=null;advanceTurn();runTurns();
@@ -3987,6 +4029,7 @@ function castSpellInner(id,o={}){
       if(!saved)pushAway(f,2);hurt(f,saved?Math.floor(dr.total/2):dr.total,'thunder',false)}
   }else if(sp.form==='heal'){
     const n=(id==='curewounds'?2:2)*(1+up),s=id==='curewounds'?8:4,dice=isSub('life',17,h)||h.conc==='beaconofhope'?Array(n).fill(s):rollDice(n,s);let amt=dice.reduce((a,b)=>a+b,0)+sm+dol;
+    if(isSub('beastmaster',15,h)&&c.pet&&cheb(c.pet,c.hero)<=6){const ph=Math.min(c.pet.hpMax-c.pet.hp,amt);if(ph>0){c.pet.hp+=ph;h.petHp=c.pet.hp;clog(`Share Spells: ${petName()} heals ${ph}.`,'good')}}
     const sickle=activeItems(h).some(m=>m.healBonus)?d(4):0;if(sickle){amt+=sickle;clog(`Moon Sickle: +${sickle} healing.`,'good')}
     const chal=c&&c.starForm==='chalice'?rollDice(h.level>=10?2:1,8).reduce((a,b)=>a+b,0)+am('wis'):0;
     h.hp=Math.min(h.hpMax,h.hp+amt+chal);if(chal)clog(`Chalice form: +${chal} more healing.`,'good');clog(`${sp.name}${tag}: you heal ${amt} (${n}d${s} [${dice.join(', ')}] ${sgn(sm)}${dol?` + Disciple of Life ${dol}`:''}).`,'good');
@@ -4395,12 +4438,16 @@ function feature(id,arg){
   if(id==='dashx'){if(!c.bonus||h.conc!=='expeditiousretreat')return;c.bonus=false;c.move+=heroSpeed();clog('Expeditious Retreat: you Dash.','info');return}
   if(id.startsWith('acmd:')){c.allyCmd=id.slice(5);clog(`Your summons will ${c.allyCmd==='help'?'help you':c.allyCmd==='dodge'?'defend themselves':'attack your target'}.`,'info');return}
   if(id==='famattack'||id==='famattackb'){const fa=c.fam,t=curTarget();if(!fa||fa.hp<=0||!fa.atk||!t||cheb(fa,t)>1)return;if(id==='famattack'){if(!hasInv('pactchain')||!c.attackedThisTurn||c.attacksLeft<1)return;c.attacksLeft--}else{if(!hasInv('chainmaster')||!c.bonus)return;c.bonus=false}allyStrike(fa,t,fa.atk.atk,fa.atk.dmg,fa.atk.type,fa.atk.extra,fa.atk.etype);checkWin();return}
-  if(id==='petstrike'){if(!c.bonus||!c.pet)return;const t=curTarget();if(!t)return;c.bonus=false;
-    const free=(x,y)=>inBounds(x,y)&&!isRock(c,x,y)&&!foeAt(c,x,y)&&!(x===c.hero.x&&y===c.hero.y);
-    for(let s2=0;s2<8&&cheb(c.pet,t)>1;s2++){const opts=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].map(([dx,dy])=>({x:c.pet.x+dx,y:c.pet.y+dy})).filter(p=>free(p.x,p.y)).sort((a,b)=>cheb(a,t)-cheb(b,t));if(!opts.length||cheb(opts[0],t)>=cheb(c.pet,t))break;c.pet=opts[0]}
-    if(cheb(c.pet,t)>1){clog('Your beast can’t reach the target.','info');return}
-    const n=isSub('beastmaster',11,h)?2:1;for(let i=0;i<n&&t.hp>0;i++){const r=d(20),tot=r+spellAtk(),hit=r===20||(r!==1&&tot>=t.ac),dmg=hit?rollDice(r===20?2:1,8).reduce((a,b)=>a+b,0)+2+am('wis'):0;
-      clog(`Your beast strikes ${fn(t)}: d20 [${r}] ${sgn(spellAtk())} = ${tot} vs AC ${t.ac}. ${hit?`${dmg} ${isSub('beastmaster',7,h)?'force':'piercing'} damage.`:'Miss.'}`,hit?'good':'');if(hit)hurt(t,dmg,isSub('beastmaster',7,h)?'force':'piercing',r===20)}checkWin();return}
+  if(id==='petstrike'){if(!c.bonus||!c.pet||!curTarget())return;c.bonus=false;if(isSub('beastmaster',7,h)&&c.petExtra){const ex=c.petExtra;c.petExtra=null;if(ex==='dash')c.petDash=true;if(ex==='help'){}}petCommandStrike(false);if(c.petHelpNext){c.petHelpNext=false}return}
+  if(id==='petstrikeA'){if(!c.pet||!curTarget()||!c.attackedThisTurn||c.attacksLeft<1)return;c.attacksLeft--;petCommandStrike(true);return}
+  if(id.startsWith('petx:')){if(!c.bonus||!c.pet)return;const k=id.slice(5);c.bonus=false;c.petCommanded=true;const t=curTarget();
+    if(k==='dodge'){c.petDodge=true;clog(`${petName()} takes the Dodge action.`,'info')}
+    if(k==='dash'){petStepToward(t||c.hero,2*petType(h).speed);clog(`${petName()} dashes.`,'info')}
+    if(k==='disengage'){c.petDisengage=true;clog(`${petName()} disengages.`,'info')}
+    if(k==='help'&&t){petStepToward(t,petType(h).speed);if(cheb(c.pet,t)<=1){c.allyHelp=c.foes.indexOf(t);clog(`${petName()} harries ${fn(t)}: your next attack against it has advantage.`,'good')}}
+    if(isSub('beastmaster',7,h)&&k!=='strike'){}return}
+  if(id==='petmode'){h.petMode=h.petMode==='harry'?'guard':'harry';return}
+  if(id==='petrevive'){if(c.actions<1||c.pet||h.petHp!==0)return;const l=[1,2,3,4,5].find(x=>h.pools['slot'+x]>0);if(!l)return;h.pools['slot'+l]--;c.actions--;h.petRevive=true;clog(`You pour a level ${l} spell slot into your fallen companion. It will rise again after the fight.`,'good');return}
   if(id==='dawn'){if(c.actions<1||!h.pools.cd)return;h.pools.cd--;c.actions--;const r=roll('2d10'),tot=r.total+h.level;clog(`Radiance of the Dawn: ${tot} radiant.`,'good');
     for(const f of liveFoes().filter(f=>cheb(f,c.hero)<=6)){const s2=foeD20(f),tt=s2+f.mods.con,sv=tt>=spellDC(),n=sv?Math.floor(tot/2):tot;clog(`${Fn(f)} CON save ${tt}: ${n}.`,sv?'':'good');hurt(f,n,'radiant',false)}checkWin();return}
   if(id==='corona'){if(c.actions<1||!h.pools.corona||c.corona)return;h.pools.corona--;c.actions--;c.corona=true;clog('Corona of Light: blazing light. Enemies have disadvantage on saves against your spells.','good');return}
@@ -4549,6 +4596,7 @@ function checkWin(){
   const c=S.run.combat;if(c.over||liveFoes().length)return;
   const xp=c.foes.reduce((a,f)=>a+f.xp,0);S.hero.xp+=xp;c.over='win';clog(`Victory. +${xp} XP.`,'good');
   if(S.hero.conc){clog(`${SPELLS[S.hero.conc].name} ends with the fight.`,'info');S.hero.conc=null}
+  if(S.hero.petRevive){S.hero.petRevive=false;S.hero.petHp=null;clog('Your companion stirs, then rises, whole again.','good')}
   if(isGW()){if(c.burnout)endBurnout();if(c.zero){S.hero.exh=Math.min(6,(S.hero.exh||0)+1);clog('Zero Point fades. You gain a level of Exhaustion.','bad')}}
   checkLevel();
 }
@@ -4634,6 +4682,7 @@ function foeTurn(f){
   if(f.confused){const k=d(10),sv=d(20)+f.mods.wis;if(sv>=spellDC())f.confusedEnd=true;if(k<=6){clog(`${Fn(f)} ${k===1?'wanders aimlessly':'stares blankly'}, confused.`,'good');if(f.confusedEnd){f.confused=false;f.confusedEnd=false;clog(`${Fn(f)} shakes off its confusion.`,'info')}f.acted=true;endFoeTurn(f);return}if(k<=8){f.crowned=true;f.domTurn=true}if(f.confusedEnd){f.confused=false;f.confusedEnd=false}}
   if(c.mdark&&c.mdark.length)c.mdark=c.mdark.filter(z=>h.conc===z.spell);
   if(c.grab!=null&&c.foes[c.grab]===f){f.rooted=true;if(cheb(f,c.hero)>1)c.grab=null;else{const tt=d(20)+Math.max(f.mods.str,f.mods.dex);if(tt>=spellDC()+5){c.grab=null;clog(`${Fn(f)} wrenches free of your grip.`,'info')}}}
+  if(f.petGrab){if(!c.pet||cheb(f,c.pet)>1)f.petGrab=false;else{const tt=d(20)+Math.max(f.mods.str,f.mods.dex);if(tt>=spellDC()){f.petGrab=false;clog(`${Fn(f)} breaks free of ${petName()}.`,'info')}else f.rooted=true}}
   if(f.dominated==='fury'){const tt=d(20)+f.mods.wis;if(tt>=(f.furyDC||spellDC())){f.dominated=null;f.crowned=false;clog(`${Fn(f)}’s fury fades.`,'info')}}
   if(f.slowS&&S.hero.conc!=='slow'){f.slowS=false;f.ac+=2}
   if(f.crowned&&!f.domTurn&&h.conc!=='crownofmadness')f.crowned=false;
@@ -5513,7 +5562,7 @@ function renderHeroRaw(){
   <h2>Attacks</h2>
   <ul class="ledger">${attackRows()}</ul>
   <p class="meta">Attacks come from the weapon set in your hands.</p>
-  ${renderGraftwright()}${renderSpellbook()}
+  ${renderCompanion()}${renderGraftwright()}${renderSpellbook()}
   <h2>Features</h2>
   <p class="meta">${h.sub?`Subclass: ${SUBNAME(h.sub)}${h.sub==='land'?` (${LANDS[h.land||'arid'][0]})`:''}.`:'Subclass at level 3.'}${h.style?` Fighting style: ${FIGHTING_STYLES[h.style][0]}.`:''}</p>
   <label class="toggle"><input type="checkbox" data-flag="hideFuture" ${S.flags.hideFuture?'checked':''}> Hide upcoming features</label>
@@ -5725,7 +5774,10 @@ function renderCombat(st){
     if(isSub('vengeance',3,h))f.push(btn('act',c.vowTarget!=null?`Vow of Enmity: ${fn(c.foes[c.vowTarget])}`:`Vow of Enmity (bonus, ${h.pools.cd} CD)`,`data-k="vow" ${disab(!c.bonus||!h.pools.cd||c.vowTarget!=null)}`,'btn ghost small'));
     if((c.summons||[]).length)['attack','help','dodge'].forEach(k=>f.push(btn('act',`Summons: ${k}`,`data-k="acmd:${k}"`,(c.allyCmd||'attack')===k?'btn small':'btn ghost small')));
     if(c.fam&&c.fam.hp>0&&c.fam.atk){if(hasInv('pactchain'))f.push(btn('act',`Familiar attacks (uses one of your attacks)`,`data-k="famattack" ${disab(!c.attackedThisTurn||c.attacksLeft<1)}`,'btn ghost small'));if(hasInv('chainmaster'))f.push(btn('act','Familiar attacks (bonus)',`data-k="famattackb" ${disab(!c.bonus)}`,'btn ghost small'))}
-    if(c.pet)f.push(btn('act','Command your beast (bonus)',`data-k="petstrike" ${disab(!c.bonus)}`,'btn ghost small'));
+    if(c.pet){f.push(btn('act',`${petName()}: Beast’s Strike (bonus)`,`data-k="petstrike" ${disab(!c.bonus||!t)}`,'btn ghost small'),btn('act','Beast’s Strike (uses one of your attacks)',`data-k="petstrikeA" ${disab(!c.attackedThisTurn||c.attacksLeft<1||!t)}`,'btn ghost small'));
+      if(isSub('beastmaster',7,h))['dash','disengage','dodge','help'].forEach(k=>f.push(btn('act',`Beast: ${k} (bonus)`,`data-k="petx:${k}" ${disab(!c.bonus)}`,'btn ghost small')));
+      f.push(btn('act',h.petMode==='harry'?'Beast follows your target':'Beast guards you',`data-k="petmode"`,'btn ghost small'))}
+    else if(isSub('beastmaster',3,h)&&h.petHp===0&&!h.petRevive)f.push(btn('act','Revive your companion (spell slot)',`data-k="petrevive" ${disab(c.actions<1)}`,'btn ghost small'));
     if(isSub('feywanderer',15,h))f.push(btn('act',`Misty Wanderer (bonus), ${h.pools.fmisty}`,`data-k="fmisty" ${disab(!c.bonus||!h.pools.fmisty)}`,'btn ghost small'));
     if(isSub('sea',3,h)){if(!c.seaAura)f.push(btn('act',`Wrath of the Sea (bonus, ${h.pools.ws} uses)`,`data-k="seawrath" ${disab(!c.bonus||!h.pools.ws)}`,'btn ghost small'));else f.push(btn('act','Wave strike (bonus)',`data-k="seastrike" ${disab(!c.bonus)}`,'btn ghost small'))}
     if(isSub('stars',3,h)){if(!c.starForm)['archer','chalice','dragon'].forEach(k=>f.push(btn('act',`Starry Form: ${k} (bonus)`,`data-k="star:${k}" ${disab(!c.bonus||!h.pools.ws)}`,'btn ghost small')));else if(c.starForm==='archer')f.push(btn('act','Luminous arrow (bonus)',`data-k="starshot" ${disab(!c.bonus)}`,'btn ghost small'))}
@@ -5940,6 +5992,10 @@ const A={
   smith(ds){buySmithy(ds.k)},
   buypouch(){const h=S.hero;if(S.run||h.pouch||S.res.gold<25)return;S.res.gold-=25;h.pouch=true;addLog('You buy a component pouch.');commit()},
   buymat(ds){const h=S.hero,c2=COSTLY[ds.k];if(S.run||!c2||S.res.gold<c2[0])return;S.res.gold-=c2[0];h.mats=h.mats||{};h.mats[ds.k]=(h.mats[ds.k]||0)+1;addLog(`You buy ${c2[2]}.`);commit()},
+  pettype(ds){const h=S.hero;if(S.run||!PET_TYPES[ds.k])return;h.petType=ds.k;h.petHp=null;commit()},
+  petdmg(ds){const h=S.hero;if(S.run)return;h.petDmgType=ds.k;commit()},
+  petforce(){const h=S.hero;h.petForce=!h.petForce;commit()},
+  petrevivetown(){const h=S.hero;if(S.run||h.petHp!==0)return;const l=[1,2,3,4,5].find(x=>h.pools['slot'+x]>0);if(!l)return;h.pools['slot'+l]--;h.petHp=null;addLog('You revive your companion with a spell slot.','good');commit()},
   tcant(ds){const h=S.hero;if(S.run)return;ensurePrepared(h);const i=h.cantrips.indexOf(ds.k),free=canFreeEdit(h);
     if(i>=0){if(!free){if(!(h.cswaps>0))return;h.cswaps--}h.cantrips.splice(i,1)}else{if(h.cantrips.length>=cantripCount(h)||!classList(h,0).includes(ds.k))return;h.cantrips.push(ds.k)}commit()},
   tprep(ds){const h=S.hero;if(S.run)return;ensurePrepared(h);const i=h.prepared.indexOf(ds.k),free=canFreeEdit(h)||FREE_SWAP.includes(h.cls);
@@ -5982,6 +6038,7 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.matches('[data-assign]')){const w=S.workers.find(x=>x.id==t.dataset.assign);if(w){w.assign=t.value;commit()}}
   if(t.matches('[data-flag]')){S.flags[t.dataset.flag]=t.checked;commit()}
+  if(t.matches('[data-petname]')&&S&&S.hero){S.hero.petName=t.value.trim().slice(0,20)||null;save();return}
   if(t.matches('[data-act]')&&S&&S.run&&S.run.combat){A.act({k:t.dataset.act});return}
   if(t.matches('[data-draft]')){const f=t.dataset.draft;draft[f]=t.value;if(f==='cls'){draft.cantrips=null;draft.prepared=null;draft.book=null;draft.inv=null;draft.grafts=null;draft.abil=draft.method==='point'?{str:8,dex:8,con:8,int:8,wis:8,cha:8}:draft.method==='roll'&&draft.rolled?draft.abil:{...CLASSES[t.value].array};draft.classSkills=[];draft.style=null;draft.sub=null}if(f==='species'){draft.lineage=null;draft.bonusSkills=[]}if(f==='bg'){draft.bgPlus2=null;draft.bgPlus1=null;draft.classSkills=draft.classSkills.filter(x=>!BACKGROUNDS[t.value].skills.includes(x));draft.bonusSkills=[]}render()}
   if(t.matches('[data-abil]')){const k=t.dataset.abil,v=+t.value,other=ABIL.find(a=>a!==k&&draft.abil[a]===v&&(draft.method!=='roll'||true));if(other)draft.abil[other]=draft.abil[k];draft.abil[k]=v;render()}
