@@ -1355,6 +1355,7 @@ function normalize(st){
   if(st.hero&&!st.hero.items)st.hero.items=[];
   if(!st.places){st.places={};const pos={lumber:[6,4],quarry:[1,1],smithy:[6,6],chapel:[5,3],market:[2,5],watchtower:[7,7]};for(const k of PLACEABLE){if(st.buildings&&st.buildings[k]&&st.buildings[k].status!=='none'){const v=pos[k];st.places[k]={c:v[0],r:v[1]}}}}
   if(!st.cottages)st.cottages=[];
+  if(st.hero&&st.hero.pouch==null&&!st.hero.v24comp){st.hero.pouch=true;st.hero.v24comp=true}
   if(st.hero&&st.hero.items)st.hero.items.forEach(i=>{if(i.id==='warmage')i.id='warmage1'});
   if(st.hero&&st.hero.level>=3&&!st.hero.sub)st.hero.sub=DEFAULT_SUB[st.hero.cls];
   if(st.hero&&STYLE_AT[st.hero.cls]&&st.hero.level>=STYLE_AT[st.hero.cls]&&!st.hero.style)st.hero.style=defaultStyle(st.hero.cls);
@@ -2092,7 +2093,7 @@ const KITS0={fighter:[['greatsword',null],['flail','shield']],rogue:[['shortswor
 const GEAR_SLOTS=[['armor','Armor'],['ring1','Ring'],['ring2','Ring'],['belt','Belt'],['amulet','Amulet'],['w1','Wondrous item'],['w2','Wondrous item'],['w3','Wondrous item']];
 const slotKind=k=>k.startsWith('ring')?'ring':k.startsWith('w')?'wondrous':k;
 const ARMOR_NAME={fighter:'Chain mail',cleric:'Chain mail',paladin:'Chain mail',rogue:'Leather armor',bard:'Leather armor',druid:'Leather armor',ranger:'Studded leather',barbarian:'No armor (Unarmored Defense)',monk:'No armor (Unarmored Defense)',wizard:'No armor',sorcerer:'No armor',warlock:'No armor (Armor of Shadows)'};
-const KITS=Object.assign({},KITS0,{wizard:[['quarterstaff',null],['dagger','focus:wand']],sorcerer:[['dagger','focus:orb'],['quarterstaff',null]],warlock:[['dagger','focus:rod'],['quarterstaff',null]],bard:[['rapier','focus:instrument'],['dagger',null]]});
+const KITS=Object.assign({},KITS0,{cleric:[['mace','shield'],[null,'shield']],paladin:[['longsword','shield'],['javelin',null]],druid:[['quarterstaff','shield'],['quarterstaff',null]],ranger:[['longbow',null],['shortsword',null]],wizard:[['quarterstaff',null],['dagger','focus:wand']],sorcerer:[['dagger','focus:orb'],['quarterstaff',null]],warlock:[['dagger','focus:rod'],['quarterstaff',null]],bard:[['rapier','focus:instrument'],['dagger',null]]});
 let equipPick=null;
 function ownedBases(h=S.hero){const b=new Set(CLASSES[h.cls].weapons.filter(w=>WEAPONS[w]));if(h.cls==='warlock'&&(h.inv||[]).includes('pactblade'))b.add('longsword');if(['wizard','sorcerer','warlock','druid'].includes(h.cls))b.add('quarterstaff');if(isSub('valor',3,h))b.add('longsword');KITS[h.cls].flat().forEach(x=>x&&x!=='shield'&&!x.startsWith('focus:')&&b.add(x));return [...b]}
 function newEquip(h){h.equip={armor:null,ring1:null,ring2:null,belt:null,amulet:null,w1:null,w2:null,w3:null};h.loadouts=KITS[h.cls].map(([m,o])=>({main:m,off:o}));h.activeSet=0}
@@ -2127,7 +2128,7 @@ function setHand(set,hand,v){
 }
 function handOptions(set,hand){
   const h=S.hero,opts=[];const items=(h.items||[]).filter(i=>usable(i.id));
-  const fk=focusKind(h),foci=Object.entries(FOCUS_BASES).filter(([,f])=>f[1]===fk).map(([k,f])=>['focus:'+k,`${f[0]} (spellcasting focus)`]),fitems=items.filter(i=>itemSlot(i.id)==='focus').map(i=>['i:'+uidOf(i),`${MAGIC[i.id].name} (focus)`]);
+  const fk=focusKind(h),foci=Object.entries(FOCUS_BASES).filter(([,f])=>f[1]===fk||(f[1]==='book'&&h.cls==='wizard')).map(([k,f])=>['focus:'+k,`${f[0]} (spellcasting focus)`]),fitems=items.filter(i=>itemSlot(i.id)==='focus').map(i=>['i:'+uidOf(i),`${MAGIC[i.id].name} (focus)`]);
   if(hand==='main'){ownedBases().forEach(b=>opts.push([b,WEAPONS[b].name]));opts.push(...foci,...fitems);items.filter(i=>itemSlot(i.id)==='weapon').forEach(i=>opts.push(['i:'+uidOf(i),`${WEAPONS[i.base].name} (${MAGIC[i.id].name})`]))}
   else{ownedBases().filter(b=>LIGHT.has(b)).forEach(b=>opts.push([b,`${WEAPONS[b].name} (light, off hand)`]));items.filter(i=>itemSlot(i.id)==='weapon'&&LIGHT.has(i.base)).forEach(i=>opts.push(['i:'+uidOf(i),`${WEAPONS[i.base].name} (${MAGIC[i.id].name})`]));
     opts.push(...foci,...fitems);
@@ -2347,12 +2348,14 @@ function renderSpellbook(){
   const h=S.hero,C=CLASSES[h.cls],p=h.pools,inQuest=!!S.run;
   const known=knownSpells();if(!known.length)return'';
   const head=`<h2>Spells</h2><p class="meta">${isWarlock()?'':'Slots: '}${slotSummary(h,true)}.${h.cls==='sorcerer'&&h.level>=2?` Sorcery Points: ${p.sp}/${h.level}.`:''}${h.mageArmor?' Mage Armor is up.':''}</p>`;
-  const row=(id,btnHtml)=>{const sp=SPELLS[id];return `<li><div class="row"><span><b>${sp.name}</b> <span class="meta">${sp.lvl?`Level ${sp.lvl}`:'Cantrip'}${sp.ritual?', ritual':''}${sp.conc?', concentration':''}</span></span>${btnHtml||''}</div><p class="meta">${sp.desc}</p></li>`};
+  const row=(id,btnHtml)=>{const sp=SPELLS[id],cost=COSTLY[id];return `<li><div class="row"><span><b>${sp.name}</b> <span class="meta">${sp.lvl?`Level ${sp.lvl}`:'Cantrip'} · ${compLabel(compOf(id))}${cost&&cost[0]?` (${cost[2]}, ${cost[0]} gp${cost[1]?', used up':''})`:''}${sp.ritual?' · ritual':''}${sp.conc?' · concentration':''}</span></span>${btnHtml||''}</div><p class="meta">${sp.desc}</p></li>`};
   if(!C.caster||!CANTRIP_N[h.cls]&&!PREP_N[h.cls])return head+`<ul class="ledger">${known.map(id=>row(id)).join('')}</ul>`;
   ensurePrepared(h);
   const free=canFreeEdit(h),al=alwaysPrepared(h),cn=cantripCount(h),pm=prepMax(h);
   const swapNote=free?'You can change anything until your first quest.':FREE_SWAP.includes(h.cls)?'You can change prepared spells any time you’re in town.':`Swaps left: ${h.swaps||0} spell, ${h.cswaps||0} cantrip. You earn one of each when you level up.`;
   let html=head+`<p class="meta">${swapNote}${inQuest?' Changes wait until you’re back in town.':''}</p>`;
+  const needMats=[...new Set(known)].filter(id=>COSTLY[id]&&COSTLY[id][0]>0);
+  html+=`<p class="meta"><b>Components:</b> V spells need no hands. S spells need a free hand. M spells need a focus or a component pouch with a free hand${hasHolySymbolWorn(h)?' (your holy symbol is worn, so it always counts as your focus)':''}. ${h.pouch?'You carry a component pouch.':''}</p>${h.pouch?'':`<div class="actions">${btn('buypouch','Buy a component pouch (25 gp)',dis(inQuest||S.res.gold<25),'btn ghost small')}</div>`}${needMats.length?`<ul class="ledger">${needMats.map(id=>{const c2=COSTLY[id],have=(h.mats||{})[id]||0;return `<li class="row"><span>${SPELLS[id].name}: ${c2[2]} <span class="meta">${c2[1]?`${have} owned, used up when cast`:have?'owned':'not owned'}</span></span>${(!c2[1]&&have)?'':btn('buymat',`Buy (${c2[0]} gp)`,`data-k="${id}" ${dis(inQuest||S.res.gold<c2[0])}`,'btn ghost small')}</li>`}).join('')}</ul>`:''}`;
   if(cn){const cl=classList(h,0);html+=`<details ${so('cantrips',false)}><summary>Cantrips: ${h.cantrips.length} of ${cn}</summary><ul class="ledger">${cl.map(id=>{const on=h.cantrips.includes(id);return row(id,btn('tcant',on?'Known':'Learn',`data-k="${id}" ${disab(inQuest||(!on&&h.cantrips.length>=cn)||(on&&!free&&!(h.cswaps>0)))}`,on?'btn small':'btn ghost small'))}).join('')}</ul></details>`}
   if(h.cls==='wizard'){const pool=prepPool(h).filter(id=>!h.book.includes(id));
     html+=`<details ${so('book',!!h.bookPicks)}><summary>Spellbook: ${h.book.length} spells${h.bookPicks?`, ${h.bookPicks} to add`:''}</summary>${h.bookPicks?`<p class="meta">Choose ${h.bookPicks} new spell${h.bookPicks>1?'s':''} to copy into your book.</p><ul class="ledger">${pool.map(id=>row(id,btn('tbook','Copy',`data-k="${id}" ${disab(inQuest)}`,'btn small'))).join('')}</ul>`:''}</details>`}
@@ -2757,9 +2760,9 @@ const itemFlag=(k,h=S.hero)=>activeItems(h).some(m=>m[k]);
 const itemResists=(type,h=S.hero)=>activeItems(h).some(m=>(m.resist||[]).includes(type));
 
 /* ---- spellcasting focuses in hand, and more magic items ---- */
-const FOCUS_BASES={wand:['Wand','arcane'],orb:['Crystal orb','arcane'],rod:['Rod','arcane'],holysymbol:['Holy symbol','holy'],totem:['Druidic totem','druid'],instrument:['Lute','bard']};
+const FOCUS_BASES={spellbook:['Spellbook','book'],yewwand:['Yew wand','druid'],wand:['Wand','arcane'],orb:['Crystal orb','arcane'],rod:['Rod','arcane'],holysymbol:['Holy symbol','holy'],totem:['Druidic totem','druid'],instrument:['Lute','bard']};
 const focusKind=h=>({wizard:'arcane',sorcerer:'arcane',warlock:'arcane',cleric:'holy',paladin:'holy',druid:'druid',ranger:'druid',bard:'bard'})[h.cls]||(THIRD_SPELLS[h.sub]?'arcane':null);
-function isFocusHand(r,h=S.hero){if(!r)return false;if(r.focus)return true;if(r.item&&r.item.focus)return true;if(r.base==='quarterstaff'&&['arcane','druid'].includes(focusKind(h)))return true;if(r.base==='shield'&&focusKind(h)==='holy')return true;return false}
+function isFocusHand(r,h=S.hero){if(!r)return false;if(r.focus){const fb=FOCUS_BASES[(r.base||'').slice(6)];if(fb&&fb[1]==='book')return h.cls==='wizard';if(fb&&fb[1]!==focusKind(h))return false;return true}if(r.item&&r.item.focus)return true;if(r.base==='quarterstaff'&&['arcane','druid'].includes(focusKind(h)))return true;if(r.base==='shield'&&focusKind(h)==='holy')return true;return false}
 function handsBlockCasting(h=S.hero){if(!h.loadouts||shape(h)||hasFeat('warcaster',h))return false;const st=activeSet(h),m=resolveHand(st.main,h),o=resolveHand(st.off,h);if(!m||!o)return false;if(isFocusHand(m,h)||isFocusHand(o,h))return false;return true}
 Object.assign(WEAPONS,{sickle:{name:'Sickle',kind:'melee',dmg:'1d4',abil:'str',mastery:'nick',type:'slashing',verb:'slash at'}});
 const plusItems=(key,base,rar,price,extra,who,desc)=>[1,2,3].forEach(n=>{MAGIC[key+n]=Object.assign({name:`${base} +${n}`,rarity:rar[n-1],price:price[n-1],attune:true,who,desc:desc(n)},typeof extra==='function'?extra(n):extra)});
@@ -3059,6 +3062,34 @@ function creatorSpells(preview,lvl){
 }
 function classInfo(cls){const C=CLASSES[cls];return `<div class="raidbox" style="margin:8px 0"><p><b>${C.name}</b> · d${C.hd} Hit Die · saves ${C.saves.map(a=>ABIL_SHORT[a]).join(' and ')}</p><p class="meta">${C.blurb}</p><ul class="ledger">${C.features.map(f=>`<li><b>Level ${f[0]}: ${f[1]}</b><p class="meta">${f[2]}</p></li>`).join('')}</ul><p class="meta">Subclasses at level 3: ${(SUBCLASSES[cls]||[]).map(x=>x[1]).join(', ')}.</p></div>`}
 
+/* ---- spell components (2024 rules) ---- */
+const COMP_LIST={
+  V:'huntersmark searingsmite thunderoussmite wrathfulsmite shiningsmite blindingsmite staggeringsmite banishingsmite ensnaringstrike hailofthorns command healingword masshealingword mistystep powerwordkill powerwordstun powerwordheal powerwordfortify compelledduel divineword dissonantwhispers viciousmockery mindsliver thaumaturgy crusadersmantle destructivewave auraofvitality auraoflife auraofpurity circleofpower prayerofhealing wish timestop blindness blur dimensiondoor guardianoffaith faeriefire ottosdance',
+  VS:'bladeward chillTouch chilltouch eldritchblast firebolt poisonspray rayoffrost sacredflame shockinggrasp tollthedead produceflame starrywisp sorcburst acidsplash guidance resistance sparethedying magehand prestidigitation druidcraft elementalism thunderclap counterspell magicmissile shield thunderwave burninghands inflictwounds curewounds guidingbolt charmperson detectmagic disguiseself expeditiousretreat fogcloud raysickness speakwithanimals armsofhadar hellishrebuke divinefavor entangle detectevilandgood purifyfood heroism barkskin crownofmadness mirrorimage rayofenfeeblement scorchingray shadowblade spiritualweapon arcanevigor lesserrestoration protectionfrompoison magicweapon silence calllightning conjureanimals bestowcurse blink dispelmagic elementalweapon lightningarrow protectionfromenergy spiritshroud vampirictouch beaconofhope daylight blight charmmonster compulsion conjureminorelementals conjurewoodland deathward dominatebeast giantinsect graspingvine greaterinvisibility phantasmalkiller animateobjects antilifeshell cloudkill conjureelemental contagion dominateperson holyweapon masscurewounds synapticstatic telekinesis bladebarrier conjurefey eyebite harm heal conjurecelestial fingerofdeath firestorm prismaticspray dominatemonster incendiarycloud maze mindblank tsunami massheal meteorswarm prismaticwall stormofvengeance weird mindspike',
+  VM:'featherfall wordofradiance light darkness suggestion masssuggestion',
+  SM:'truestrike message minorillusion friends iceknife hypnoticpattern steelwindstrike'
+};
+const COMP={};for(const [k,v] of Object.entries(COMP_LIST))v.split(/\s+/).forEach(id=>{if(id)COMP[id]=k});
+const COSTLY={chromaticorb:[50,false,'a diamond'],stoneskin:[100,true,'diamond dust'],greaterrestoration:[100,true,'diamond dust'],identify:[100,false,'a pearl'],findfamiliar:[10,true,'incense'],
+  summonbeast:[200,false,'a feather in a gold-leaf frame'],summonfey:[300,false,'a gilded flower'],summonundead:[300,false,'a gilded skull'],summonaberration:[400,false,'a pickled tentacle and eyeball'],summonconstruct:[400,false,'an ornate lockbox'],summonelemental:[400,false,'a gold-inlaid vial'],summoncelestial:[500,false,'a golden reliquary'],summondragon:[500,false,'a golden dragon figurine'],summonfiend:[600,false,'a bloody vial'],
+  mordenkainensword:[250,false,'a platinum sword miniature'],forcecage:[1500,true,'ruby dust'],holyaura:[1000,false,'a tiny reliquary'],heroesfeast:[1000,true,'a gem-encrusted bowl'],createundead:[150,true,'a black onyx stone'],tashascauldron:[500,false,'a gilded ladle'],animatedead:[0,false,''],revivify:[300,true,'a diamond']};
+function compOf(id){const sp=SPELLS[id];if(!sp)return'V';if(COMP[id])return COMP[id];return sp.lvl===0?'VS':'VSM'}
+const compLabel=c=>({V:'V',VS:'V, S',VM:'V, M',SM:'S, M',VSM:'V, S, M'})[c]||c;
+function hasHolySymbolWorn(h){return['cleric','paladin'].includes(h.cls)}
+function castCheck(id,h=S.hero){
+  const sp=SPELLS[id];if(!sp||sp.internal||!h.loadouts||shape(h))return null;
+  const cp=compOf(id),needS=cp.includes('S'),needM=cp.includes('M');
+  const cost=COSTLY[id];if(cost&&cost[0]>0&&!((h.mats||{})[id]>0))return`needs ${cost[2]} (${cost[0]} gp)`;
+  if(!needS&&!needM)return null;
+  const st=activeSet(h),m=resolveHand(st.main,h),o=resolveHand(st.off,h);
+  const free=!m||!o||(m&&TWOHAND.has(m.base)&&!o);
+  const focusHand=isFocusHand(m,h)||isFocusHand(o,h)||(h.cls==='wizard'&&(st.main==='focus:spellbook'||st.off==='focus:spellbook'));
+  const wc=hasFeat('warcaster',h);
+  if(needM){const mOK=focusHand||hasHolySymbolWorn(h)||(free&&(h.pouch||(cost&&cost[0]>0)));if(!mOK)return free?'needs a focus or component pouch':'hands full: hold a focus or free a hand'}
+  if(needS){const sOK=free||wc||(needM&&focusHand);if(!sOK)return'needs a free hand (somatic)'}
+  return null;
+}
+
 /* ---- hero rules ---- */
 const mod=s=>Math.floor((s-10)/2);
 const sgn=n=>(n>=0?'+':'−')+Math.abs(n);
@@ -3202,7 +3233,7 @@ function buildHero(o){
   const mi=feats.find(f=>MI_SPELLS[f]);if(mi)h.featCaster=MI_SPELLS[mi][2];else if(o.species==='tiefling')h.featCaster='cha';
   if(STYLE_AT[h.cls]&&h.level>=STYLE_AT[h.cls]&&!h.style)h.style=defaultStyle(h.cls);
   if(h.level>=3&&!h.sub)h.sub=DEFAULT_SUB[h.cls];
-  newEquip(h);
+  newEquip(h);h.v24comp=true;h.pouch=['ranger','graftwright'].includes(h.cls)||!!h.featCaster;
   for(let l=2;l<=h.level;l++)levelFeatures(h,l,true);
   if(o.cantrips)h.cantrips=o.cantrips.slice();if(o.book&&h.cls==='wizard')h.book=o.book.slice();if(o.prepared)h.prepared=o.prepared.slice();if(o.inv&&h.cls==='warlock')h.inv=o.inv.slice();if(o.grafts&&h.cls==='graftwright')h.grafts={...o.grafts};
   ensurePrepared(h);if(h.cls==='warlock'&&!o.inv)fillInv(h);h.freeEditXp=h.xp;
@@ -3859,7 +3890,7 @@ function spellIssue(id){
   const warMagic=sp.lvl===0&&isSub('eldritchknight',7,h)&&c.actions<1&&c.attacksLeft>0;
   if(!asBonus&&sp.cast==='action'&&c.actions<1&&!warMagic&&!(c.wishAction&&sp.lvl>0))return'action used';
   if(sp.form==='utility'||sp.form==='restheal'||sp.form==='restbuff')return'outside combat';
-  if(!sp.internal&&handsBlockCasting(h))return'hands full: switch to a set with a focus or a free hand';
+  if(!sp.internal){const cc=castCheck(id,h);if(cc)return cc}
   if(sp.form==='smite'){const lh=c.lastHit,t2=lh&&c.foes[lh.ti];if(!lh||lh.round!==c.round||!t2||t2.hp<=0||(sp.smite==='thorns'?lh.kind!=='ranged':lh.kind!=='melee'))return sp.smite==='thorns'?'needs a ranged hit first':'needs a melee hit first'}
   if((sp.range||1)<=1&&c.fam&&c.fam.hp>0&&curTarget()&&cheb(c.fam,curTarget())<=1)return null;
   if(['attack','save','missile','rays','spiritual','blast','hex','mark','chain','dance','pwstun','pwkill','laugh','command','iceknife','witchbolt'].includes(sp.form))return rangeIssue(sp.kind==='melee'?'melee':'ranged',sp.range,sp.range);
@@ -3891,6 +3922,7 @@ function castSpellInner(id,o={}){
     if(sp.lvl>0){const mastery=h.cls==='wizard'&&h.level>=18&&['magicmissile','scorchingray'].includes(id)&&!(o.slot>sp.lvl),sig=h.cls==='wizard'&&h.level>=20&&id==='fireball'&&h.pools.sig>0&&!(o.slot>3);if(mastery){lvl=sp.lvl;clog('Spell Mastery: no slot needed.','info')}else if(sig){h.pools.sig--;lvl=3;clog('Signature Spell: a free Fireball.','info')}else if(id==='wish'&&h.pools.gdi>0){h.pools.gdi--;lvl=9;clog('Greater Divine Intervention: a free Wish.','info')}else if(h.pools.recall>0&&sp.lvl<=4&&!slotFor(sp.lvl)){h.pools.recall--;lvl=sp.lvl;clog('Boon of Spell Recall: no slot needed.','info')}else if(id==='guidingbolt'&&isSub('stars',3,h)&&h.pools.starbolt>0){h.pools.starbolt--;lvl=1;clog('Star Map: a free Guiding Bolt.','info')}else if(id===miSpell(h)&&h.pools.mi>0&&!(CLASSES[h.cls].caster&&slotFor(sp.lvl)&&!c.slotUsed)){h.pools.mi--;lvl=1;clog(`Magic Initiate: a free ${sp.name}.`,'info')}else if(id==='huntersmark'&&h.pools.favored>0){h.pools.favored--;lvl=1;clog(`Favored Enemy: a free Hunter’s Mark (${h.pools.favored} left today).`,'info')}else if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=pickSlot(sp.lvl,o.slot);useSlot(lvl);c.slotUsed=true}}
     if(c.wishAction&&sp.lvl>0&&!sp.internal&&id!=='wish'){c.wishAction=false;clog('Wish: no action needed.','info')}else if(sp.cast==='action'&&c.quicken){c.bonus=false;c.quicken=false;clog('Quickened Spell: cast as a bonus action.','info')}else if(sp.cast==='action'&&c.actions<1&&c.attacksLeft>0&&sp.lvl===0&&isSub('eldritchknight',7,h)){c.attacksLeft--;clog('War Magic: a cantrip in place of an attack.','info')}else if(sp.cast==='action')c.actions--;else if(sp.cast==='bonus')c.bonus=false;
   }
+  {const cost=COSTLY[id];if(cost&&cost[1]&&cost[0]>0&&(h.mats||{})[id]>0){h.mats[id]--;clog(`The spell consumes ${cost[2]}.`,'info')}}
   c.ambushCast=isSub('arcanetrickster',9,h)&&c.hidden;
   c.hidden=false;
   if(h.conds.sanctuary&&['attack','save','missile','rays','iceknife','witchbolt','laugh','command','bane','burst','blast','chain'].includes(sp.form)){delete h.conds.sanctuary;clog('Your Sanctuary fades.','info')}
@@ -4476,6 +4508,7 @@ function combatAction(k){
   const h=S.hero;
   if(h.dying){if(k==='deathsave')deathSave();return}
   if(!k.startsWith('reroll'))c.lastMiss=null;
+  if(WEAPONS[k]&&!heroWeapons().includes(k)&&h.loadouts&&h.loadouts.length>1&&!c.swapped){const was=h.activeSet||0;h.activeSet=was?0:1;if(heroWeapons().includes(k)){c.swapped=true;clog(`You switch to weapon set ${h.activeSet+1}.`,'info')}else h.activeSet=was}
   if(WEAPONS[k])weaponAttack(k);
   else if(k.startsWith('up:')){const [,id,l]=k.split(':');c.pick=null;if(id==='smite'){c.smiteLvl=+l;c.smiteNext=true;clog(`Divine Smite readied with a level ${l} slot.`,'info')}else castSpell(id,{slot:+l})}
   else if(k==='cancelpick'){c.pick=null}
@@ -4486,7 +4519,8 @@ function combatAction(k){
     if(k==='splitgo'){const tot=Object.values(sp.alloc).reduce((a,b)=>a+b,0);if(tot!==sp.n)return;c.split=null;castSpell(sp.id,{slot:sp.slot,alloc:sp.alloc});checkWin();return}
     const [op,i]=k.slice(5).split(':'),tot=Object.values(sp.alloc).reduce((a,b)=>a+b,0);
     if(op==='+'&&tot<sp.n)sp.alloc[i]=(sp.alloc[i]||0)+1;if(op==='-'&&(sp.alloc[i]||0)>0)sp.alloc[i]--;return}
-  else if(SPELLS[k]){if(spellIssue(k))return;
+  else if(SPELLS[k]){if(castCheck(k)&&!c.swapped&&h.loadouts&&h.loadouts.length>1){const was=h.activeSet||0;h.activeSet=was?0:1;if(!castCheck(k)&&!spellIssue(k)){c.swapped=true;clog(`You switch to weapon set ${h.activeSet+1} to cast ${SPELLS[k].name}.`,'info')}else h.activeSet=was}
+    if(spellIssue(k))return;
     if(MULTI[k]){const slot=plannedSlot(k)||0,n=multiCount(k,slot),tg=multiTargets(k);
       if(n>1&&tg.length>1){c.split={id:k,slot,n,alloc:{[c.foes.indexOf(curTarget())]:n}};return}}
     castSpell(k,{slot:castLvl()})}
@@ -4747,7 +4781,7 @@ function foeAttack(f,mode,atkObj){
   if(hit&&isSub('forgefist',10,h)&&c.grab!=null&&c.react&&!c.burnout&&c.foes[c.grab]&&c.foes[c.grab].hp>0&&c.foes[c.grab]!==f){c.react=false;const g=c.foes[c.grab],x=roll(r.dmg).total;clog(`${head} Meat Shield: you yank ${fn(g)} into the blow. It takes ${x}.`,'good');hurt(g,x,r.dtype||f.dtype,false);checkWin();return}
   if(hit&&!crit&&isSub('glory',15,h)&&c.react&&h.pools.gdef>0&&total<ac+Math.max(1,am('cha'))){c.react=false;h.pools.gdef--;clog(`${head} Glorious Defense: +${Math.max(1,am('cha'))} AC. It misses.`,'good');fxMiss('hero','block');
     if(cheb(f,c.hero)<=1&&f.hp>0){const sv=c.target;c.target=c.foes.indexOf(f);const m=heroWeapons().find(k=>WEAPONS[k]&&WEAPONS[k].kind==='melee');if(m)weaponAttack(m,true);c.target=sv;checkWin()}return}
-  if(hit&&!crit&&knownSpells().includes('shield')&&c.react&&S.flags.autoShield!==false&&total<ac+5&&slotFor(1)){
+  if(hit&&!crit&&knownSpells().includes('shield')&&c.react&&S.flags.autoShield!==false&&total<ac+5&&slotFor(1)&&!castCheck('shield')){
     const l=slotFor(1);useSlot(l);c.react=false;c.shieldUp=true;if(isSub('abjurer',3,h)){const mx=2*h.level+am('int');if(!h.wardMade){h.ward=mx;h.wardMade=true}else h.ward=Math.min(mx,(h.ward||0)+2*l)}clog(`${head} You cast Shield as a reaction: AC ${ac+5}. It misses.`,'good');fxMiss('hero','block');return;
   }
   if(hit&&!crit&&isSub('lore',3,h)&&c.react&&h.pools.bi&&S.flags.autoCutting!==false&&total-biDie()<ac){c.react=false;h.pools.bi--;const x=d(biDie());if(total-x<ac){clog(`${head} Cutting Words: your jeer throws it off by ${x}. It misses.`,'good');fxMiss('hero','block');return}clog(`Cutting Words: you subtract ${x}, but it still hits.`,'info')}
@@ -5595,7 +5629,8 @@ function renderCombat(st){
     const pickRow=c.pick?(()=>{const isSm=c.pick==='smite',lv=isSm?[1,2,3,4,5].filter(l=>h.pools['slot'+l]>0):upcastLevels(c.pick),nm=isSm?'Divine Smite':SPELLS[c.pick].name;
       return `<div class="pickrow"><p><b>${nm}:</b> which slot level? Higher slots make it stronger.</p><div class="actions">${lv.map(l=>btn('act',`Level ${l} (${h.pools['slot'+l]} left)`,`data-k="up:${c.pick}:${l}"`,'btn small')).join('')}${btn('act','Cancel','data-k="cancelpick"','btn ghost small')}</div></div>`})():'';
     const allyRows=allies(c).length?`<p class="meta">Your allies: ${allies(c).map(a=>`${esc(a.name)} ${Math.max(0,a.hp)}/${a.hpMax} HP, AC ${a.ac}`).join('; ')}.</p>`:'';
-    const spBtns=shape()?'':knownSpells().filter(id=>!['shield','magearmor','hellishrebuke'].includes(id)&&SPELLS[id].form!=='utility'&&SPELLS[id].form!=='restheal'&&SPELLS[id].form!=='restbuff').map(id=>{const s=SPELLS[id],issue=spellIssue(id),pl=!issue&&s.lvl?plannedSlot(id):0;
+    const spIssue=id=>{const i0=spellIssue(id);if(!i0||!castCheck(id)||c.swapped||!h.loadouts||h.loadouts.length<2)return i0;const was=h.activeSet||0;h.activeSet=was?0:1;const ok=!castCheck(id)&&!spellIssue(id);h.activeSet=was;return ok?null:i0};
+    const spBtns=shape()?'':knownSpells().filter(id=>!['shield','magearmor','hellishrebuke'].includes(id)&&SPELLS[id].form!=='utility'&&SPELLS[id].form!=='restheal'&&SPELLS[id].form!=='restbuff').map(id=>{const s=SPELLS[id],issue=spIssue(id),pl=!issue&&s.lvl?plannedSlot(id):0;
       return btn('act',`${s.name}${s.cast==='bonus'?' (bonus)':''}${pl&&pl>s.lvl?` at level ${pl}`:''}${issue&&!['action used','bonus action used'].includes(issue)?`: ${issue}`:''}`,`data-k="${id}" ${disab(issue)}`,pl&&pl>s.lvl?'btn small':'btn ghost small')}).join('');
     const mp=maxPools(h),lvls=isWarlock(h)?[]:[1,2,3,4,5,6,7,8,9].filter(l=>mp['slot'+l]);
     const lvlRow=lvls.length>1&&!shape()?`<div class="lvlrow"><span class="meta">Cast at:</span>${btn('act','Lowest','data-k="lvl:0"',castLvl()?'btn ghost small':'btn small')}${lvls.map(l=>btn('act',`Level ${l} (${h.pools['slot'+l]||0})`,`data-k="lvl:${l}" ${disab(!h.pools['slot'+l])}`,castLvl()===l?'btn small':'btn ghost small')).join('')}</div>`:'';
@@ -5903,6 +5938,8 @@ const A={
   closech4(){S.flags.ch4Modal=false;checkLevel();commit()},
   closefinal(){S.flags.finalModal=false;commit()},
   smith(ds){buySmithy(ds.k)},
+  buypouch(){const h=S.hero;if(S.run||h.pouch||S.res.gold<25)return;S.res.gold-=25;h.pouch=true;addLog('You buy a component pouch.');commit()},
+  buymat(ds){const h=S.hero,c2=COSTLY[ds.k];if(S.run||!c2||S.res.gold<c2[0])return;S.res.gold-=c2[0];h.mats=h.mats||{};h.mats[ds.k]=(h.mats[ds.k]||0)+1;addLog(`You buy ${c2[2]}.`);commit()},
   tcant(ds){const h=S.hero;if(S.run)return;ensurePrepared(h);const i=h.cantrips.indexOf(ds.k),free=canFreeEdit(h);
     if(i>=0){if(!free){if(!(h.cswaps>0))return;h.cswaps--}h.cantrips.splice(i,1)}else{if(h.cantrips.length>=cantripCount(h)||!classList(h,0).includes(ds.k))return;h.cantrips.push(ds.k)}commit()},
   tprep(ds){const h=S.hero;if(S.run)return;ensurePrepared(h);const i=h.prepared.indexOf(ds.k),free=canFreeEdit(h)||FREE_SWAP.includes(h.cls);
