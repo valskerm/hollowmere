@@ -210,6 +210,7 @@ details.group summary{font-family:var(--sans);font-weight:700;cursor:pointer;pad
 .cell.lt0{box-shadow:inset 0 0 0 999px rgba(3,6,14,.62)}
 .cell.lt-1{box-shadow:inset 0 0 0 999px rgba(20,4,30,.85)}
 .cell .brazier{font-size:.9rem}
+.tok.pet.sel{outline:3px solid var(--lantern);outline-offset:1px}
 .tok.pet.fam{background:#9db4e0}
 .tok.pet{background:#7fb069;color:#10170f;font-weight:700;display:grid;place-items:center;border-radius:50%;width:80%;height:80%;font-family:var(--sans)}
 .placesq{fill:var(--lantern);fill-opacity:.28;stroke:var(--lantern);stroke-width:1.5;cursor:pointer}
@@ -264,7 +265,7 @@ const SEASONS=['Spring','Summer','Fall','Winter'];
 const WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const XP_AT=[0,300,900,2700,6500,14000,23000,34000,48000,64000,85000,100000,120000,140000,165000,195000,225000,265000,305000,355000,999999];
 const MAX_LEVEL=10;
-const maxLevel=()=>S&&S.flags&&S.flags.sequel?(S.quests&&S.quests.s4c?20:S.quests&&S.quests.s2c?17:14):MAX_LEVEL;
+const maxLevel=()=>S&&S.quests?tierCap():MAX_LEVEL;
 const ABIL=['str','dex','con','int','wis','cha'];
 const ABIL_NAME={str:'Strength',dex:'Dexterity',con:'Constitution',int:'Intelligence',wis:'Wisdom',cha:'Charisma'};
 const ABIL_SHORT={str:'STR',dex:'DEX',con:'CON',int:'INT',wis:'WIS',cha:'CHA'};
@@ -527,6 +528,7 @@ const FEATS={
   skilled:['Skilled','Three extra skill proficiencies of your choice.','origin'],
   brawler:['Tavern Brawler','Unarmed strikes deal 1d4 + Strength, and once per turn a hit shoves the target 5 ft.','origin'],
   tough:['Tough','+2 max HP per level.','origin'],
+  dualwielder:['Dual Wielder','+1 Strength or Dexterity. After attacking with a Light weapon, your bonus-action off-hand attack can use any one-handed melee weapon.','general',['str','dex']],
   gwm:['Great Weapon Master','+1 Strength. Hits with a two-handed melee weapon deal extra damage equal to your proficiency bonus, and a critical hit or a kill earns a bonus-action attack.','general',['str']],
   sharpshooter:['Sharpshooter','+1 Dexterity. Long range and nearby enemies don’t give your ranged weapon attacks disadvantage.','general',['dex']],
   warcaster:['War Caster','+1 to your spellcasting ability. Advantage on saves to keep concentration.','general',['int','wis','cha']],
@@ -813,8 +815,8 @@ const NPCS={
 const PEDDLER_GOODS=[
   {id:'potion',name:'Healing potion',price:18,desc:'Heals 2d4 + 2.'},
   {id:'moonseed',name:'Moonblossom seeds',price:8,desc:'One seed. Grows in 14 days.'},
-  {id:'shield',name:'Iron-rimmed shield',price:40,desc:'+1 AC.',gear:'ac'},
-  {id:'blade',name:'Whetted edge',price:45,desc:'+1 damage on weapon attacks.',gear:'dmg'},
+  {id:'shield',name:'Iron rim for a shield',price:40,desc:'+1 AC with the shield you choose.',gear:'ac'},
+  {id:'blade',name:'Whetted edge',price:45,desc:'+1 damage with the weapon you choose.',gear:'dmg'},
   {id:'charm',name:'Rowan charm',price:30,desc:'+1 to all skill checks.',gear:'check'}
 ];
 
@@ -1068,20 +1070,25 @@ const CONSUMABLE_QTY={potion:2,moonseed:3,greater:2,superior:1,heroism:1};
 function peddlerStock(){
   if(dateInfo(S.day).dow!==5&&!built('market'))return null;
   if(!S.peddler||S.peddler.day!==S.day){
-    const pool=PEDDLER_GOODS.filter(g=>!g.gear||!S.hero.owned.includes(g.id));
+    const pool=PEDDLER_GOODS.filter(g=>!g.gear||!S.hero.owned.includes(g.id)),mp=mundaneShopPool();
     const items=[];while(items.length<3&&pool.length){items.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0].id)}
+    const n2=built('market')?7:5;while(items.length<3+n2&&mp.length){items.push(mp.splice(Math.floor(Math.random()*mp.length),1)[0].id)}
     S.peddler={day:S.day,items,sold:[],qty:Object.fromEntries(items.map(id=>[id,CONSUMABLE_QTY[id]||1]))};
   }
   return S.peddler;
 }
 const peddlePrice=g=>Math.round(g.price*(hasPerk('corwin3')?.9:1)*crafterMul());
+const peddlerGood=id=>PEDDLER_GOODS.find(x=>x.id===id)||(id.startsWith('w:')&&WEAPONS[id.slice(2)]?{id,name:WEAPONS[id.slice(2)].name,price:WPRICE[id.slice(2)]||10,desc:'A weapon.'}:id.startsWith('a:')&&ARMORS[id.slice(2)]?{id,name:ARMORS[id.slice(2)][0],price:ARMORS[id.slice(2)][6],desc:'Armor.'}:null);
 function buyPeddler(id){
-  const st=peddlerStock(),g=PEDDLER_GOODS.find(x=>x.id===id);
+  const st=peddlerStock(),g=peddlerGood(id);
   if(!st||!g||st.sold.includes(id)||S.res.gold<peddlePrice(g))return;
   st.qty=st.qty||{};if(st.qty[id]===undefined)st.qty[id]=CONSUMABLE_QTY[id]||1;
   S.res.gold-=peddlePrice(g);
-  if(g.gear){S.hero.gear[g.gear]++;S.hero.owned.push(g.id)}
-  else S.inv[id]++;
+  if(id.startsWith('w:')){ensureArmor(S.hero);S.hero.ownedW.push(id.slice(2))}
+  else if(id.startsWith('a:')){ensureArmor(S.hero);S.hero.ownedA.push(id.slice(2))}
+  else if(g.gear==='check'){S.hero.gear.check=(S.hero.gear.check||0)+1;S.hero.owned.push(g.id)}
+  else if(g.gear){S.hero.owned.push(g.id);S.hero.pendingUp={src:'corwin',id:g.id};note('Choose which '+(g.gear==='ac'?'shield':'weapon')+' gets the upgrade, on the Hero tab.')}
+  else S.inv[id]=(S.inv[id]||0)+1;
   if(--st.qty[id]<=0)st.sold.push(id);
   addLog(`Bought ${g.name.toLowerCase()} from Corwin.`);commit();
 }
@@ -1165,7 +1172,7 @@ function dailyEvent(lines){
   else if(r===19&&!S.quests.seal){const g=S.plots.filter(p=>p.crop&&p.days>0);if(g.length){pick(g).days--;lines.push('Grey frost on the fields. One crop lost a day of growth.')}}
   else if(r===20){const k=pick(Object.keys(NPCS).filter(k=>!NPCS[k].saturday));gainHearts(k,1);lines.push(`${NPCS[k].name} saw you working late and thinks well of you.`)}
 }
-function act1Ready(){return S.quests.seal&&builtCount()>=4&&S.prosperity>=10&&S.hero.level>=3}
+function act1Ready(){return S.quests.seal&&builtCount()>=4&&S.prosperity>=10&&S.hero.level>=2}
 function checkAct(){if(!S.flags.act1&&act1Ready()){S.flags.act1=true;S.flags.actModal=true;addLog('Hollowmere is a hamlet again.','good')}}
 
 /* ---- adventures ---- */
@@ -1207,6 +1214,7 @@ function enterStage(){
   if(st.effect==='ch2end'){S.flags.ch2=true;S.flags.ch2Modal=true}
   if(st.effect==='calderRedeemed'&&!S.flags.calderRedeemed){S.flags.calderRedeemed=true;giveItem('oathblade');addLog('Ser Calder’s Oathblade is yours.','good')}
   if(st.effect==='ch3end'){S.flags.ch3=true}
+  if(st.effect==='darkPact')S.flags.dark=(S.flags.dark||0)+1;
   if(st.effect==='phylacteryBroken')S.flags.phylacteryBroken=true;
   if(st.effect==='phylacteryKept')S.flags.phylacteryKept=true;
   if(st.effect==='ch5end'){S.flags.ch5=true}
@@ -1327,19 +1335,20 @@ Object.assign(QUESTS,{
 });
 ['well','wolves','kobolds','seal'].forEach(k=>QUESTS[k].act=1);
 const SMITHY_ITEMS=[
-  {id:'armor',name:'Reinforced armor',cost:{gold:60,stone:10},desc:'+1 AC.'},
-  {id:'edge',name:'Dwarven-honed weapons',cost:{gold:50,timber:5},desc:'+1 to weapon attack rolls.'},
-  {id:'moonarmor',name:'Moonsilver armor',cost:{gold:120,moonsilver:4},forge:true,master:true,desc:'+1 AC, and resistance to necrotic damage.'},
-  {id:'wardenblade',name:'Warden’s blade',cost:{gold:300,moonsilver:6},forge:true,foundry:true,desc:'+1 to weapon attack and damage rolls, engraved with the closed eye of the Order.'},
-  {id:'moonblade',name:'Moonsilver weapons',cost:{gold:80,moonsilver:3},forge:true,desc:'+1 damage with weapons, and an extra 1d6 radiant against undead.'}
+  {id:'armor',name:'Reinforced plates',cost:{gold:60,stone:10},desc:'+1 AC with the armor you choose.'},
+  {id:'edge',name:'Dwarven honing',cost:{gold:50,timber:5},desc:'+1 to attack rolls with the weapon you choose.'},
+  {id:'moonarmor',name:'Moonsilver lining',cost:{gold:120,moonsilver:4},forge:true,master:true,desc:'+1 AC and resistance to necrotic damage with the armor you choose.'},
+  {id:'wardenblade',name:'Warden’s blade',cost:{gold:300,moonsilver:6},forge:true,foundry:true,desc:'+1 to attack and damage rolls with the weapon you choose, engraved with the closed eye of the Order.'},
+  {id:'moonblade',name:'Moonsilver inlay',cost:{gold:80,moonsilver:3},forge:true,desc:'+1 damage and an extra 1d6 radiant against undead with the weapon you choose. It also cuts through mundane resistance.'}
 ];
 function smithyCost(it){const c={...it.cost};if(c.gold)c.gold=Math.round(c.gold*crafterMul());if(c.moonsilver&&hasPerk('dorrin6'))c.moonsilver--;return c}
-function buySmithy(id){
-  const it=SMITHY_ITEMS.find(x=>x.id===id),h=S.hero;if(!it||h.owned.includes(id)||!built('smithy')||(it.forge&&!S.flags.forge)||(it.master&&lvl('smithy')<2)||(it.foundry&&lvl('smithy')<3))return;
+function buySmithy(id,target){
+  const it=SMITHY_ITEMS.find(x=>x.id===id),h=S.hero;if(!it||!built('smithy')||(it.forge&&!S.flags.forge)||(it.master&&lvl('smithy')<2)||(it.foundry&&lvl('smithy')<3))return;
   const cost=smithyCost(it);if(!canAfford(cost))return;
   for(const [r,v] of Object.entries(cost))S.res[r]-=v;
-  h.owned.push(id);if(id==='armor')h.gear.ac=(h.gear.ac||0)+1;if(id==='edge')h.gear.atk=(h.gear.atk||0)+1;if(id==='wardenblade'){h.gear.atk=(h.gear.atk||0)+1;h.gear.dmg=(h.gear.dmg||0)+1}if(id==='moonarmor'){h.gear.ac=(h.gear.ac||0)+1;h.gear.necro=true}if(id==='moonblade'){h.gear.dmg=(h.gear.dmg||0)+1;h.gear.moon=true}
-  addLog(`Dorrin hands you ${it.name.toLowerCase()}.`,'good');commit();
+  if(!target||!applyUp(id,target,cost.gold||0)){for(const [r,v] of Object.entries(cost))S.res[r]+=v;return}
+  const tn=(upTargets(UP_KIND[id]).find(x=>x[0]===target)||[0,'it'])[1];upPick=null;
+  addLog(`Dorrin works ${it.name.toLowerCase()} into your ${tn.toLowerCase()}.`,'good');commit();
 }
 function buildingLock(k){
   const b=BUILDINGS[k];
@@ -1355,6 +1364,8 @@ function normalize(st){
   if(st.hero&&!st.hero.items)st.hero.items=[];
   if(!st.places){st.places={};const pos={lumber:[6,4],quarry:[1,1],smithy:[6,6],chapel:[5,3],market:[2,5],watchtower:[7,7]};for(const k of PLACEABLE){if(st.buildings&&st.buildings[k]&&st.buildings[k].status!=='none'){const v=pos[k];st.places[k]={c:v[0],r:v[1]}}}}
   if(!st.cottages)st.cottages=[];
+  if(st.hero){try{const S0=S;S=st;ensureArmor(st.hero);migrateGear(st.hero);S=S0}catch(e){}}
+  if(st.flags&&st.flags.sequel&&st.quests){const q=st.quests;if(!st.flags.arc2&&(q.s1a||q.s1b||q.s1c))st.flags.arc2='frozen';if(!st.flags.arc3&&(q.s4a))st.flags.arc3='greyhallow';if(!st.flags.arc4&&q.s5a)st.flags.arc4='monastery';if(!st.flags.arc2&&st.flags.sequel)st.flags.arc2=null}
   if(st.hero&&st.hero.pouch==null&&!st.hero.v24comp){st.hero.pouch=true;st.hero.v24comp=true}
   if(st.hero&&st.hero.items)st.hero.items.forEach(i=>{if(i.id==='warmage')i.id='warmage1'});
   if(st.hero&&st.hero.level>=3&&!st.hero.sub)st.hero.sub=DEFAULT_SUB[st.hero.cls];
@@ -1533,11 +1544,11 @@ const attuneMax=()=>isSub('thief',13)?4:3;
 const attunedCount=()=>(S.hero.items||[]).filter(i=>i.attuned).length;
 function weaponItem(h=S.hero){const st=h.loadouts?activeSet(h):{},ws=[st.main,st.off].map(v=>v&&resolveHand(v,h)).filter(r=>r&&r.item&&r.item.kind==='weapon'&&(!r.item.attune||r.inst.attuned)).map(r=>r.item);return{wb:Math.max(0,...ws.map(m=>m.wb||0)),fire:ws.find(m=>m.fire),holy:ws.find(m=>m.holy),warn:ws.some(m=>m.warn)}}
 const blessed=()=>S.hero.conc==='bless'||!!S.hero.conds.heroism;
-function giveItem(id){
+function giveItem(id,forcedBase){
   const m=MAGIC[id];
   if(m.consumable){S.inv[id]=(S.inv[id]||0)+1;return}
   const h=S.hero;h.items=h.items||[];const inst={id,attuned:false,charges:m.charges||undefined,uid:Math.random().toString(36).slice(2,9)};
-  if(m.kind==='weapon'){const st=h.loadouts?activeSet(h):null,cur=st&&resolveHand(st.main);let b=m.base||(cur&&cur.base&&WEAPONS[cur.base]?cur.base:ownedBases(h)[0]);
+  if(m.kind==='weapon'){const st=h.loadouts?activeSet(h):null,cur=st&&resolveHand(st.main);let b=forcedBase||m.base||(cur&&cur.base&&WEAPONS[cur.base]?cur.base:ownedBases(h)[0]);
     if(m.fire&&WEAPONS[b].kind!=='melee')b=ownedBases(h).find(x=>WEAPONS[x].kind==='melee')||b;inst.base=b}
   h.items.push(inst);
   if(h.equip&&!(S.run&&S.run.combat)&&autoEquip(inst))note(`${m.name} is equipped${m.attune?' and attuned':''}. Change it on the Hero tab.`);
@@ -1560,18 +1571,19 @@ function merchantStock(size=5){
 function merchantTick(lines){
   if(!S.merchant)S.merchant={arrive:S.day+6+d(6),leave:0,stock:[],sold:[]};
   const m=S.merchant;
-  if(S.day===m.arrive){m.leave=S.day+2;m.stock=merchantStock(lvl('market')>=3?7:5);m.sold=[];m.qty=Object.fromEntries(m.stock.map(id=>[id,CONSUMABLE_QTY[id]||1]));lines.push('A painted wagon rolls into the square, hung with bells and glass charms. Mirela the Wanderer is selling magic items for the next three days.')}
+  if(S.day===m.arrive){m.leave=S.day+2;m.stock=merchantStock(lvl('market')>=3?7:5);m.sold=[];{const h=S.hero,st=h.loadouts?activeSet(h):null,cur=st&&resolveHand(st.main);m.bases={};for(const id of m.stock){const mm=MAGIC[id];if(mm.kind!=='weapon')continue;let b=mm.base||(cur&&cur.base&&WEAPONS[cur.base]?cur.base:ownedBases(h)[0]);if(mm.fire&&WEAPONS[b].kind!=='melee')b=ownedBases(h).find(x=>WEAPONS[x].kind==='melee')||b;m.bases[id]=b}}m.qty=Object.fromEntries(m.stock.map(id=>[id,CONSUMABLE_QTY[id]||1]));lines.push('A painted wagon rolls into the square, hung with bells and glass charms. Mirela the Wanderer is selling magic items for the next three days.')}
   if(m.leave&&S.day>m.leave){lines.push('Mirela’s wagon has moved on.');S.merchant={arrive:S.day+(lvl('market')>=2?5+d(4):8+d(8)),leave:0,stock:[],sold:[]}}
 }
+function saleBase(id){const m=MAGIC[id],h=S.hero;ensureArmor(h);if(m.kind==='weapon'){const b=(S.merchant.bases||{})[id]||m.base;return b&&WEAPONS[b]?WEAPONS[b].name:'weapon'}if(m.kind==='shield')return'shield';if(m.kind==='focus')return'spellcasting focus, held';if(m.slot==='armor')return h.armor?`fitted to your ${ARMORS[h.armor][0].toLowerCase()}`:'armor (you need to wear armor)';if(m.tome)return'book';if(m.consumable)return'potion';return({ring:'ring',amulet:'amulet',belt:'belt',wondrous:'wondrous item'})[m.slot||'wondrous']||'wondrous item'}
 const mPrice=id=>Math.round(MAGIC[id].price*(hasPerk('corwin6')?.9:1));
 function buyMagic(id){
   const m=S.merchant;if(!merchantHere()||!m.stock.includes(id)||m.sold.includes(id)||S.res.gold<mPrice(id))return;
   m.qty=m.qty||{};if(m.qty[id]===undefined)m.qty[id]=CONSUMABLE_QTY[id]||1;
-  S.res.gold-=mPrice(id);if(--m.qty[id]<=0)m.sold.push(id);giveItem(id);addLog(`Bought ${MAGIC[id].name} from Mirela.`,'good');commit();
+  S.res.gold-=mPrice(id);if(--m.qty[id]<=0)m.sold.push(id);giveItem(id,(m.bases||{})[id]);addLog(`Bought ${MAGIC[id].name} from Mirela.`,'good');commit();
 }
 function sellMagic(i){
   const h=S.hero,it=h.items[i];if(!it||!merchantHere())return;if(h.equip)unequipUid(uidOf(it));
-  const val=Math.floor(MAGIC[it.id].price/2);h.items.splice(i,1);S.res.gold+=val;addLog(`Sold ${MAGIC[it.id].name} to Mirela for ${val} gp.`);commit();
+  const val=Math.floor((MAGIC[it.id].price+(it.upv||0))/2);h.items.splice(i,1);if(h.ups)delete h.ups['i:'+it.uid];S.res.gold+=val;addLog(`Sold ${MAGIC[it.id].name} to Mirela for ${val} gp.`);commit();
 }
 
 /* ---- random bounties ---- */
@@ -1885,16 +1897,16 @@ Object.assign(QUESTS,{
       {t:'fight',foes:['youngblack'],text:'The dragon uncoils with a hiss like a kettle, acid already dripping from its jaws.'}
     ]},
   s2c:{act:5,name:'The Drowned Abbey',lvl:13,needs:'s2b',rests:2,
-    blurb:'Morvath the Drowner coils around the third seal at the bottom of the abbey. The bells are ringing for you.',
+    blurb:'Morvath the Drowner coils around the seal at the bottom of the abbey. The bells are ringing for you.',
     reward:{gold:2000,xp:25000},done:'',
     stages:[
-      {t:'text',text:'You descend through the flooded nave on a rope of moonsilver chain. The bells ring in the black water around you. The third Sleeper’s seal glows faintly below.'},
+      {t:'text',text:'You descend through the flooded nave on a rope of moonsilver chain. The bells ring in the black water around you. The Sleeper’s seal glows faintly below.'},
       {t:'fight',foes:['wraith','ghast'],text:'The abbey’s last monks still keep their vigil, and they do not want visitors.'},
       {t:'text',if:'shard',text:'The rime shard at your belt grows cold, and the wraiths hesitate. They know what you carry.'},
       {t:'save',save:'dex',dc:18,text:'The floor of the chapter house gives way into the dragon’s flooded lair.',
         pass:{text:'You catch the edge and swing down safely.'},fail:{text:'You fall, hard, into acid-slick water.',damage:'6d10',dtype:'acid'}},
       {t:'fight',foes:['morvath'],text:'Morvath the Drowner rises from the black water, vast and ancient, the drowned seal glowing in her coils. “My child,” she hisses. “You will pay for my child.”'},
-      {t:'text',effect:'ch2end',text:'Morvath sinks into the dark. You reseal the third Sleeper with the Order’s keys. On the altar, someone has left a message carved fresh into the stone: “Three of seven. Come to Greyhallow, Warden. I have something of yours.” It is signed with a closed eye.'}
+      {t:'text',effect:'ch2end',text:'Morvath sinks into the dark. You reseal the Sleeper with the Order’s keys. On the altar, someone has left a message carved fresh into the stone: “Three of seven. Come to Greyhallow, Warden. I have something of yours.” It is signed with a closed eye.'}
     ]}
 });
 const SEQUEL_CHAPTERS=[[4,'Chapter 1: The Frozen Seal'],[5,'Chapter 2: The Drowned Abbey']];
@@ -1923,10 +1935,10 @@ Object.assign(QUESTS,{
       {t:'fight',foes:['firegiant'],text:'A fire giant forge-warden hefts a sword as long as a cart.'}
     ]},
   s3c:{act:6,name:'The Burning Court',lvl:15,needs:'s3b',rests:2,
-    blurb:'Ser Calder, Vaelor’s death knight, holds the forge-seal of the fourth Sleeper. He was a Warden of the Order once.',
+    blurb:'Ser Calder, Vaelor’s death knight, holds the forge-seal of the Sleeper. He was a Warden of the Order once.',
     reward:{gold:3000,xp:30000},done:'',
     stages:[
-      {t:'text',text:'The Burning Court is a cathedral of forges. In its heart, under a dome of black glass, the fourth Sleeper dreams of fire, and its seal glows cherry red.'},
+      {t:'text',text:'The Burning Court is a cathedral of forges. In its heart, under a dome of black glass, the Sleeper dreams of fire, and its seal glows cherry red.'},
       {t:'fight',foes:['hellhound','hellhound','salamander'],text:'The court’s keepers come at you from every forge-mouth.'},
       {t:'text',text:'Before the seal waits a knight in burned plate, an Order eye etched on his breastplate and scratched through. “Another Warden,” says Ser Calder. “I was one too. I knelt to Vaelor because I was tired of being afraid.”'},
       {t:'choice',text:'His hand rests on his sword, but he hasn’t drawn it.',options:[
@@ -1937,7 +1949,7 @@ Object.assign(QUESTS,{
       {id:'redeemed',t:'text',effect:'calderRedeemed',text:'“Thane Ashgar commands here now,” Calder says, rising, his voice already fading. “Go. Finish what I couldn’t.” His armor falls empty. The sword stays, burning gold instead of red.'},
       {t:'fight',goto:'sealed',foes:['ashgar'],text:'The fire giant Thane Ashgar strides out of the largest forge, wreathed in smoke. “The knight was weak,” he rumbles. “I am not.”'},
       {id:'calder',t:'fight',foes:['calder'],text:'Ser Calder raises a sword wreathed in black fire. Around him, the forge-fires bend toward his blade.'},
-      {id:'sealed',t:'text',effect:'ch3end',text:'You reseal the fourth Sleeper with the Order’s keys. The forges of Cinderhold go quiet one by one, and for the first time in a month the dwarves’ bells ring out over Mount Ember.'}
+      {id:'sealed',t:'text',effect:'ch3end',text:'You reseal the Sleeper with the Order’s keys. The forges of Cinderhold go quiet one by one, and for the first time in a month the dwarves’ bells ring out over Mount Ember.'}
     ]},
   s4a:{act:7,name:'The road to Greyhallow',lvl:15,needs:'s3c',
     blurb:'Greyhallow, the Varne family’s city, has closed its gates. Travelers who go in at dusk don’t come out.',
@@ -1953,7 +1965,7 @@ Object.assign(QUESTS,{
     ]},
   s4b:{act:7,name:'House Varne',lvl:16,needs:'s4a',
     blurb:'The way to the Night Court runs through the Varne family’s townhouse and its crypts.',
-    reward:{gold:2500,xp:22000},done:'You stand at the bottom of the Varne crypts. The fifth seal is somewhere below, and so is Lord Aldric Varne.',
+    reward:{gold:2500,xp:22000},done:'You stand at the bottom of the Varne crypts. The seal is somewhere below, and so is Lord Aldric Varne.',
     stages:[
       {t:'text',if:'ysoldeAlly',set:'ambush',text:'Ysolde leads you through a servants’ passage only a Varne would know. “I grew up here,” she whispers. “I never knew what was under it.”'},
       {t:'text',if:'noYsolde',text:'The townhouse is silent. Portraits of the Varne family line the stairs, and the newest one is Ysolde, painted pale and smiling, with a red smear at the corner of her mouth.'},
@@ -1961,16 +1973,16 @@ Object.assign(QUESTS,{
       {t:'fight',foes:['vampspawn','vampspawn','ghast'],text:'The crypts are full of the family’s servants, and none of them are dead enough.'}
     ]},
   s4c:{act:7,name:'The Night Court',lvl:16,needs:'s4b',rests:2,
-    blurb:'Lord Aldric Varne, Ysolde’s grandfather, keeps the fifth seal. The man who sealed forty miners in Gallery Nine never died.',
+    blurb:'Lord Aldric Varne, Ysolde’s grandfather, keeps the seal. The man who sealed forty miners in Gallery Nine never died.',
     reward:{gold:4000,xp:35000},done:'',
     stages:[
-      {t:'text',text:'The Night Court is a ballroom under the city, lit by a thousand candles. The fifth Sleeper lies beneath its glass floor, dreaming of hunger. At the head of the room sits an old man who looks thirty.'},
+      {t:'text',text:'The Night Court is a ballroom under the city, lit by a thousand candles. The Sleeper lies beneath its glass floor, dreaming of hunger. At the head of the room sits an old man who looks thirty.'},
       {t:'save',save:'wis',dc:18,text:'Lord Aldric’s gaze finds you across the room, and his voice is suddenly inside your head: kneel.',
         pass:{text:'You keep your feet.'},fail:{text:'Your knees buckle before you shake it off. It costs you.',damage:'6d8',dtype:'psychic'}},
       {t:'fight',foes:['vampspawn','vampspawn'],text:'The dancers stop dancing and turn toward you, all at once.'},
       {t:'text',if:'ledger',text:'You still have the miners’ ledger from Gallery Nine. When Aldric sees it, his smile slips for the first time.'},
       {t:'fight',foes:['aldric'],text:'Lord Aldric Varne rises. “Forty miners,” he says. “Do you know what forty lives buy, Warden? Forever.”'},
-      {t:'text',effect:'ch4end',text:'Aldric crumbles into grey ash at the first touch of dawn through the shattered skylight. You reseal the fifth Sleeper. On his desk lies a letter in an old, precise hand: “The phylactery is safe where the Order began. Come and find it, if you can. — V.”'}
+      {t:'text',effect:'ch4end',text:'Aldric crumbles into grey ash at the first touch of dawn through the shattered skylight. You reseal the Sleeper. On his desk lies a letter in an old, precise hand: “The phylactery is safe where the Order began. Come and find it, if you can. — V.”'}
     ]}
 });
 SEQUEL_CHAPTERS.push([6,'Chapter 3: The Burning Court'],[7,'Chapter 4: Greyhallow']);
@@ -2047,11 +2059,11 @@ Object.assign(QUESTS,{
         {label:'Bind them to yourself',goto:'f_bind',req:'canBind'}]},
       {id:'f_seal',t:'text',effect:'finalSeal',goto:'f_end',text:'You speak the vigil, and every seal in the realm closes at once. The Sleepers sink into a dream so deep they will never wake again. Somewhere, you know, you have become the Last Warden, and you always will be.'},
       {id:'f_wake',t:'text',effect:'finalWake',goto:'f_end',text:'You do what Ilsa taught you with the first Sleeper: you don’t fight the dream, you answer it. One by one, the seven wake slowly, gently, and their waking spreads through the realm as pale flowers and good harvests and very strange weather.'},
-      {id:'f_bind',t:'text',effect:'finalBind',goto:'f_end',text:'You crush the phylactery in your fist and drink in the dreams of seven Sleepers. Their power floods you, cold and endless. When you climb out of the mine, Hollowmere kneels. You are the Unwaking now.'},
+      {id:'f_bind',t:'text',effect:'finalBind',goto:'f_end',text:'You call on every dark bargain you have made and drink in the dreams of seven Sleepers. Their power floods you, cold and endless. When you climb out of the mine, Hollowmere kneels. You are the Unwaking now.'},
       {id:'f_end',t:'text',text:'The war is over.'}
     ]}
 });
-Object.assign(COND,{calderRedeemed:()=>!!S.flags.calderRedeemed,koboldsAllied:()=>!!S.flags.koboldsAllied,phylKept:()=>!!S.flags.phylacteryKept,canWakeAll:()=>S.flags.ending==='bloom'||(S.npcs.ilsa&&S.npcs.ilsa.hearts>=8),canBind:()=>!!S.flags.phylacteryKept&&!!S.flags.rimeShard});
+Object.assign(COND,{calderRedeemed:()=>!!S.flags.calderRedeemed,koboldsAllied:()=>!!S.flags.koboldsAllied,phylKept:()=>!!S.flags.phylacteryKept,canWakeAll:()=>S.flags.ending==='bloom'||(S.npcs.ilsa&&S.npcs.ilsa.hearts>=8),canBind:()=>darkCount()>=2});
 SEQUEL_CHAPTERS.push([8,'Chapter 5: The First Monastery'],[9,'Chapter 6: The Unwaking']);
 Object.assign(CHAPTER_PREV,{8:'s4c',9:'s5c'});
 const FINAL_ENDINGS={
@@ -2060,6 +2072,107 @@ const FINAL_ENDINGS={
   bind:['The Unwaking','Seven Sleepers dream inside you now. Hollowmere is safe, and prosperous, and very quiet. Nobody in the valley ever raises their voice to you again.']
 };
 
+/* ---- campaign tiers: intro (1-4), then one arc per tier ---- */
+const ENC_BUDGET=[0,[50,75,100],[100,150,200],[150,225,400],[250,375,500],[500,750,1100],[600,1000,1400],[750,1300,1700],[1000,1700,2100],[1300,2000,2600],[1600,2300,3100],[1900,2900,4100],[2200,3700,4700],[2600,4200,5400],[2900,4900,6200],[3300,5400,7800],[3800,6100,9800],[4500,7200,11700],[5000,8700,14200],[5500,10700,17200],[6400,13200,22000]];
+function scaleFoes(foes){const L=S.hero.level,b=ENC_BUDGET[Math.min(20,Math.max(1,L))],xp=foes.reduce((a,f)=>a+(f.xp||0),0);if(!xp||S.run.qid==='raid')return;
+  const story=QUESTS[S.run.qid]&&S.run.qid!=='patrol';const target=foes.length===1?b[2]:b[1];let k=target/xp;if(k>0.75&&k<1.75)return;if(k>1&&!story)return;k=Math.max(0.2,Math.min(1.8,k));
+  const hm=Math.pow(k,0.6),dm=Math.max(0.35,Math.min(1.8,Math.pow(k,0.5))),aa=Math.max(-5,Math.min(4,Math.round(2*Math.log2(k))));
+  for(const f of foes){f.hp=f.hpMax=Math.max(1,Math.round(f.hp*hm));if(f.regen)f.regen=Math.max(1,Math.round(f.regen*hm*hm));f.dmgMul=dm;f.atk=(f.atk||0)+aa;if(f.attacks)f.attacks=f.attacks.map(a=>({...a,atk:a.atk+aa,paralyze:a.paralyze?a.paralyze+Math.round(aa/2):a.paralyze}));if(f.ranged)f.ranged={...f.ranged,atk:f.ranged.atk+aa};if(f.burst)f.burst={...f.burst,dc:f.burst.dc+Math.round(aa/2)};if(k<0.5)f.ac=Math.max(10,f.ac-1);f.xp=Math.round((f.xp||0)*k)}
+}
+const ARCS={
+  2:{lv:'5 to 10',list:[['frozen','The Frozen Seal','Winter wolves, frost giants and the Jarl of the White Pass guard a seal in the ice.',['s1a','s1b','s1c']],['drowned','The Drowned Abbey','A sunken abbey, its ghastly monks, and a black dragon coiled around the seal.',['s2a','s2b','s2c']],['burning','The Burning Court','Hell hounds, fire giants and a fallen knight in the city of Cinderhold.',['s3a','s3b','s3c']]]},
+  3:{lv:'11 to 16',list:[['greyhallow','The Night Court of Greyhallow','House Varne’s vampires rule a city from the dark.',['s4a','s4b','s4c']],['thorn','The Thornwood Court','Deep in the Wolfwood, a fey queen has grown a court around a seal.',['t3a','t3b','t3c']],['legion','The Iron Legion','Under the hills, a dwarven foundry still forges soldiers for a war that ended centuries ago.',['t3d','t3e','t3f']]]},
+  4:{lv:'17 to 18',list:[['monastery','The First Monastery','Vaelor’s phylactery lies in the oldest monastery of the Order.',['s5a','s5b','s5c']],['star','The Sunken Star','Something fell into the Mirrormere a thousand years ago. It is waking up.',['t4a','t4b','t4c']],['dream','The Dream Road','Ilsa’s moonblossom can carry you into the Sleepers’ dream, where Vaelor walks unguarded.',['t4d','t4e','t4f']]]}
+};
+const FINALE=['s6a','s6b','s6c'];
+const arcOf=t=>{const id=S.flags['arc'+t];return id?ARCS[t].list.find(a=>a[0]===id):null};
+const arcDone=t=>{const a=arcOf(t);return !!a&&!!S.quests[a[3][2]]};
+const tierOpen=t=>t===2?!!S.quests.descent:arcDone(t-1);
+const darkCount=()=>(S.flags.dark||0)+(S.flags.rimeShard?1:0)+(S.flags.phylacteryKept?1:0);
+function tierCap(){if(!S.quests.descent)return 4;if(!arcDone(2))return 10;if(!arcDone(3))return 16;return 20}
+let arcPick=null;
+function renderTiers(){if(!S.quests.descent)return'';let html='';
+  for(const t of [4,3,2]){if(!tierOpen(t))continue;const T=ARCS[t],a=arcOf(t);
+    if(!a){html+=`<div class="raidbox" style="border-color:var(--lantern)"><p><b>Choose your path (levels ${T.lv}).</b> Pick one. The other two close for this hero; New Game+ will let you take them later.</p><ul class="ledger">${T.list.map(([id,n,bl])=>`<li><b>${n}</b><p class="meta">${bl}</p><div class="actions">${arcPick===id?btn('arcok','Yes, take this path',`data-k="${t}:${id}"`,'btn small')+btn('arcno','Not yet','','btn ghost small'):btn('arcpick','Choose this path',`data-k="${id}"`,'btn ghost small')}</div></li>`).join('')}</ul></div>`}
+    else html+=`<h2>Levels ${T.lv}: ${a[1]}</h2><ul class="ledger">${a[3].map(questRow).join('')}</ul>`}
+  if(arcDone(4))html=`<h2>Levels 19 to 20: The Unwaking</h2><ul class="ledger">${FINALE.map(questRow).join('')}</ul>`+html;
+  return html}
+Object.assign(ENEMIES,{
+  redcap:{name:'Redcap',type:'fey',ac:13,hp:'6d6+12',atk:6,dmg:'2d8+4',dtype:'slashing',xp:700,speed:5,mods:{str:4,dex:1,con:3,int:-1,wis:1,cha:0},attacks:[{name:'wicked sickle',atk:6,dmg:'2d8+4',dtype:'slashing'},{name:'iron boot',atk:6,dmg:'1d8+4',dtype:'bludgeoning'}]},
+  dryadthrall:{name:'Thorn-bound dryad',type:'fey',ac:13,hp:'8d8+8',atk:5,dmg:'1d8+2',dtype:'bludgeoning',xp:700,speed:6,keepAway:true,mods:{str:0,dex:3,con:1,int:1,wis:3,cha:4},ranged:{name:'thorn',range:6,long:24,atk:6,dmg:'2d6+3',dtype:'piercing'}},
+  thornqueen:{name:'The Thorn Queen',type:'fey',ac:18,hp:'20d10+80',atk:12,dmg:'3d8+6',dtype:'piercing',xp:15000,speed:6,reach:2,regen:10,regenStop:['fire'],mods:{str:5,dex:4,con:4,int:3,wis:4,cha:6},attacks:[{name:'thorn lash',atk:12,dmg:'3d8+6',dtype:'piercing'},{name:'thorn lash',atk:12,dmg:'3d8+6',dtype:'piercing'}],burst:{name:'Bramble Storm',dc:19,dmg:'8d10',dtype:'piercing',range:12}},
+  clocksoldier:{name:'Clockwork soldier',type:'construct',ac:17,hp:'10d8+30',atk:7,dmg:'1d10+4',dtype:'slashing',xp:1800,speed:6,reach:2,immune:['poison','psychic'],mods:{str:4,dex:0,con:3,int:-3,wis:0,cha:-5},attacks:[{name:'halberd',atk:7,dmg:'1d10+4',dtype:'slashing'},{name:'halberd',atk:7,dmg:'1d10+4',dtype:'slashing'}]},
+  ironabbot:{name:'The Iron Abbot',type:'construct',ac:20,hp:'20d10+100',atk:12,dmg:'3d10+6',dtype:'bludgeoning',xp:15000,speed:6,immune:['poison','psychic'],resistMundane:true,mods:{str:7,dex:0,con:5,int:2,wis:2,cha:0},attacks:[{name:'iron fist',atk:12,dmg:'3d10+6',dtype:'bludgeoning'},{name:'iron fist',atk:12,dmg:'3d10+6',dtype:'bludgeoning'}],burst:{name:'Steam Vent',dc:19,dmg:'10d8',dtype:'fire',range:6}},
+  starspawn:{name:'Starspawn',type:'aberration',ac:15,hp:'12d8+36',atk:8,dmg:'2d8+4',dtype:'slashing',xp:2900,speed:6,mods:{str:4,dex:2,con:3,int:2,wis:1,cha:0},attacks:[{name:'claw',atk:8,dmg:'2d8+4',dtype:'slashing'},{name:'mind lash',atk:8,dmg:'2d10',dtype:'psychic'}]},
+  mindhusk:{name:'Mindhusk',type:'aberration',ac:14,hp:'14d8+42',atk:9,dmg:'2d6+2',dtype:'bludgeoning',xp:3900,speed:6,keepAway:true,mods:{str:0,dex:2,con:3,int:5,wis:3,cha:2},ranged:{name:'mind bolt',range:12,long:24,atk:9,dmg:'4d8',dtype:'psychic'},burst:{name:'Psychic Scream',dc:17,dmg:'6d8',dtype:'psychic',range:6}},
+  watcherbelow:{name:'The Watcher Below',type:'aberration',ac:19,hp:'22d12+110',atk:13,dmg:'3d6+7',dtype:'bludgeoning',xp:33000,speed:6,reach:2,immune:['psychic'],mods:{str:7,dex:1,con:5,int:6,wis:5,cha:4},attacks:[{name:'tentacle',atk:13,dmg:'3d6+7',dtype:'bludgeoning'},{name:'tentacle',atk:13,dmg:'3d6+7',dtype:'bludgeoning'},{name:'tentacle',atk:13,dmg:'3d6+7',dtype:'bludgeoning'}],burst:{name:'Unblinking Gaze',dc:21,dmg:'12d8',dtype:'psychic',range:12}},
+  nightmareshade:{name:'Nightmare shade',type:'undead',ac:15,hp:'14d8+28',atk:8,dmg:'3d8',dtype:'psychic',xp:2900,speed:8,immune:['necrotic','poison'],resistMundane:true,mods:{str:-2,dex:4,con:2,int:1,wis:2,cha:3},attacks:[{name:'dread touch',atk:8,dmg:'3d8',dtype:'psychic'},{name:'dread touch',atk:8,dmg:'3d8',dtype:'psychic'}]},
+  dreamvaelor:{name:'Vaelor, Dreaming',type:'undead',ac:18,hp:'20d10+80',atk:12,dmg:'3d8',dtype:'cold',xp:25000,speed:6,keepAway:true,immune:['psychic','necrotic'],mods:{str:1,dex:3,con:4,int:6,wis:4,cha:5},ranged:{name:'dream bolt',range:24,long:24,atk:12,dmg:'4d8',dtype:'psychic'},rangedMulti:2,attacks:[{name:'grave touch',atk:12,dmg:'3d8',dtype:'cold',paralyze:17}],burst:{name:'Lucid Collapse',dc:20,dmg:'10d8',dtype:'psychic',range:12}}
+});
+const darkChoice=(q,lbl,dark,light)=>[{t:'choice',text:q,options:[{label:lbl[0],goto:'lt'},{label:lbl[1],goto:'dk'}]},{id:'dk',t:'text',effect:'darkPact',goto:'fin',text:dark},{id:'lt',t:'text',text:light},{id:'fin',t:'text',text:'The seal holds. Somewhere far off, you feel Vaelor’s attention turn toward you.'}];
+Object.assign(QUESTS,{
+  t3a:{act:23,name:'The Withering Wood',lvl:11,blurb:'Past the shrine, the Wolfwood turns grey. Ilsa says the trees are being drunk dry.',reward:{gold:1500,xp:30000},done:'You find the court’s outer gate: two oaks grown together into an arch of thorns.',stages:[
+    {t:'text',text:'Every step deeper, the leaves crunch like paper. Things with red caps watch from the undergrowth.'},
+    {t:'check',skill:'nature',dc:16,text:'The wood itself is the trap: thorns that move, roots that grab.',pass:{text:'You read the wood and take the paths it hasn’t poisoned.',set:'ambush'},fail:{text:'Thorns rake you bloody.',damage:'4d8',dtype:'poison'}},
+    {t:'fight',foes:['redcap','redcap','needleblight'],text:'Redcaps, iron-shod and grinning, drop out of the branches.'}]},
+  t3b:{act:23,name:'Court of Thorns',lvl:13,needs:'t3a',blurb:'The Thorn Queen holds court among enthralled dryads. She invites you in.',reward:{gold:2000,xp:40000},done:'The courtiers scatter. The Queen’s throne room lies open.',stages:[
+    {t:'text',text:'The court is beautiful and terrible: music, wine that tastes of honey and rot, dancers who cannot stop.'},
+    {t:'save',save:'wis',dc:17,text:'The music wraps around your thoughts and squeezes.',pass:{text:'You keep your feet still.'},fail:{text:'You dance until your feet bleed.',damage:'6d6',dtype:'psychic'}},
+    {t:'check',skill:'persuasion',dc:18,text:'A thorn-bound dryad begs you to free her.',pass:{text:'You promise, and she shows you the way past the guards.',set:'ambush'},fail:{text:'She screams for the guards instead.'}},
+    {t:'fight',foes:['dryadthrall','dryadthrall','vineblight'],text:'The Queen’s thralls close in.'}]},
+  t3c:{act:23,name:'The Thorn Queen',lvl:15,needs:'t3b',rests:2,blurb:'The seal is her throne. She won’t give it up.',reward:{gold:4000,xp:60000},done:'The Thorn Queen is gone, and the Wolfwood is green again.',stages:[
+    {t:'fight',foes:['redcap','dryadthrall','vineblight'],text:'Her last guard stands among the roses.'},
+    {t:'fight',foes:['thornqueen'],text:'The Thorn Queen rises from her throne of roots. “You may kneel,” she says, “or you may feed my roses.”'},
+    ...darkChoice('The Queen lies withered. Her crown of thorns rolls to your feet, still pulsing with the seal’s power.',['Burn the crown and reseal the court','Wear the Thorn Crown'],'The thorns bite into your scalp. The wood bows to you. It feels like being loved by something very hungry.','The crown burns green. The wood exhales, and the seal sinks back into the earth.')]},
+  t3d:{act:24,name:'The Silent Foundry',lvl:11,blurb:'Tikka’s miners broke into a dwarven foundry that should have been empty for six hundred years. It’s still running.',reward:{gold:1500,xp:30000},done:'Behind the foundry, a staircase descends into the forge-halls of Karak Thune.',stages:[
+    {t:'text',text:'Hammers ring in the dark. Nobody is swinging them.'},
+    {t:'check',skill:'investigation',dc:16,text:'The foundry is laced with old dwarven traps.',pass:{text:'You find the trip-plates and the pressure valves.',set:'ambush'},fail:{text:'A steam valve bursts in your face.',damage:'4d10',dtype:'fire'}},
+    {t:'fight',foes:['clocksoldier','clocksoldier'],text:'Two clockwork soldiers turn their heads toward you, gears grinding.'}]},
+  t3e:{act:24,name:'March of Iron',lvl:13,needs:'t3d',blurb:'The Legion is marching toward the surface, toward Hollowmere.',reward:{gold:2000,xp:40000},done:'You break the Legion’s vanguard. The rest wait for their master’s command.',stages:[
+    {t:'text',text:'A hundred iron soldiers march in perfect step through the deep roads.'},
+    {t:'check',skill:'athletics',dc:18,text:'You climb ahead along the chain-lifts to cut them off.',pass:{text:'You reach the gatehouse first.'},fail:{text:'A chain snaps and you fall.',damage:'6d10',dtype:'bludgeoning'}},
+    {t:'fight',foes:['clocksoldier','clocksoldier','clocksoldier'],text:'The vanguard holds the gate.'},
+    {t:'fight',foes:['stonegolem'],text:'A stone guardian, older than the Legion, wakes to defend it.'}]},
+  t3f:{act:24,name:'The Iron Abbot',lvl:15,needs:'t3e',rests:2,blurb:'A dwarven priest became the Legion’s heart to guard the seal forever. He forgot why.',reward:{gold:4000,xp:60000},done:'The foundry falls silent. The Iron Legion will not march.',stages:[
+    {t:'fight',foes:['clocksoldier','stonegolem'],text:'The Abbot’s honor guard stands in the cathedral of iron.'},
+    {t:'fight',foes:['ironabbot'],text:'The Iron Abbot unfolds from his throne, twelve feet of brass and faith. “The seal is mine to keep.”'},
+    ...darkChoice('The Abbot falls silent. The Legion stands frozen, waiting for a new voice to obey.',['Shut the Legion down forever','Take command of the Iron Legion'],'A hundred iron heads turn toward you. They will march wherever you say.','You pull the Abbot’s heart-gear. Across the halls, a hundred soldiers sink to their knees and go still.')]},
+  t4a:{act:25,name:'Lights in the Mere',lvl:17,blurb:'The Mirrormere glows at night now, and the fishermen who look too long walk into the water.',reward:{gold:3000,xp:25000},done:'The lights lead down: there is a city under the lake, and a star at its heart.',stages:[
+    {t:'check',skill:'perception',dc:19,text:'Something moves under the glowing water.',pass:{text:'You spot them before they spot you.',set:'ambush'},fail:{text:'A mind-lash catches you looking.',damage:'6d8',dtype:'psychic'}},
+    {t:'fight',foes:['starspawn','starspawn'],text:'Starspawn crawl out of the mere, dripping light.'}]},
+  t4b:{act:25,name:'The Drowned Choir of Stars',lvl:18,needs:'t4a',blurb:'In the sunken city, the drowned sing to the star.',reward:{gold:3500,xp:30000},done:'The choir falls silent. The star’s chamber lies below.',stages:[
+    {t:'save',save:'int',dc:19,text:'The song is a geometry your mind wasn’t built for.',pass:{text:'You hold on to the shape of yourself.'},fail:{text:'For a moment you forget which way is up.',damage:'8d8',dtype:'psychic'}},
+    {t:'fight',foes:['mindhusk','starspawn','starspawn'],text:'The choirmaster turns its empty face toward you.'}]},
+  t4c:{act:25,name:'The Watcher Below',lvl:18,needs:'t4b',rests:2,blurb:'The fallen star is an eye. It has been watching the seal for a thousand years.',reward:{gold:5000,xp:35000},done:'The Mirrormere is dark and still.',stages:[
+    {t:'fight',foes:['mindhusk','mindhusk'],text:'Two mindhusks guard the star’s chamber.'},
+    {t:'fight',foes:['watcherbelow'],text:'The Watcher Below opens. It is not a star. It never was.'},
+    ...darkChoice('The Watcher’s light dims to a single, pleading point. You could seal it, or drink it.',['Seal the star away','Drink the starlight'],'The light floods into you. You see everything at once, for a moment, and some of it stays.','You press the seal down over the dying light. The Mirrormere goes dark, and stays dark.'),
+    {t:'text',effect:'ch5end',text:'On the shore, the bells of every chapel in the valley begin to ring by themselves. Vaelor is marching on the last seal, beneath Hollowmere.'}]},
+  t4d:{act:26,name:'The Moonblossom Door',lvl:17,blurb:'Ilsa can open a door into the Sleepers’ dream with moonblossom smoke. Someone must walk through it.',reward:{gold:3000,xp:25000},done:'You stand on the Dream Road, a path of moonlight across a sea of sleeping minds.',stages:[
+    {t:'text',text:'Ilsa burns the moonblossom. The smoke smells like your childhood home. You close your eyes.'},
+    {t:'check',skill:'arcana',dc:18,text:'The door wants to close behind you.',pass:{text:'You hold it open long enough to step through cleanly.',set:'ambush'},fail:{text:'You tumble through badly.',damage:'6d8',dtype:'psychic'}},
+    {t:'fight',foes:['nightmareshade','wraith'],text:'The Sleepers’ nightmares notice an intruder.'}]},
+  t4e:{act:26,name:'Halls of the Dreaming',lvl:18,needs:'t4d',blurb:'Every Sleeper dreams a hall. Vaelor has been walking through them all.',reward:{gold:3500,xp:30000},done:'At the end of the last hall, someone is waiting for you. He looks younger than you expected.',stages:[
+    {t:'save',save:'wis',dc:19,text:'The halls show you everyone you’ve ever failed.',pass:{text:'You walk on.'},fail:{text:'It hurts more than any blade.',damage:'8d8',dtype:'psychic'}},
+    {t:'fight',foes:['nightmareshade','nightmareshade','wraith'],text:'Vaelor’s dream-guards bar the way.'}]},
+  t4f:{act:26,name:'Vaelor’s Dream',lvl:18,needs:'t4e',rests:2,blurb:'Here, in his dream, Vaelor is still a young Warden. And here, he can be beaten.',reward:{gold:5000,xp:35000},done:'You walked the Dream Road and came back.',stages:[
+    {t:'fight',foes:['nightmareshade','nightmareshade'],text:'His last nightmares rise out of the floor.'},
+    {t:'fight',foes:['dreamvaelor'],text:'“I only wanted to keep them safe,” says Vaelor. Then he stops pretending.'},
+    ...darkChoice('The dream-Vaelor kneels. You could wake now, or strike a bargain with the dream itself.',['Wake up','Make a pact with the dream'],'The dream accepts you. When you wake, you can still hear the Sleepers breathing.','You open your eyes in Ilsa’s cottage. The moonblossom has burned to ash.'),
+    {t:'text',effect:'ch5end',text:'You wake to bells. In the waking world, Vaelor’s army is already marching on Hollowmere.'}]}
+});
+
+(function(){
+  const IN={well:[1,150],wolves:[1,200],kobolds:[2,300],seal:[2,400],delve:[3,500],forge:[3,400],warren:[3,500],claim:[3,500],confession:[3,300],seal2:[4,700],crypt:[4,600],shrine:[4,600],barrow:[4,600],siege:[4,800],descent:[4,1000]};
+  for(const [k,[l,x]] of Object.entries(IN))if(QUESTS[k]){QUESTS[k].lvl=l;if(QUESTS[k].reward)QUESTS[k].reward.xp=x}
+  const LV={2:[[5,12000],[7,20000],[9,30000]],3:[[11,30000],[13,40000],[15,60000]],4:[[17,25000],[18,30000],[18,35000]]};
+  for(const t of [2,3,4])for(const [id,,,qs] of ARCS[t].list)qs.forEach((k,i)=>{const q=QUESTS[k];q.lvl=LV[t][i][0];q.reward.xp=LV[t][i][1];q.needs=i?qs[i-1]:null;if(i===0)q.req=[()=>S.flags['arc'+t]===id,'Choose this path on the notice board.'];else delete q.req});
+  [[19,20000],[19,15000],[20,50000]].forEach(([l,x],i)=>{const q=QUESTS[FINALE[i]];q.lvl=l;q.reward.xp=x;q.needs=i?FINALE[i-1]:null;if(i===0)q.req=[()=>arcDone(4),'Finish your level 17 path first.']});
+  const add=(k,arr)=>{QUESTS[k].stages.push(...arr)};
+  add('s2c',darkChoice('Morvath’s black heart still beats in the silt, slow and patient.',['Let it sink into the deep','Take the black heart'],'You cut it free. It beats in your pack all the way home, in time with your own.','You let it go. It sinks into the dark water, beat by beat, until you can’t hear it.'));
+  add('s3c',darkChoice('Thane Ashgar’s ember crown smolders in the ashes.',['Leave it to cool','Take the Ember Crown'],'It’s still hot. You don’t care. The fire in it sings to you.','You leave it in the ashes. By morning it is only iron.'));
+  add('s4c',darkChoice('Lord Aldric’s blood pools black on the marble. It would make you strong.',['Walk away','Drink the Varne blood'],'One mouthful. The night feels very clear, and very hungry.','You wipe your blade and leave House Varne to its ghosts.'));
+})();
 function renderSequelModal(kind){
   if(kind==='start')return `<div class="adv" role="dialog" aria-modal="true" aria-label="The Seven Seals"><div class="adv-inner">
   <p class="meta">Sequel</p><h1>The Seven Seals</h1>
@@ -2095,7 +2208,7 @@ const slotKind=k=>k.startsWith('ring')?'ring':k.startsWith('w')?'wondrous':k;
 const ARMOR_NAME={fighter:'Chain mail',cleric:'Chain mail',paladin:'Chain mail',rogue:'Leather armor',bard:'Leather armor',druid:'Leather armor',ranger:'Studded leather',barbarian:'No armor (Unarmored Defense)',monk:'No armor (Unarmored Defense)',wizard:'No armor',sorcerer:'No armor',warlock:'No armor (Armor of Shadows)'};
 const KITS=Object.assign({},KITS0,{cleric:[['mace','shield'],[null,'shield']],paladin:[['longsword','shield'],['javelin',null]],druid:[['quarterstaff','shield'],['quarterstaff',null]],ranger:[['longbow',null],['shortsword',null]],wizard:[['quarterstaff',null],['dagger','focus:wand']],sorcerer:[['dagger','focus:orb'],['quarterstaff',null]],warlock:[['dagger','focus:rod'],['quarterstaff',null]],bard:[['rapier','focus:instrument'],['dagger',null]]});
 let equipPick=null;
-function ownedBases(h=S.hero){const b=new Set(CLASSES[h.cls].weapons.filter(w=>WEAPONS[w]));if(h.cls==='warlock'&&(h.inv||[]).includes('pactblade'))b.add('longsword');if(['wizard','sorcerer','warlock','druid'].includes(h.cls))b.add('quarterstaff');if(isSub('valor',3,h))b.add('longsword');KITS[h.cls].flat().forEach(x=>x&&x!=='shield'&&!x.startsWith('focus:')&&b.add(x));return [...b]}
+function ownedBases(h=S.hero){const b=new Set([...CLASSES[h.cls].weapons.filter(w=>WEAPONS[w]),...(h.ownedW||[])]);if(h.cls==='warlock'&&(h.inv||[]).includes('pactblade'))b.add('longsword');if(['wizard','sorcerer','warlock','druid'].includes(h.cls))b.add('quarterstaff');if(isSub('valor',3,h))b.add('longsword');KITS[h.cls].flat().forEach(x=>x&&x!=='shield'&&!x.startsWith('focus:')&&b.add(x));return [...b]}
 function newEquip(h){h.equip={armor:null,ring1:null,ring2:null,belt:null,amulet:null,w1:null,w2:null,w3:null};h.loadouts=KITS[h.cls].map(([m,o])=>({main:m,off:o}));h.activeSet=0}
 const uidOf=it=>it.uid||(it.uid=Math.random().toString(36).slice(2,9));
 const instByUid=(u,h=S.hero)=>(h.items||[]).find(i=>i.uid===u);
@@ -2130,7 +2243,7 @@ function handOptions(set,hand){
   const h=S.hero,opts=[];const items=(h.items||[]).filter(i=>usable(i.id));
   const fk=focusKind(h),foci=Object.entries(FOCUS_BASES).filter(([,f])=>f[1]===fk||(f[1]==='book'&&h.cls==='wizard')).map(([k,f])=>['focus:'+k,`${f[0]} (spellcasting focus)`]),fitems=items.filter(i=>itemSlot(i.id)==='focus').map(i=>['i:'+uidOf(i),`${MAGIC[i.id].name} (focus)`]);
   if(hand==='main'){ownedBases().forEach(b=>opts.push([b,WEAPONS[b].name]));opts.push(...foci,...fitems);items.filter(i=>itemSlot(i.id)==='weapon').forEach(i=>opts.push(['i:'+uidOf(i),`${WEAPONS[i.base].name} (${MAGIC[i.id].name})`]))}
-  else{ownedBases().filter(b=>LIGHT.has(b)).forEach(b=>opts.push([b,`${WEAPONS[b].name} (light, off hand)`]));items.filter(i=>itemSlot(i.id)==='weapon'&&LIGHT.has(i.base)).forEach(i=>opts.push(['i:'+uidOf(i),`${WEAPONS[i.base].name} (${MAGIC[i.id].name})`]));
+  else{ownedBases().filter(b=>LIGHT.has(b)||(hasFeat('dualwielder',h)&&WEAPONS[b].kind==='melee'&&!TWOHAND.has(b))).forEach(b=>opts.push([b,`${WEAPONS[b].name} (${LIGHT.has(b)?'light, ':''}off hand)`]));items.filter(i=>itemSlot(i.id)==='weapon'&&LIGHT.has(i.base)).forEach(i=>opts.push(['i:'+uidOf(i),`${WEAPONS[i.base].name} (${MAGIC[i.id].name})`]));
     opts.push(...foci,...fitems);
     if(SHIELD_PROF.includes(h.cls)&&(h.cls!=='bard'||isSub('valor',3,h))){opts.push(['shield','Shield (+2 AC)']);items.filter(i=>itemSlot(i.id)==='shield').forEach(i=>opts.push(['i:'+uidOf(i),`Shield (${MAGIC[i.id].name})`]))}}
   return opts;
@@ -2144,12 +2257,13 @@ function renderEquipment(){
     return `<div class="setcard ${act?'on':''}"><div class="row"><h3>Weapon set ${i+1}</h3>${act?'<span class="tag done">In hand</span>':btn('useset','Switch to this set',`data-i="${i}"`,'btn small')}</div><ul class="ledger">${row('main','Right hand (main)')}${row('off','Left hand (off)')}</ul></div>`};
   const gearRow=([k,label])=>{const it=h.equip[k]?instByUid(h.equip[k]):null,m=it&&MAGIC[it.id],key='g:'+k;
     const cands=(h.items||[]).filter(i=>usable(i.id)&&itemSlot(i.id)===slotKind(k)&&!isEquippedAnywhere(uidOf(i)));
-    return `<li><div class="row"><span><span class="meta">${label}</span><br><b>${m?m.name:k==='armor'?ARMOR_NAME[h.cls]:'Empty'}</b>${m&&m.attune?' <span class="tag">attuned</span>':''}</span>${btn('epick',equipPick===key?'Close':'Change',`data-k="${key}" ${disab(lockAtt||(!m&&!cands.length))}`,'btn ghost small')}</div>
+    return `<li><div class="row"><span><span class="meta">${label}</span><br><b>${m?m.name:k==='armor'?'No magic armor':'Empty'}</b>${m&&m.attune?' <span class="tag">attuned</span>':''}</span>${btn('epick',equipPick===key?'Close':'Change',`data-k="${key}" ${disab(lockAtt||(!m&&!cands.length))}`,'btn ghost small')}</div>
       ${m?`<p class="meta">${m.desc}${m.charges?` ${it.charges} charges left.`:''}</p>`:''}
       ${equipPick===key?`<div class="actions">${cands.map(i=>btn('setslot',MAGIC[i.id].name,`data-k="${k}" data-u="${i.uid}"`,'btn ghost small')).join('')}${m?btn('setslot','Take it off',`data-k="${k}" data-u=""`,'btn ghost small'):''}</div>`:''}</li>`};
   const pack=(h.items||[]).filter(i=>!isEquippedAnywhere(uidOf(i)));
   return `<h2>Equipment</h2>
-  <p class="meta">Attuned: ${attunedCount()} of ${attuneMax()}. Items that need attunement attune when you equip them, and only in town. A shield only protects you in the left (off) hand of the set you’re holding. ${inCombat?'You can switch weapon sets in a fight, once per turn.':''}</p>
+  <p class="meta">Attuned: ${attunedCount()} of ${attuneMax()}. Items that need attunement attune when you equip them, and only in town. A shield only protects you in the left (off) hand of the set you’re holding. ${inCombat?'Switching weapon sets in a fight takes your bonus action.':''}</p>
+  ${(()=>{ensureArmor(h);const A=ARMORS[h.armor];return `<div class="raidbox"><div class="row"><span><span class="meta">Armor worn</span><br><b>${A?A[0]:'No armor'}</b> <span class="meta">${A?`AC ${A[2]}${A[3]==='full'?' + Dex':A[3]?' + Dex (max 2)':''}${A[4]&&h.abil.str<A[4]?`. Strength ${A[4]} needed: −10 ft speed`:''}${A[5]?'. Disadvantage on Stealth':''}`:'Unarmored'}</span></span>${btn('epick',equipPick==='armorworn'?'Close':'Change',`data-k="armorworn" ${disab(!!S.run)}`,'btn ghost small')}</div>${equipPick==='armorworn'?`<div class="actions">${(h.ownedA||[]).filter(a=>armorProf(h).includes(ARMORS[a][1])).map(a=>btn('weararmor',ARMORS[a][0],`data-k="${a}"`,h.armor===a?'btn small':'btn ghost small')).join('')}${btn('weararmor','No armor','data-k=""',!h.armor?'btn small':'btn ghost small')}</div><p class="meta">Buy more armor from Corwin.</p>`:''}</div>`})()}
   ${h.loadouts.map(setCard).join('')}
   <ul class="ledger" style="margin-top:12px">${GEAR_SLOTS.map(gearRow).join('')}</ul>
   ${pack.length?`<h3 style="margin-top:16px">In your pack</h3><ul class="ledger">${pack.map(i=>{const m=MAGIC[i.id],ok=usable(i.id);return `<li><div class="row"><span><b>${m.name}${i.base?` (${WEAPONS[i.base].name})`:''}</b> <span class="meta">${m.rarity}${m.attune?', attunement':''}</span></span>${m.tome?btn('readtome','Read it',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):ok?btn('quickequip','Equip',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):'<span class="tag lock">Not for your class</span>'}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>`:''}`;
@@ -2157,7 +2271,7 @@ function renderEquipment(){
 function attackRows(){
   const h=S.hero;return heroWeapons().map(id=>{let w=WEAPONS[id];if(id==='unarmed'&&h.cls!=='monk')w={...w,dmg:'1d1',abil:'str'};
     if(h.cls==='monk'&&w.monk){const base=+w.dmg.split('d')[1];w={...w,dmg:`1d${Math.max(base,maDie())}`}}
-    const hb=w.fixedAtk!=null?{wb:0}:handBonus(id),ab=weaponAbil(w),hit=w.fixedAtk!=null?w.fixedAtk:pb()+am(ab)+(h.gear.atk||0)+hb.wb+(hasStyle('archery',h)&&w.kind==='ranged'?2:0),dm=(w.fixedAtk!=null?w.fixedDmg:am(ab))+(w.fixedAtk!=null?0:(h.gear.dmg||0))+hb.wb+(hasStyle('dueling',h)&&w.kind==='melee'&&!TWOHAND.has(id)?2:0);
+    const hb=w.fixedAtk!=null?{wb:0}:handBonus(id),ab=weaponAbil(w),hit=w.fixedAtk!=null?w.fixedAtk:pb()+am(ab)+(wUp(id,false).atk||0)+hb.wb+(hasStyle('archery',h)&&w.kind==='ranged'?2:0),dm=(w.fixedAtk!=null?w.fixedDmg:am(ab))+(w.fixedAtk!=null?0:(wUp(id,false).dmg||0))+hb.wb+(hasStyle('dueling',h)&&w.kind==='melee'&&!TWOHAND.has(id)?2:0);
     const extra=[hb.fire&&'+2d6 fire',hb.holy&&'+2d8 radiant'].filter(Boolean).join(', ');
     return `<li><div class="row"><b>${hb.name||w.name}</b><span>${sgn(hit)} to hit, ${w.dmg==='1d1'?'1':w.dmg} ${sgn(dm)} ${w.type}${extra?`, ${extra}`:''}</span></div><p class="meta">${w.kind==='melee'?'Melee, 5 ft':`Ranged, ${ft(w.range)}/${ft(w.long)} ft`}${TWOHAND.has(id)?', two-handed':''}${LIGHT.has(id)?', light':''}.${hasMastery(id)?` ${MASTERY[w.mastery]}`:''}</p></li>`}).join('');
 }
@@ -2215,7 +2329,7 @@ Object.assign(SUB_FEATS,{
   greatoldone:[[3,'Great Old One: Psychic Spells','Dissonant Whispers, and Synaptic Static at level 9.'],[6,'Great Old One: Clairvoyant Combatant','Once per short rest: a Wisdom save, or you have advantage against that enemy and it has disadvantage against you.'],[10,'Great Old One: Eldritch Hex','Your Hex target has disadvantage on saves against your spells. Thought Shield: resistance to psychic damage.']],
   dance:[[3,'Dance: Dazzling Footwork','Unarmored AC of 10 + Dex + Cha. Your unarmed strikes use Dexterity and deal your Bardic Inspiration die.'],[14,'Dance: Leading Evasion','Evasion against area damage.']],
   glamour:[[3,'Glamour: Mantle of Inspiration','Bonus action, spend Bardic Inspiration: temporary HP of twice the roll, and you slip away without provoking.'],[6,'Glamour: Mantle of Majesty','Once a day, bonus action: for the fight, a bonus-action command each turn. A Wisdom save, or the target grovels prone and can’t move.']],
-  valor:[[3,'Valor: Martial Training','Medium armor, shields and longswords.'],[3,'Valor: Combat Inspiration','Spend Bardic Inspiration to add it to a hit’s damage.'],[6,'Valor: Extra Attack','Attack twice when you take the Attack action.'],[14,'Valor: Battle Magic','After casting an action spell, make a bonus-action weapon attack.']]
+  valor:[[3,'Valor: Martial Training','Medium armor, shields and longswords.'],[3,'Valor: Combat Inspiration','Bonus action: spend Bardic Inspiration, and your next hit adds the die to its damage.'],[6,'Valor: Extra Attack','Attack twice when you take the Attack action, and you can cast an action cantrip in place of one of those attacks.'],[14,'Valor: Battle Magic','After casting an action spell, make a bonus-action weapon attack.']]
 });
 function wildSurge(){
   const c=S.run.combat,h=S.hero,k=d(6);clog('Wild Magic Surge!','head');
@@ -2881,7 +2995,7 @@ function canSee(c,from,to,dv,opts={}){
   if(opts.umbral)return false;
   return dv>=cheb(from,to);
 }
-function heroSeesFoe(f){const c=S.run.combat,h=S.hero;const md=(c.mdark||[]);const own=md.some(z=>z.mine);return canSee(c,c.hero,f,heroDV(),{devil:hasInv('devilsight')&&cheb(c.hero,f)<=24,shadowSees:own&&isSub('shadow',3,h)})}
+function heroSeesFoe(f){const c=S.run.combat,h=S.hero;const md=(c.mdark||[]);const own=false&&md.some(z=>z.mine);return canSee(c,c.hero,f,heroDV(),{devil:hasInv('devilsight')&&cheb(c.hero,f)<=24,shadowSees:own&&isSub('shadow',3,h)})}
 function foeSeesHero(f){const c=S.run.combat,h=S.hero;const L=lightAt(c,c.hero.x,c.hero.y);return canSee(c,f,c.hero,foeDV(f),{umbral:isSub('gloomstalker',3,h)&&L===0})}
 const LIGHT_NAME={'-1':'magical darkness','0':'darkness','1':'dim light','2':'bright light'};
 
@@ -3027,7 +3141,7 @@ function acSources(h=S.hero){
   its.forEach(m=>parts.push([m.name,m.ac]));
   if(h.loadouts&&shieldOn(h))parts.push(['Shield (left hand)',2]);
   const armored=['fighter','cleric','paladin','rogue','bard','druid','ranger'].includes(h.cls);if(armored&&hasStyle('defense',h))parts.push(['Defense fighting style',1]);
-  if(h.gear&&h.gear.ac)parts.push(['Smithy upgrades',h.gear.ac]);
+  {const au=armorUpAC(h);if(au)parts.push(['Armor upgrades',au]);const su=h.loadouts&&shieldOn(h)?shieldUpAC(h):0;if(su)parts.push(['Shield upgrade',su])}
   if(isGW(h)){if(hasG('scaleweave',h))parts.push(['Scaleweave Skin graft',1]);if(hasGP('livingconstruct',h))parts.push(['Living Construct perk',1])}
   const rest=total-parts.reduce((a,p)=>a+p[1],0);
   const dex=am('dex',h);let baseName=ARMOR_NAME[h.cls]||'Base';
@@ -3036,7 +3150,8 @@ function acSources(h=S.hero){
   else if(isSub('draconic',3,h))baseName=`Draconic Resilience (10 + Dex ${sgn(dex)} + Cha ${sgn(am('cha',h))})`;
   else if(isSub('dance',3,h))baseName=`Dazzling Footwork or leather, whichever is higher`;
   else if(h.mageArmor||hasInv('armorshadows',h))baseName=`Mage Armor (13 + Dex ${sgn(dex)})`;
-  else if(['fighter','cleric','paladin'].includes(h.cls))baseName='Chain mail (16)';
+  else if(ARMORS[h.armor]){const A=ARMORS[h.armor];baseName=`${A[0]} (${A[2]}${A[3]==='full'?` + Dex ${sgn(dex)}`:A[3]?` + Dex ${sgn(Math.min(2,dex))}`:''})`}
+  else if(false)baseName='';
   else if(h.cls==='graftwright')baseName=`Studded leather (12 + Dex ${sgn(dex)})`;
   else if(h.cls==='ranger')baseName=`Studded leather (12 + Dex ${sgn(dex)})`;
   else if(['rogue','bard','druid','warlock'].includes(h.cls))baseName=`Leather armor (11 + Dex ${sgn(dex)})`;
@@ -3114,11 +3229,12 @@ function petStrikeOnce(t,charge){const c=S.run.combat,h=S.hero,T=petType(h),r=d(
   if(t.hp>0){const dc=spellDC();if(charge&&(h.petType||'land')==='land'){const sv=d(20)+t.mods.str;if(sv<dc){t.prone=true;clog(`${Fn(t)} is knocked prone (STR ${sv}).`,'good')}}
     if((h.petType)==='sea'&&!t.petGrab){t.petGrab=true;clog(`${petName()} clamps onto ${fn(t)}: it’s grappled.`,'good')}}}
 function petCommandStrike(viaAttack){const c=S.run.combat,h=S.hero,t=curTarget();if(!c.pet||!t)return false;
-  const mv=petStepToward(t,petType(h).speed+(c.petDash?petType(h).speed:0));if(cheb(c.pet,t)>1){clog(`${petName()} can’t reach ${fn(t)}.`,'info');return true}
+  const budget=(c.petMove==null?petType(h).speed:c.petMove)+(c.petDash?petType(h).speed:0),mv=petStepToward(t,budget);c.petMove=Math.max(0,budget-mv.moved);if(cheb(c.pet,t)>1){clog(`${petName()} can’t reach ${fn(t)}.`,'info');return true}
   const charge=mv.moved>=4&&mv.straight,n=isSub('beastmaster',11,h)?2:1;c.petCommanded=true;
   for(let i=0;i<n&&t.hp>0;i++)petStrikeOnce(t,charge&&i===0);checkWin();return true}
 function petAuto(){const c=S.run.combat,h=S.hero;if(!c.pet||c.over)return;
   if(c.petCommanded){c.petCommanded=false;return}
+  if(c.petMoved){c.petDodge=true;clog(`${petName()} takes the Dodge action.`,'info');return}
   const incap=h.dying||c.heroPara;
   if(incap){const t=liveFoes().sort((a,b)=>cheb(a,c.pet)-cheb(b,c.pet))[0];if(t){petStepToward(t,petType(h).speed);if(cheb(c.pet,t)<=1){clog(`With you down, ${petName()} fights on its own.`,'info');petStrikeOnce(t,false);checkWin()}}return}
   const goal=(h.petMode==='harry'&&curTarget())||c.hero;petStepToward(goal,petType(h).speed);c.petDodge=true;clog(`${petName()} ${h.petMode==='harry'?'circles your target':'stays at your side'} and takes the Dodge action.`,'info')}
@@ -3129,7 +3245,86 @@ function renderCompanion(){const h=S.hero;if(!isSub('beastmaster',3,h))return'';
   ${(h.petType||'land')==='land'?`<div class="actions">${['piercing','bludgeoning','slashing'].map(k=>btn('petdmg',k,`data-k="${k}" ${disab(inQ)}`,(h.petDmgType||'piercing')===k?'btn small':'btn ghost small')).join('')}${isSub('beastmaster',7,h)?btn('petforce',h.petForce?'Force damage: on':'Force damage: off','','btn ghost small'):''}</div>`:isSub('beastmaster',7,h)?`<div class="actions">${btn('petforce',h.petForce?'Force damage: on':'Force damage: off','','btn ghost small')}</div>`:''}
   <label class="field">Name<input data-petname value="${esc(h.petName||'')}" placeholder="${T.name}" maxlength="20" ${inQ?'disabled':''}></label>
   ${hp===0&&!inQ?`<div class="actions">${btn('petrevivetown','Revive with a spell slot',dis(![1,2,3,4,5].some(x=>h.pools['slot'+x]>0)),'btn small')}</div>`:''}`}
+function petReach(){const c=S.run.combat;if(!c.pet)return new Map();return reach(c,c.pet,c.petMove||0,(x,y)=>foeAt(c,x,y)?((S.hero.petType==='sky')?'pass':'no'):(x===c.hero.x&&y===c.hero.y)||(c.summons||[]).some(a=>a.x===x&&a.y===y)||(c.fam&&c.fam.hp>0&&c.fam.x===x&&c.fam.y===y)?'pass':false)}
+function movePet(x,y){const c=S.run.combat,map=petReach(),node=map.get(ck(x,y));if(!node||!node.d||!node.stop)return false;c.pet.x=x;c.pet.y=y;c.petMove-=node.d;c.petMoved=true;clog(`You send ${petName()} ${node.d*5} ft.`,'info');return true}
 function petOA(f,prev){const c=S.run.combat;if(!c.pet||c.petReacted||c.over||f.hp<=0)return;if(cheb(prev,c.pet)<=1&&cheb(f,c.pet)>1&&!f.disengagedFromPet){c.petReacted=true;clog(`${Fn(f)} pulls away from ${petName()}, which lunges at it.`,'info');petStrikeOnce(f,false);checkWin()}}
+
+/* ---- 2024 weapon table, proficiencies, mastery choice ---- */
+Object.assign(WEAPONS,{
+  club:{name:'Club',kind:'melee',dmg:'1d4',abil:'str',mastery:'slow',type:'bludgeoning',verb:'club'},
+  greatclub:{name:'Greatclub',kind:'melee',dmg:'1d8',abil:'str',mastery:'push',type:'bludgeoning',verb:'smash'},
+  lighthammer:{name:'Light hammer',kind:'melee',dmg:'1d4',abil:'str',mastery:'nick',type:'bludgeoning',verb:'hammer'},
+  lightcrossbow:{name:'Light crossbow',kind:'ranged',range:16,long:64,dmg:'1d8',abil:'dex',mastery:'slow',type:'piercing',verb:'shoot at'},
+  sling:{name:'Sling',kind:'ranged',range:6,long:24,dmg:'1d4',abil:'dex',mastery:'slow',type:'bludgeoning',verb:'sling a stone at'},
+  battleaxe:{name:'Battleaxe',kind:'melee',dmg:'1d8',abil:'str',mastery:'topple',type:'slashing',verb:'chop at'},
+  glaive:{name:'Glaive',kind:'melee',dmg:'1d10',abil:'str',mastery:'graze',type:'slashing',verb:'sweep at',reach:2},
+  halberd:{name:'Halberd',kind:'melee',dmg:'1d10',abil:'str',mastery:'cleave',type:'slashing',verb:'cleave at',reach:2},
+  maul:{name:'Maul',kind:'melee',dmg:'2d6',abil:'str',mastery:'topple',type:'bludgeoning',verb:'smash'},
+  morningstar:{name:'Morningstar',kind:'melee',dmg:'1d8',abil:'str',mastery:'sap',type:'piercing',verb:'swing at'},
+  pike:{name:'Pike',kind:'melee',dmg:'1d10',abil:'str',mastery:'push',type:'piercing',verb:'thrust at',reach:2},
+  scimitar:{name:'Scimitar',kind:'melee',dmg:'1d6',abil:'finesse',mastery:'nick',type:'slashing',verb:'slash at'},
+  trident:{name:'Trident',kind:'melee',dmg:'1d8',abil:'str',mastery:'topple',type:'piercing',verb:'thrust at'},
+  warhammer:{name:'Warhammer',kind:'melee',dmg:'1d8',abil:'str',mastery:'push',type:'bludgeoning',verb:'hammer'},
+  warpick:{name:'War pick',kind:'melee',dmg:'1d8',abil:'str',mastery:'sap',type:'piercing',verb:'swing at'},
+  whip:{name:'Whip',kind:'melee',dmg:'1d4',abil:'finesse',mastery:'slow',type:'slashing',verb:'lash',reach:2},
+  heavycrossbow:{name:'Heavy crossbow',kind:'ranged',range:20,long:80,dmg:'1d10',abil:'dex',mastery:'push',type:'piercing',verb:'shoot at'}
+});
+WEAPONS.spear.mastery='sap';WEAPONS.quarterstaff.mastery='topple';WEAPONS.rapier.mastery='vex';WEAPONS.throwdagger.mastery='nick';WEAPONS.weavelash.mastery='slow';
+['club','lighthammer','scimitar','sickle','dagger','throwdagger'].forEach(k=>LIGHT.add(k));
+['greatclub','glaive','halberd','maul','pike','lightcrossbow','heavycrossbow'].forEach(k=>TWOHAND.add(k));
+MASTERY.topple='Topple: on a hit, the target makes a Constitution save or falls prone.';
+MASTERY.push='Push: on a hit, you shove the target 10 ft away (not Huge creatures).';
+MASTERY.nick='Nick: the extra light-weapon attack is part of your Attack action, not your bonus action (once per turn).';
+const SIMPLE_W=['club','dagger','greatclub','handaxe','javelin','lighthammer','mace','quarterstaff','sickle','spear','lightcrossbow','shortbow','sling','throwdagger'];
+const MARTIAL_W=['battleaxe','flail','glaive','greataxe','greatsword','halberd','longsword','maul','morningstar','pike','rapier','scimitar','shortsword','trident','warhammer','warpick','whip','handcrossbow','heavycrossbow','longbow'];
+function profWeapons(h=S.hero){const all=['fighter','paladin','ranger','barbarian','graftwright'];if(all.includes(h.cls))return[...SIMPLE_W,...MARTIAL_W];
+  if(h.cls==='rogue')return[...SIMPLE_W,'rapier','scimitar','shortsword','whip','handcrossbow'];
+  if(h.cls==='monk')return[...SIMPLE_W,'scimitar','shortsword','handcrossbow'];
+  const extra=isSub('valor',3,h)?MARTIAL_W:hasInv('pactblade',h)?MARTIAL_W.filter(k=>WEAPONS[k].kind==='melee'):isSub('eldritchknight',3,h)?MARTIAL_W:[];return[...SIMPLE_W,...extra]}
+const MASTERY_N={fighter:[3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,6],barbarian:[2,2,2,3,3,3,3,3,3,4],paladin:[2],ranger:[2],rogue:[2],graftwright:[3]};
+function masteryCount(h=S.hero){const t=MASTERY_N[h.cls];if(!t)return 0;return t[Math.min(t.length-1,h.level-1)]}
+const mBase=w=>w==='throwdagger'?'dagger':w;
+function ensureMasteries(h=S.hero){const n=masteryCount(h);if(!n){h.masteries=[];return}if(!h.masteries){h.masteries=(CLASSES[h.cls].masteries||[]).map(mBase).filter((k,i,a)=>WEAPONS[k]&&WEAPONS[k].mastery&&a.indexOf(k)===i).slice(0,n)}h.masteries=h.masteries.filter(k=>WEAPONS[k]&&WEAPONS[k].mastery).slice(0,n);
+  if(h.masteries.length<n&&!h.mFree){for(const k of profWeapons(h)){if(h.masteries.length>=n)break;if(WEAPONS[k].mastery&&!h.masteries.includes(mBase(k)))h.masteries.push(mBase(k))}}}
+function renderMasteries(){const h=S.hero,n=masteryCount(h);if(!n)return'';ensureMasteries(h);const inQ=!!S.run;
+  return `<h2>Weapon Mastery</h2><p class="meta">Choose ${n} kinds of weapon to master (${h.masteries.length} chosen). You can change them in town.</p><ul class="ledger">${profWeapons(h).filter(k=>WEAPONS[k].mastery&&k!=='throwdagger').map(k=>{const on=h.masteries.includes(k),w=WEAPONS[k];return `<li><div class="row"><span><b>${w.name}</b> <span class="meta">${w.dmg} ${w.type}${LIGHT.has(k)?', light':''}${TWOHAND.has(k)?', two-handed':''}${w.reach?', reach':''}</span></span>${btn('tmastery',on?'Mastered':'Master',`data-k="${k}" ${disab(inQ||(!on&&h.masteries.length>=n))}`,on?'btn small':'btn ghost small')}</div><p class="meta">${MASTERY[w.mastery]}</p></li>`}).join('')}</ul>`}
+
+/* ---- mundane armor and weapons you own ---- */
+const ARMORS={
+  padded:['Padded armor','light',11,'full',0,true,5],leather:['Leather armor','light',11,'full',0,false,10],studded:['Studded leather','light',12,'full',0,false,45],
+  hide:['Hide armor','medium',12,2,0,false,10],chainshirt:['Chain shirt','medium',13,2,0,false,50],scale:['Scale mail','medium',14,2,0,true,50],breastplate:['Breastplate','medium',14,2,0,false,400],halfplate:['Half plate','medium',15,2,0,true,750],
+  ringmail:['Ring mail','heavy',14,0,0,true,30],chainmail:['Chain mail','heavy',16,0,13,true,75],splint:['Splint armor','heavy',17,0,15,true,200],plate:['Plate armor','heavy',18,0,15,true,1500]
+};
+const WPRICE={club:1,dagger:2,greatclub:2,handaxe:5,javelin:1,lighthammer:2,mace:5,quarterstaff:2,sickle:1,spear:1,lightcrossbow:25,shortbow:25,sling:1,throwdagger:2,battleaxe:10,flail:10,glaive:20,greataxe:30,greatsword:50,halberd:20,longsword:15,maul:10,morningstar:15,pike:5,rapier:25,scimitar:25,shortsword:10,trident:5,warhammer:15,warpick:5,whip:2,handcrossbow:75,heavycrossbow:50,longbow:50};
+function armorProf(h=S.hero){const P={fighter:['light','medium','heavy'],paladin:['light','medium','heavy'],cleric:['light','medium','heavy'],barbarian:['light','medium'],ranger:['light','medium'],druid:['light'],rogue:['light'],bard:['light'],warlock:['light'],graftwright:['light']}[h.cls]||[];return isSub('valor',3,h)&&!P.includes('medium')?[...P,'medium']:P}
+const DEFAULT_ARMOR={fighter:'chainmail',cleric:'chainmail',paladin:'chainmail',rogue:'leather',bard:'leather',druid:'leather',warlock:'leather',ranger:'studded',graftwright:'studded'};
+function ensureArmor(h){if(h.armorV)return;h.armorV=1;h.ownedA=h.ownedA||[];const d0=DEFAULT_ARMOR[h.cls];if(d0&&!h.ownedA.includes(d0))h.ownedA.push(d0);if(h.armor===undefined)h.armor=d0||null;
+  if(isSub('valor',3,h)&&!h.ownedA.includes('chainshirt'))h.ownedA.push('chainshirt');h.ownedW=h.ownedW||[]}
+function wornArmorAC(h){const A=ARMORS[h.armor];if(!A)return null;const dex=am('dex',h);return A[2]+(A[3]==='full'?dex:Math.min(A[3],dex))}
+function armorSpeedPen(h=S.hero){const A=ARMORS[h.armor];return A&&A[4]&&h.abil.str<A[4]?2:0}
+function mundaneShopPool(){const h=S.hero;ensureArmor(h);const w=profWeapons(h).filter(k=>k!=='throwdagger'&&WPRICE[k]&&!ownedBases(h).includes(k)).map(k=>({id:'w:'+k,name:WEAPONS[k].name,price:WPRICE[k],desc:`${WEAPONS[k].dmg} ${WEAPONS[k].type}${LIGHT.has(k)?', light':''}${TWOHAND.has(k)?', two-handed':''}${WEAPONS[k].reach?', reach':''}. Mastery: ${(WEAPONS[k].mastery||'none').replace(/^./,x=>x.toUpperCase())}.`}));
+  const a=Object.entries(ARMORS).filter(([k,A])=>armorProf(h).includes(A[1])&&!(h.ownedA||[]).includes(k)).map(([k,A])=>({id:'a:'+k,name:A[0],price:A[6],desc:`${A[1][0].toUpperCase()+A[1].slice(1)} armor, AC ${A[2]}${A[3]==='full'?' + Dex':A[3]?' + Dex (max 2)':''}${A[4]?`, needs Str ${A[4]}`:''}${A[5]?', disadvantage on Stealth':''}.`}));return[...w,...a]}
+
+/* ---- upgrades bound to one item ---- */
+const UP_FX={edge:{atk:1},wardenblade:{atk:1,dmg:1},moonblade:{dmg:1,moon:1},blade:{dmg:1},armor:{ac:1},moonarmor:{ac:1,necro:1},shield:{ac:1}};
+const UP_KIND={edge:'weapon',wardenblade:'weapon',moonblade:'weapon',blade:'weapon',armor:'armor',moonarmor:'armor',shield:'shield'};
+function upOf(key,h=S.hero){return(h.ups||{})[key]||{}}
+function upTargets(kind,h=S.hero){ensureArmor(h);const it=(h.items||[]);
+  if(kind==='weapon')return[...ownedBases(h).filter(b=>WEAPONS[b]&&b!=='unarmed').map(b=>['w:'+b,WEAPONS[b].name]),...it.filter(i=>MAGIC[i.id].kind==='weapon').map(i=>['i:'+i.uid,`${MAGIC[i.id].name} (${WEAPONS[i.base]?WEAPONS[i.base].name:'weapon'})`])];
+  if(kind==='armor')return[...(h.ownedA||[]).map(a=>['a:'+a,ARMORS[a][0]]),...it.filter(i=>MAGIC[i.id].slot==='armor').map(i=>['i:'+i.uid,MAGIC[i.id].name])];
+  return[['s:shield','Shield'],...it.filter(i=>MAGIC[i.id].kind==='shield').map(i=>['i:'+i.uid,MAGIC[i.id].name])]}
+function applyUp(id,key,gold,h=S.hero){h.ups=h.ups||{};const u=h.ups[key]=h.ups[key]||{};u.has=u.has||[];if(u.has.includes(id))return false;u.has.push(id);for(const [k,v] of Object.entries(UP_FX[id]||{}))u[k]=(u[k]||0)+v;u.gold=(u.gold||0)+gold;
+  if(key.startsWith('i:')){const inst=(h.items||[]).find(i=>'i:'+i.uid===key);if(inst)inst.upv=(inst.upv||0)+gold}return true}
+function weaponUpKey(wid,off,h=S.hero){if(!h.loadouts)return'w:'+wid;const st=activeSet(h),v=off?st.off:st.main;const r=v&&resolveHand(v,h);if(v&&v.startsWith('i:')&&r&&r.base===wid)return v;const v2=off?st.main:st.off,r2=v2&&resolveHand(v2,h);if(v2&&v2.startsWith('i:')&&r2&&r2.base===wid&&!(r&&r.base===wid))return v2;return'w:'+wid}
+const wUp=(wid,off,h=S.hero)=>upOf(weaponUpKey(wid,off,h),h);
+function armorUpAC(h=S.hero){if(!h.armor)return 0;const mu=h.equip&&h.equip.armor?upOf('i:'+h.equip.armor,h).ac||0:0;return (upOf('a:'+h.armor,h).ac||0)+mu}
+function armorNecro(h=S.hero){return h.armor&&(upOf('a:'+h.armor,h).necro||(h.equip&&h.equip.armor&&upOf('i:'+h.equip.armor,h).necro))}
+function shieldUpAC(h=S.hero){const st=activeSet(h);if(!st.off)return 0;return st.off==='shield'?(upOf('s:shield',h).ac||0):(upOf(st.off,h).ac||0)}
+function migrateGear(h){if(h.gearV)return;h.gearV=1;ensureArmor(h);const own=h.owned||[];const st=h.loadouts?activeSet(h):null,mr=st&&resolveHand(st.main,h);const wk=st&&st.main&&st.main.startsWith('i:')?st.main:'w:'+((mr&&mr.base)||ownedBases(h)[0]);
+  for(const id of own){if(!UP_FX[id])continue;const kind=UP_KIND[id];const key=kind==='weapon'?wk:kind==='armor'?(h.armor?'a:'+h.armor:null):'s:shield';if(key)applyUp(id,key,0,h)}
+  if(h.gear){h.gear.atk=0;h.gear.dmg=0;h.gear.ac=0;h.gear.moon=false;h.gear.necro=false}}
+let upPick=null;
+function upPicker(id,price,act){const kind=UP_KIND[id];const ts=upTargets(kind);return `<div class="actions">${ts.length?ts.map(([k,n])=>btn(act,n+((upOf(k).has||[]).includes(id)?' (has it)':''),`data-k="${id}|${k}" ${disab((upOf(k).has||[]).includes(id))}`,'btn ghost small')).join(''):'<span class="meta">Nothing to upgrade.</span>'}${btn('upcancel','Cancel','','btn ghost small')}</div>`}
 
 /* ---- hero rules ---- */
 const mod=s=>Math.floor((s-10)/2);
@@ -3142,30 +3337,26 @@ const isCaster=(h=S.hero)=>!!CLASSES[h.cls].caster||featSpells(h).length>0;
 const spellMod=(h=S.hero)=>am(CLASSES[h.cls].caster||(THIRD_SPELLS[h.sub]||h.cls==='graftwright'?'int':null)||h.featCaster||'cha',h);
 const spellDC=(h=S.hero)=>8+pb(h)+spellMod(h)+(h.items?itemSum('dcBonus',h):0)+(S&&S.run&&S.run.combat&&S.run.combat.innate?1:0);
 const spellAtk=(h=S.hero)=>pb(h)+spellMod(h)+itemSum('spellAtk',h)-exhPen(h);
-const heroSpeed=(h=S.hero)=>-(h.exh||0)+(hasG('clocklegs',h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.dilated?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&S.run.combat.bootsOn?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&S.run.combat.speedPot?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&h.conc==='haste'?Math.floor(baseSpeed(h)):0)+(h.conds&&h.conds.longstrider?2:0)+(isSub('glory',7,h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.round===1&&isSub('gloomstalker',3,h)?2:0)+(h.species==='elf'&&h.lineage==='wood'?1:0)+(hasFeat('mobile',h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.large?2:0)+(h.conds&&h.conds.shape?FORMS[h.conds.shape].speed-SPECIES[h.species].speed:0)+SPECIES[h.species].speed+(h.cls==='monk'?(h.level>=10?4:h.level>=6?3:h.level>=2?2:0):0)+(h.cls==='ranger'&&h.level>=6?2:0)+(h.cls==='barbarian'&&h.level>=5?2:0);
+const heroSpeed=(h=S.hero)=>-(h.exh||0)-armorSpeedPen(h)+(hasG('clocklegs',h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.dilated?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&S.run.combat.bootsOn?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&S.run.combat.speedPot?baseSpeed(h):0)+(S&&S.run&&S.run.combat&&h.conc==='haste'?Math.floor(baseSpeed(h)):0)+(h.conds&&h.conds.longstrider?2:0)+(isSub('glory',7,h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.round===1&&isSub('gloomstalker',3,h)?2:0)+(h.species==='elf'&&h.lineage==='wood'?1:0)+(hasFeat('mobile',h)?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.large?2:0)+(h.conds&&h.conds.shape?FORMS[h.conds.shape].speed-SPECIES[h.species].speed:0)+SPECIES[h.species].speed+(h.cls==='monk'?(h.level>=10?4:h.level>=6?3:h.level>=2?2:0):0)+(h.cls==='ranger'&&h.level>=6?2:0)+(h.cls==='barbarian'&&h.level>=5?2:0);
 function skillMod(k,h=S.hero){let m=-exhPen(h)+am(SKILLS[k][1],h)+(SKILLS[k][1]==='cha'&&isSub('feywanderer',3,h)?Math.max(1,am('wis',h)):0);if(h.skills.includes(k))m+=pb(h)*(h.expertise.includes(k)?2:1);else if(h.cls==='bard'&&h.level>=2)m+=Math.floor(pb(h)/2);return m+(h.gear.check||0)+itemSum('checks',h)}
 function saveMod(k,h=S.hero){return -exhPen(h)+am(k,h)+(CLASSES[h.cls].saves.includes(k)||(h.cls==='monk'&&h.level>=14)||(h.cls==='rogue'&&h.level>=15&&(k==='wis'||k==='cha'))||h.resilient===k||(k==='wis'&&isSub('gloomstalker',7,h))?pb(h):0)+itemSum('saves',h)+(h.cls==='paladin'&&h.level>=6?Math.max(1,am('cha',h)):0)+(isSub('moon',6,h)&&k==='con'?Math.max(0,am('wis',h)):0)}
 function baseAC(h=S.hero){
-  const dex=am('dex',h);let ac;
-  switch(h.cls){
-    case 'fighter':ac=16;break;
-    case 'cleric':ac=16;break;
-    case 'rogue':ac=11+dex;break;
+  ensureArmor(h);const dex=am('dex',h);let ac;const worn=wornArmorAC(h);
+  if(worn!=null){ac=worn;if(h.cls==='graftwright')ac+=(hasG('scaleweave',h)?1:0)+(hasGP('livingconstruct',h)?1:0)+(S&&S.run&&S.run.combat&&S.run.combat.dilated?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.grab!=null&&isSub('forgefist',10,h)?2:0)}
+  else switch(h.cls){
+    case 'fighter':case 'cleric':case 'rogue':case 'paladin':case 'druid':case 'ranger':ac=10+dex;break;
     case 'monk':ac=10+dex+am('wis',h);break;
-    case 'warlock':ac=hasInv('armorshadows',h)?13+dex:11+dex;break;
-    case 'paladin':ac=16;break;
+    case 'warlock':ac=hasInv('armorshadows',h)?13+dex:10+dex;break;
     case 'barbarian':ac=10+dex+am('con',h);break;
-    case 'druid':ac=11+dex;break;
-    case 'graftwright':ac=12+Math.min(dex,99)+(hasG('scaleweave',h)?1:0)+(hasGP('livingconstruct',h)?1:0)+(S&&S.run&&S.run.combat&&S.run.combat.dilated?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.grab!=null&&isSub('forgefist',10,h)?2:0);break;
-    case 'bard':ac=Math.max(11+dex,isSub('valor',3,h)?14+Math.min(2,dex):0,isSub('dance',3,h)&&!(h.loadouts&&shieldOn(h))?10+dex+am('cha',h):0);break;
-    case 'ranger':ac=12+dex;break;
+    case 'graftwright':ac=10+dex+(hasG('scaleweave',h)?1:0)+(hasGP('livingconstruct',h)?1:0)+(S&&S.run&&S.run.combat&&S.run.combat.dilated?2:0)+(S&&S.run&&S.run.combat&&S.run.combat.grab!=null&&isSub('forgefist',10,h)?2:0);break;
+    case 'bard':ac=Math.max(10+dex,isSub('dance',3,h)&&!(h.loadouts&&shieldOn(h))?10+dex+am('cha',h):0);break;
     case 'sorcerer':ac=Math.max((h.mageArmor?13:10)+dex,isSub('draconic',3,h)?10+dex+am('cha',h):0);break;
     default:ac=(h.mageArmor?13:10)+dex;
   }
-  if(activeItems(h).some(m=>m.robe))ac=Math.max(ac,15+dex);
+  if(isSub('dance',3,h)&&worn!=null){}
+  if(activeItems(h).some(m=>m.robe)&&worn==null)ac=Math.max(ac,15+dex);
   const sh=h.loadouts&&shieldOn(h);
-  const armored=['fighter','cleric','paladin','rogue','bard','druid','ranger'].includes(h.cls);
-  return ac+(armored&&hasStyle('defense',h)?1:0)+(sh?2:0)+(h.gear.ac||0)+activeItems(h).filter(m=>!(m.name==='Bracers of Defense'&&sh)).reduce((a,m)=>a+(m.ac||0),0)
+  return ac+(worn!=null&&hasStyle('defense',h)?1:0)+(sh?2:0)+armorUpAC(h)+(sh?shieldUpAC(h):0)+activeItems(h).filter(m=>!(m.name==='Bracers of Defense'&&(sh||worn!=null))&&!(m.slot==='armor'&&worn==null)).reduce((a,m)=>a+(m.ac||0),0)
 }
 const baseSpeed=h=>SPECIES[h.species].speed;
 function heroAC(){const h=S.hero,c=S.run&&S.run.combat,sh=shape(h);return (c&&c.speedPot?2:0)+(c&&h.conc==='haste'?2:0)+(c&&c.surgeAC?2:0)+(c&&c.sanctuary?2:0)+(c&&c.bulwark?2:0)+Math.max(h.conds.barkskin?17:0,sh?Math.max(sh.ac,isSub('moon',3,h)?13+am('wis'):0):baseAC(h))+(c&&c.shieldUp?5:0)+(h.conc==='shieldoffaith'?2:0)}
@@ -3359,6 +3550,7 @@ function rollCheck(spec){
   const h=S.hero;let adv=false,dis=false;
   if(spec.skill==='athletics'&&isSub('champion',3,h))adv=true;
   if(spec.adv)adv=true;
+  if(spec.skill==='stealth'&&ARMORS[h.armor]&&ARMORS[h.armor][5])dis=true;
   if(spec.skill&&activeItems(h).some(m=>(m.skillAdv||[]).includes(spec.skill)))adv=true;
   if(spec.skill==='deception'&&hasInv('maskofmanyfaces',h))adv=true;
   if(isGW(h)&&((spec.skill==='athletics'&&(hasGP('heavylifter',h)||hasGP('fluidmotion',h)||hasG('springheel',h)))||(spec.skill==='acrobatics'&&hasG('springheel',h))||(spec.skill==='perception'&&hasG('marksmanlens',h))||(spec.skill==='stealth'&&hasGP('ghoststep',h)&&S.run&&S.run.combat&&lightAt(S.run.combat,S.run.combat.hero.x,S.run.combat.hero.y)<2)))adv=true;
@@ -3453,13 +3645,13 @@ function finishRun(success,reason){
     if(r.qid==='raid'){S.raid=null;S.lastRaid=S.day;S.prosperity+=1;lines.push('+1 Prosperity');gainHearts(pick(['maren','bram','ilsa','dorrin']),1)}
     if(r.qid==='bounty'){S.bounties=(S.bounties||[]).filter(b=>b.id!==q.bounty);S.npcs.maren.hearts=S.npcs.maren.hearts}
     {const lootId=rollLoot(h.level,q.loot!==undefined?q.loot:r.qid==='patrol'?.04:QUESTS[r.qid]&&QUESTS[r.qid].act>=2?.5:.25);if(lootId){giveItem(lootId);lines.push(`Found: ${MAGIC[lootId].name}!`);addLog(`You found ${MAGIC[lootId].name}.`,'good')}}
-    if(r.qid!=='patrol'&&r.qid!=='bounty'&&r.qid!=='raid'){S.quests[r.qid]=true;S.prosperity+=1;lines.push('+1 Prosperity')}
+    if(r.qid!=='patrol'&&r.qid!=='bounty'&&r.qid!=='raid'){const capB=tierCap();S.quests[r.qid]=true;S.prosperity+=1;lines.push('+1 Prosperity');if(tierCap()>capB){S.hero.xp=Math.max(S.hero.xp,XP_AT[capB]);lines.push(capB===4?'The intro is complete. Choose your first path on the notice board.':'A new path opens on the notice board.')}['ch2Modal','ch4Modal','ch1Modal','ch3Modal','ch5Modal'].forEach(k=>{if(S.flags[k])S.flags[k]=false})}
     if(r.qid==='descent')S.flags.endModal=true;
     r.result={success:true,text:q.done||ENDINGS[S.flags.ending]?.text||'',lines};
     if(r.qid==='s1c')r.result.text=S.flags.rimeShard?'You carry the rime shard down the mountain. It is cold against your skin, and the town’s dogs won’t come near you.':'The Glacier Shrine is sealed again. The herders of the White Pass light fires in your honor all the way down the mountain.';
-    if(r.qid==='s2c')r.result.text='The third seal holds. Three of seven.';
+    if(r.qid==='s2c')r.result.text='Another seal holds.';
     if(r.qid==='s3c')r.result.text=S.flags.calderRedeemed?'Four of seven. Ser Calder’s sword hangs at your side, warm as a hearth.':'Four of seven. Ser Calder is finally at rest.';
-    if(r.qid==='s4c')r.result.text='Five of seven.';
+    if(r.qid==='s4c')r.result.text='Another seal holds.';
     if(r.qid==='s5c')r.result.text=S.flags.phylacteryKept?'You carry the phylactery home. It whispers to you on the road.':'The phylactery is dust. Vaelor can die now.';
     if(r.qid==='s6c')r.result.text=FINAL_ENDINGS[S.flags.finalEnding||'seal'][1];
     addLog(`Completed: ${q.name}.`,'good');checkLevel();
@@ -3478,7 +3670,7 @@ function finishRun(success,reason){
   if(!success&&r.qid==='siege'&&!(r.result&&r.result.dead)){const l=[];siegeDamage(l);if(l.length){r.result.lines.push(l[0]);addLog(l[0],'bad')}}
 }
 function checkLevel(){
-  const h=S.hero;
+  const h=S.hero;{const cap=maxLevel();if(cap<20&&h.level>=cap)h.xp=Math.min(h.xp,XP_AT[cap]-1)}
   while(h.level<maxLevel()&&h.xp>=XP_AT[h.level]){
     const oldMax=h.hpMax,oldPools=maxPools(h);h.level++;levelFeatures(h,h.level);
     h.hpMax=maxHP(h);h.hp+=h.hpMax-oldMax;const np=maxPools(h);
@@ -3535,12 +3727,13 @@ function makeBoard(n){
   return{rocks:[],hero:{x:3,y:GH-1},spots:Array.from({length:n},(_,i)=>({x:i*2%GW,y:Math.floor(i/4)}))};
 }
 function retarget(){const c=S.run.combat;let best=-1,bd=99;c.foes.forEach((f,i)=>{if(f.hp>0&&cheb(f,c.hero)<bd){bd=cheb(f,c.hero);best=i}});if(best>=0)c.target=best}
-const TOKEN={rat:'R',blightrat:'R',wolf:'W',madwolf:'W',kobold:'K',bandit:'B',blightspawn:'S',warden:'W',ghoul:'G',spider:'X',blightkobold:'K',thug:'T',captain:'H',arcanist:'A',skeleton:'K',wight:'W',ogrezombie:'O',needleblight:'N',vineblight:'V',thornwarden:'T',ysolde:'Y',dream:'D',heart:'H',goblin:'Go',hobgoblin:'Hb',worg:'Wg',ogre:'O',troll:'Tr',hillgiant:'Gi',frostgiant:'FG',winterwolf:'WW',yeti:'Ye',jarl:'Ja',ghast:'Gh',wraith:'Wr',youngblack:'YD',morvath:'M',hellhound:'HH',salamander:'Sa',firegiant:'Fi',calder:'C',ashgar:'As',vampspawn:'VS',ysoldevamp:'Y',aldric:'AV',stonegolem:'SG',boneknight:'BK',isenvyr:'Is',vaelor:'Vl',unwakingdream:'UD'};
+const TOKEN={rat:'R',blightrat:'R',wolf:'W',madwolf:'W',kobold:'K',bandit:'B',blightspawn:'S',warden:'W',ghoul:'G',spider:'X',blightkobold:'K',thug:'T',captain:'H',arcanist:'A',skeleton:'K',wight:'W',ogrezombie:'O',needleblight:'N',vineblight:'V',thornwarden:'T',ysolde:'Y',dream:'D',heart:'H',goblin:'Go',hobgoblin:'Hb',worg:'Wg',ogre:'O',troll:'Tr',hillgiant:'Gi',frostgiant:'FG',winterwolf:'WW',yeti:'Ye',jarl:'Ja',ghast:'Gh',wraith:'Wr',youngblack:'YD',morvath:'M',hellhound:'HH',salamander:'Sa',firegiant:'Fi',calder:'C',ashgar:'As',vampspawn:'VS',ysoldevamp:'Y',aldric:'AV',stonegolem:'SG',boneknight:'BK',isenvyr:'Is',vaelor:'Vl',unwakingdream:'UD',redcap:'RC',dryadthrall:'Dr',thornqueen:'TQ',clocksoldier:'CS',ironabbot:'IA',starspawn:'SS',mindhusk:'MH',watcherbelow:'WB',nightmareshade:'NS',dreamvaelor:'DV'};
 function startCombat(keys){
   if(S.run.thin&&keys.length>1){keys=keys.slice(0,-1);S.run.thin=false}
   const b=makeBoard(keys.length),counts={},h=S.hero,ambush=S.run.ambush;S.run.ambush=false;
   const foes=keys.map((k,i)=>{const e=ENEMIES[k],hp=Math.max(1,roll(e.hp).total);counts[k]=(counts[k]||0)+1;
     return{...e,key:k,hp,hpMax:hp,x:b.spots[i].x,y:b.spots[i].y,label:TOKEN[k]+(keys.filter(z=>z===k).length>1?counts[k]:'')}});
+  scaleFoes(foes);
   const c={board:2,cid:Math.random().toString(36).slice(2),rocks:b.rocks,hero:b.hero,foes,target:0,log:[],over:null,round:1,order:[],ti:0,turn:'start',
     move:0,actions:0,attacksLeft:0,bonus:false,react:true,downNoted:false};
   S.run.combat=c;retarget();
@@ -3629,7 +3822,7 @@ function heroTurnStart(){
     if(c.dilated&&c.round>c.dilateEnd){c.dilated=false;clog('Dilation ends. The world speeds back up.','info')}if(c.dilated)c.dilAtk=true;if(c.zero&&c.round>c.zeroEnd){c.zero=false;h.exh=Math.min(6,(h.exh||0)+1);clog('Zero Point ends. You gain a level of Exhaustion.','bad')}
     if(c.grab!=null&&(!c.foes[c.grab]||c.foes[c.grab].hp<=0))c.grab=null}
   if(h.conc==='heroism'){const tp=Math.max(1,spellMod());if(tp>h.temp)h.temp=tp}
-  Object.assign(c,{petDodge:false,petReacted:false,petMarkUsed:false,petDash:false,redlined:false,calcUsed:false,pistonUsed:false,arcUsed:false,ffUsed:false,fistPush:false,blurUsed:false,prUsed:false,flowUsed:false,killUsed:false,frozenRound:false,esmiteUsed:false,travelUsed:false,apoUsed:false,prowessUsed:false,resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
+  Object.assign(c,{petMove:c.pet?petType(h).speed:0,petMoved:false,petSel:false,lightAtk:false,offUsed:false,nickUsed:false,petDodge:false,petReacted:false,petMarkUsed:false,petDash:false,redlined:false,calcUsed:false,pistonUsed:false,arcUsed:false,ffUsed:false,fistPush:false,blurUsed:false,prUsed:false,flowUsed:false,killUsed:false,frozenRound:false,esmiteUsed:false,travelUsed:false,apoUsed:false,prowessUsed:false,resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
   clog(`Round ${c.round}: your turn`,'head');c.head='h'+c.round;c.tk='h:'+c.round;
   if(c.speedPot)c.hasteAtk=true;
   c.moveBudget=c.move;
@@ -3715,7 +3908,7 @@ function weaponDamage(w,crit){
   return{sum:dice.reduce((a,b)=>a+b,0),txt:`${crit?n*2:n}d${s}${gwf?' GWF':''} ${txt}`};
 }
 const weaponAbil=w=>(w.kind==='melee'&&!w.monk&&w.fixedAtk==null&&S&&S.hero&&S.hero.cls==='warlock'&&hasInv('pactblade'))?'cha':['int','wis','cha'].includes(w.abil)?w.abil:w.abil==='finesse'?(am('dex')>=am('str')?'dex':'str'):w.abil;
-const hasMastery=wid=>CLASSES[S.hero.cls].masteries.includes(wid)||(isSub('soulknife',3)&&(wid==='psiblade'||wid==='psithrow'));
+const hasMastery=wid=>{const h=S.hero;if(isSub('soulknife',3)&&(wid==='psiblade'||wid==='psithrow'))return true;if(masteryCount(h)){ensureMasteries(h);return h.masteries.includes(mBase(wid))}return false};
 function rangeIssue(kind,range,long,t){
   const c=S.run.combat;t=t||curTarget();if(!t)return'no target';
   if(t.banished&&S.hero.conc===t.banished)return'banished';
@@ -3730,7 +3923,7 @@ function useAttackAction(){
   const c=S.run.combat;if(c.attacksLeft>0){c.attacksLeft--;return true}
   if(c.actions<1)return false;c.actions--;c.attacksLeft=(shape()?shape().multi:S.hero.cls==='fighter'&&S.hero.level>=20?4:S.hero.cls==='fighter'&&S.hero.level>=11?3:(['fighter','monk','paladin','ranger','barbarian'].includes(S.hero.cls)&&S.hero.level>=5)||isSub('valor',6)||hasInv('thirstingblade')||(S.hero.cls==='graftwright'&&S.hero.level>=5)?2:1)-1;return true;
 }
-function weaponAttack(wid,reroll,o={}){
+function weaponAttack(wid,reroll,o={}){const wx=[];
   const c=S.run.combat,h=S.hero,t=curTarget();let w=WEAPONS[wid];
   if(wid==='unarmed'&&itemSum('unarmedBonus')){const ub=itemSum('unarmedBonus');o.unarmedPlus=ub}
   if(wid==='unarmed'&&isGW(h)&&gwUnarmedDie(h))w={...w,dmg:`1d${gwUnarmedDie(h)}`,abil:h.sub==='forgefist'||hasG('girallon',h)?'str':'str'};
@@ -3746,8 +3939,8 @@ function weaponAttack(wid,reroll,o={}){
   const reachSq=w.kind==='melee'&&w.reach?w.reach:w.kind==='melee'?((isSub('worldtree',10,h)&&TWOHAND.has(wid))||(c.elemental&&wid==='unarmed')?3:1):1;
   if(!t||rangeIssue(w.kind,reachSq,w.long||w.range))return;
   if(!reroll&&!useAttackAction())return;
-  if(!reroll)c.attackedThisTurn=true;
-  const wi=w.fixedAtk!=null?{wb:0}:(h.loadouts?handBonus(wid,o.offhand?'off':null):weaponItem());if(o.unarmedPlus)wi.wb=(wi.wb||0)+o.unarmedPlus;if(hasGP('tinkerer')&&!wi.wb&&w.fixedAtk==null&&wid!=='unarmed')wi.wb=1;if(w.fixedAtk==null)wi.wb=Math.max(wi.wb,h.conds.magicwpn||0);const dist=cheb(c.hero,t),ab=weaponAbil(w),bonus=-exhPen(h)+(w.fixedAtk!=null?w.fixedAtk:pb()+am(ab)+(h.gear.atk||0)+wi.wb+(hasGP('patternrec')&&t.gwStudied&&!c.prUsed?(c.prUsed=true,2):0))+(hasStyle('archery',h)&&w.kind==='ranged'?2:0)+(c.sacred?Math.max(1,am('cha')):0);
+  if(!reroll){c.attackedThisTurn=true;if(LIGHT.has(wid)&&!o.offhand)c.lightAtk=true;if(!o.offhand&&hasFeat('dualwielder')&&LIGHT.has(wid))c.lightAtk=true}
+  const wi=w.fixedAtk!=null?{wb:0}:(h.loadouts?handBonus(wid,o.offhand?'off':null):weaponItem());if(o.unarmedPlus)wi.wb=(wi.wb||0)+o.unarmedPlus;if(hasGP('tinkerer')&&!wi.wb&&w.fixedAtk==null&&wid!=='unarmed')wi.wb=1;if(w.fixedAtk==null)wi.wb=Math.max(wi.wb,h.conds.magicwpn||0);const dist=cheb(c.hero,t),ab=weaponAbil(w),bonus=-exhPen(h)+(w.fixedAtk!=null?w.fixedAtk:pb()+am(ab)+(wUp(wid,o.offhand).atk||0)+wi.wb+(hasGP('patternrec')&&t.gwStudied&&!c.prUsed?(c.prUsed=true,2):0))+(hasStyle('archery',h)&&w.kind==='ranged'?2:0)+(c.sacred?Math.max(1,am('cha')):0);
   const m=attackMods(t,w.kind,dist,w.range);
   const strAtk=w.fixedAtk==null&&ab==='str';
   let brutal=false;if(c.reckless&&strAtk){if(c.brutalNext&&!o.cleave){brutal=true;c.brutalNext=false}else{m.adv=true;m.why.push('Reckless')}}
@@ -3758,79 +3951,82 @@ function weaponAttack(wid,reroll,o={}){
   if(c.larrow&&w.kind==='ranged'&&!o.forceHit){const lv=c.larrow;c.larrow=null;const r4=roll('4d8').total,x=hit?r4:Math.floor(r4/2);clog(`Your arrow becomes a bolt of lightning: ${hit?'hit':'miss'}, ${x} lightning to ${fn(t)}.`,'good');hurt(t,x,'lightning',false);const br=roll(addDice('2d8',lv-3)).total;for(const f of liveFoes().filter(f=>f!==t&&cheb(f,t)<=2)){const tt=d(20)+f.mods.dex,n=tt>=spellDC()?Math.floor(br/2):br;clog(`The lightning arcs to ${fn(f)}: ${n} (DEX ${tt}).`,'good');hurt(f,n,'lightning',false)}checkWin();return}
   const head=o.forceHit?`${o.forceHit} turns it into a hit on ${fn(t)}.`:`You ${w.verb} ${fn(t)}${why}: ${r.txt} ${sgn(bonus)}${btxt} = ${total} vs AC ${t.ac}.`;
   if(hit){
-    const dmod=o.cleave||(o.offhand&&!hasStyle('twf',h))?Math.min(0,am(ab)):w.fixedAtk!=null?w.fixedDmg:am(ab),gd=w.fixedAtk!=null?0:(h.gear.dmg||0);
+    const dmod=o.cleave||(o.offhand&&!hasStyle('twf',h))?Math.min(0,am(ab)):w.fixedAtk!=null?w.fixedDmg:am(ab),gd=w.fixedAtk!=null?0:(wUp(wid,o.offhand).dmg||0);
     const wd=weaponDamage(w,crit);let total2=wd.sum+dmod+gd+wi.wb,txt=`${wd.txt} ${sgn(dmod)}${gd?` + ${gd}`:''}${wi.wb?` + ${wi.wb} magic`:''}`;
     if(hasFeat('gwm',h)&&TWOHAND.has(wid)&&w.kind==='melee'&&!o.cleave){total2+=pb();txt+=` + ${pb()} Great Weapon Master`}
     if(hasFeat('mobile',h)&&w.kind==='melee')t.mobileTagged=c.round;
     c.lastHit={ti:c.foes.indexOf(t),kind:w.kind,round:c.round};
-    if(o.trueStrike&&h.level>=5){const x=rollDice((h.level>=17?3:h.level>=11?2:1)*(crit?2:1),6).reduce((a,b)=>a+b,0);total2+=x;txt+=` + True Strike ${x} radiant`}
-    if(hasInv('lifedrinker')&&w.kind==='melee'){const x=d(6)*(crit?1:1);total2+=x;txt+=` + Lifedrinker ${x} necrotic`}
-    if(c.esmiteNext&&hasInv('eldritchsmite')&&w.kind==='melee'&&h.pools.pact>0&&!c.esmiteUsed){c.esmiteNext=false;c.esmiteUsed=true;h.pools.pact--;const lv=PACT[h.level][1],x=rollDice(lv+1,8).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Eldritch Smite ${x} force`;c.esmiteProne=true}
-    if(h.conc==='conjureminorelementals'&&cheb(c.hero,t)<=3){const x=rollDice(crit?4:2,8).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Minor Elementals ${x} fire`}
+    if(o.trueStrike&&h.level>=5){const x=rollDice((h.level>=17?3:h.level>=11?2:1)*(crit?2:1),6).reduce((a,b)=>a+b,0);wx.push([x,'radiant']);txt+=` + True Strike ${x} radiant`}
+    if(hasInv('lifedrinker')&&w.kind==='melee'){const x=d(6)*(crit?1:1);wx.push([x,'necrotic']);txt+=` + Lifedrinker ${x} necrotic`}
+    if(c.esmiteNext&&hasInv('eldritchsmite')&&w.kind==='melee'&&h.pools.pact>0&&!c.esmiteUsed){c.esmiteNext=false;c.esmiteUsed=true;h.pools.pact--;const lv=PACT[h.level][1],x=rollDice(lv+1,8).reduce((a,b)=>a+b,0);wx.push([x,'force']);txt+=` + Eldritch Smite ${x} force`;c.esmiteProne=true}
+    if(h.conc==='conjureminorelementals'&&cheb(c.hero,t)<=3){const x=rollDice(crit?4:2,8).reduce((a,b)=>a+b,0);wx.push([x,'fire']);txt+=` + Minor Elementals ${x} fire`}
     if(h.conc==='enlargereduce'){const x=d(4);total2+=x;txt+=` + Enlarge ${x}`}
-    if(h.conc==='elementalweapon'){const x=d(4);total2+=x;txt+=` + Elemental Weapon ${x} fire`}
-    if(t.cursed&&h.conc==='bestowcurse'){const x=d(8);total2+=x;txt+=` + Bestow Curse ${x} necrotic`}
-    if(h.conc==='spiritshroud'&&cheb(c.hero,t)<=2){const x=d(8);total2+=x;txt+=` + Spirit Shroud ${x} radiant`}
-    if(c.favor){const x=d(4)*(crit?1:1)+(crit?d(4):0);total2+=x;txt+=` + Divine Favor ${x} radiant`}
+    if(h.conc==='elementalweapon'){const x=d(4);wx.push([x,'fire']);txt+=` + Elemental Weapon ${x} fire`}
+    if(t.cursed&&h.conc==='bestowcurse'){const x=d(8);wx.push([x,'necrotic']);txt+=` + Bestow Curse ${x} necrotic`}
+    if(h.conc==='spiritshroud'&&cheb(c.hero,t)<=2){const x=d(8);wx.push([x,'radiant']);txt+=` + Spirit Shroud ${x} radiant`}
+    if(c.favor){const x=d(4)*(crit?1:1)+(crit?d(4):0);wx.push([x,'radiant']);txt+=` + Divine Favor ${x} radiant`}
     if(['longbow','shortbow'].includes(wid)&&itemSum('archery')){const x=itemSum('archery');total2+=x;txt+=` + ${x} Bracers of Archery`}
     if(isGW(h)){
       if(c.burnout){total2+=2;txt+=' + 2 Burnout'}
       if(c.dilated){const x=Math.max(0,am('int'));total2+=x;txt+=` + ${x} Dilation`}
       if(c.dilated&&isSub('quicksilver',10,h)&&w.kind==='melee'&&!c.blurUsed&&(c.moveBudget||0)-c.move>=4){c.blurUsed=true;const x=roll('2d8').total;total2+=x;txt+=` + Blur Strike ${x}`}
-      if(wid==='unarmed'&&isSub('forgefist',3,h)&&!c.pistonUsed){c.pistonUsed=true;const big=c.pistonNext&&(h.pools.charge>0||h.hum>2);let x;if(big){c.pistonNext=false;spendCharge(1,'Piston Blow');x=roll(h.level>=11?'3d8':'2d8').total;c.pistonPush=true;const tp=pb()+am('con');if(tp>h.temp)h.temp=tp}else x=d(8);total2+=x;txt+=` + Piston Blow ${x} force`}
-      if(c.arcNext&&hasGP('arcstrikes')&&!c.arcUsed){c.arcUsed=true;c.arcNext=false;spendCharge(1,'Arc-Charged Strike');const x=roll(crit?'4d6':'2d6').total;total2+=x;txt+=` + ${x} lightning`}
+      if(wid==='unarmed'&&isSub('forgefist',3,h)&&!c.pistonUsed){c.pistonUsed=true;const big=c.pistonNext&&(h.pools.charge>0||h.hum>2);let x;if(big){c.pistonNext=false;spendCharge(1,'Piston Blow');x=roll(h.level>=11?'3d8':'2d8').total;c.pistonPush=true;const tp=pb()+am('con');if(tp>h.temp)h.temp=tp}else x=d(8);wx.push([x,'force']);txt+=` + Piston Blow ${x} force`}
+      if(c.arcNext&&hasGP('arcstrikes')&&!c.arcUsed){c.arcUsed=true;c.arcNext=false;spendCharge(1,'Arc-Charged Strike');const x=roll(crit?'4d6':'2d6').total;wx.push([x,'lightning']);txt+=` + ${x} lightning`}
       if(hasGP('coldblooded')){const tp=pb();if(tp>h.temp)h.temp=tp}
       if(crit&&hasG('adamarrow')&&w.kind==='melee'){const x=d(+String(w.dmg).split('d')[1]||8);total2+=x;txt+=` + ${x} Adamantine Marrow`}
       if(hasG('seekerlens'))t.gwStudied=true;
     }
     if(o.extraDie){total2+=o.extraDie;txt+=` + ${o.extraDie} superiority`}
     if(c.maneuver&&h.pools.sup>0&&!o.extraDie){const x=d(supDie());h.pools.sup--;total2+=x;txt+=` + ${MANEUVERS[c.maneuver][0]} ${x}`;c.manHit=c.maneuver;c.maneuver=null}
-    if(c.psiNext&&h.pools.psi>0&&!c.psiUsed){c.psiUsed=true;c.psiNext=false;h.pools.psi--;const x=d(psiDie())+am('int');total2+=x;txt+=` + Psionic Strike ${x} force`;c.psiThrust=isSub('psiwarrior',7,h)}
-    if(isSub('feywanderer',3,h)&&!c.feyUsed){c.feyUsed=true;const x=d(h.level>=11?6:4);total2+=x;txt+=` + Dreadful Strike ${x} psychic`}
-    if(isSub('gloomstalker',3,h)&&h.pools.dread>0&&!c.dreadUsed){c.dreadUsed=true;h.pools.dread--;const x=rollDice(2,h.level>=11?8:6).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Dread Ambusher ${x} psychic`}
+    if(c.psiNext&&h.pools.psi>0&&!c.psiUsed){c.psiUsed=true;c.psiNext=false;h.pools.psi--;const x=d(psiDie())+am('int');wx.push([x,'force']);txt+=` + Psionic Strike ${x} force`;c.psiThrust=isSub('psiwarrior',7,h)}
+    if(isSub('feywanderer',3,h)&&!c.feyUsed){c.feyUsed=true;const x=d(h.level>=11?6:4);wx.push([x,'psychic']);txt+=` + Dreadful Strike ${x} psychic`}
+    if(isSub('gloomstalker',3,h)&&h.pools.dread>0&&!c.dreadUsed){c.dreadUsed=true;h.pools.dread--;const x=rollDice(2,h.level>=11?8:6).reduce((a,b)=>a+b,0);wx.push([x,'psychic']);txt+=` + Dread Ambusher ${x} psychic`}
     if(c.valorNext&&h.pools.bi){c.valorNext=false;h.pools.bi--;const x=d(biDie());total2+=x;txt+=` + Combat Inspiration ${x}`}
-    if(c.rage&&isSub('zealot',3,h)&&!c.furyUsed){c.furyUsed=true;const x=d(6)+Math.floor(h.level/2);total2+=x;txt+=` + Divine Fury ${x} radiant`}
-    if(wid==='unarmed'&&c.harmNext&&!c.harmUsed&&(h.pools.focus>0||(o.flurry&&isSub('mercy',11,h)))){c.harmUsed=true;c.harmNext=false;if(!(o.flurry&&isSub('mercy',11,h)))h.pools.focus--;const x=d(maDie())+am('wis');total2+=x;txt+=` + Hand of Harm ${x} necrotic`;if(isSub('mercy',6,h))c.harmPoison=true}
-    if(wid==='unarmed'&&c.elemental&&isSub('elements',17,h)&&!c.epitomeUsed){c.epitomeUsed=true;const x=d(maDie());total2+=x;txt+=` + Elemental Epitome ${x}`}
+    if(c.rage&&isSub('zealot',3,h)&&!c.furyUsed){c.furyUsed=true;const x=d(6)+Math.floor(h.level/2);wx.push([x,'radiant']);txt+=` + Divine Fury ${x} radiant`}
+    if(wid==='unarmed'&&c.harmNext&&!c.harmUsed&&(h.pools.focus>0||(o.flurry&&isSub('mercy',11,h)))){c.harmUsed=true;c.harmNext=false;if(!(o.flurry&&isSub('mercy',11,h)))h.pools.focus--;const x=d(maDie())+am('wis');wx.push([x,'necrotic']);txt+=` + Hand of Harm ${x} necrotic`;if(isSub('mercy',6,h))c.harmPoison=true}
+    if(wid==='unarmed'&&c.elemental&&isSub('elements',17,h)&&!c.epitomeUsed){c.epitomeUsed=true;const x=d(maDie());wx.push([x,'fire']);txt+=` + Elemental Epitome ${x} fire`}
     if(c.rage&&strAtk){total2+=rageDmg();txt+=` + ${rageDmg()} Rage`}
     if(c.rage&&c.reckless&&isSub('berserker',3,h)&&!c.frenzyUsed&&strAtk){c.frenzyUsed=true;const fr=rollDice(crit?rageDmg()*2:rageDmg(),6);total2+=fr.reduce((a,b)=>a+b,0);txt+=` + Frenzy [${fr.join(', ')}]`}
     if(brutal){const br=rollDice((crit?2:1)*(h.level>=17?2:1),10);total2+=br.reduce((a,b)=>a+b,0);txt+=` + Brutal Strike [${br.join(', ')}]`}
-    if(wi.item&&wi.item.extra&&(!wi.item.extra.vs||wi.item.extra.vs.includes(t.type))){const ex=wi.item.extra,xr=roll(crit?ex.dice.replace(/^(\d+)/,(q,a)=>String(2*a)):ex.dice);total2+=xr.total;txt+=` + ${wi.item.name} ${xr.total} ${ex.type}`}
+    if(wi.item&&wi.item.extra&&(!wi.item.extra.vs||wi.item.extra.vs.includes(t.type))){const ex=wi.item.extra,xr=roll(crit?ex.dice.replace(/^(\d+)/,(q,a)=>String(2*a)):ex.dice);wx.push([xr.total,ex.type]);txt+=` + ${wi.item.name} ${xr.total} ${ex.type}`}
     if(wi.item&&wi.item.critBonus&&crit){total2+=wi.item.critBonus;txt+=` + ${wi.item.critBonus} vicious`}
     if(wi.item&&wi.item.vorpal&&r.nat===20){if((ENEMIES[t.key]||{}).xp>=7000||['ooze','elemental','construct'].includes(t.type)){const xr=roll('6d8');total2+=xr.total;txt+=` + Vorpal ${xr.total}`}else{total2+=t.hp+999;txt+=', and the Vorpal Sword takes its head'}}
-    if(wi.holy&&w.kind==='melee'){const hr=rollDice(crit?4:2,8);total2+=hr.reduce((a,b)=>a+b,0);txt+=` + Oathblade [${hr.join(', ')}]`}
-    if(wi.fire&&w.kind==='melee'){const fr=rollDice(crit?4:2,6);total2+=fr.reduce((a,b)=>a+b,0);txt+=` + Flame Tongue [${fr.join(', ')}]`}
-    {const hx=hexBonus(t,crit);if(hx){total2+=hx;txt+=` + Hex ${hx}`}}
+    if(wi.holy&&w.kind==='melee'){const hr=rollDice(crit?4:2,8);wx.push([hr.reduce((a,b)=>a+b,0),'radiant']);txt+=` + Oathblade ${hr.reduce((a,b)=>a+b,0)} radiant`}
+    if(wi.fire&&w.kind==='melee'){const fr=rollDice(crit?4:2,6);wx.push([fr.reduce((a,b)=>a+b,0),'fire']);txt+=` + Flame Tongue ${fr.reduce((a,b)=>a+b,0)} fire [${fr.join(', ')}]`}
+    {const hx=hexBonus(t,crit);if(hx){wx.push([hx,'necrotic']);txt+=` + Hex ${hx} necrotic`}}
     if(h.cls==='rogue'&&m.adv&&!m.dis&&!c.sneakUsed&&(w.abil==='finesse'||w.kind==='ranged')){
       const nd=Math.ceil(h.level/2),s=rollDice(crit?nd*2:nd,6);c.sneakUsed=true;total2+=s.reduce((a,b)=>a+b,0);txt+=` + Sneak Attack [${s.join(', ')}]`;
       if(isSub('assassin',3,h)&&c.round===1){total2+=h.level;txt+=` + Assassinate ${h.level}`}
       if(isSub('assassin',17,h)&&c.round===1&&!t.acted){const s2=d(20),tt=s2+t.mods.con,dc=8+am('dex')+pb();if(tt<dc){total2*=2;txt+=` × 2 Death Strike (CON ${tt} vs ${dc})`}}
     }
     let radiant=false;
-    if(h.cls==='paladin'&&h.level>=11&&w.kind==='melee'){const x=rollDice(crit?2:1,8).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Radiant Strikes ${x}`}
-    if(shape()&&h.level>=14&&h.pools.lunar&&!c.lunarUsed){c.lunarUsed=true;const x=rollDice(crit?4:2,10).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Lunar Form ${x}`}
+    if(h.cls==='paladin'&&h.level>=11&&w.kind==='melee'){const x=rollDice(crit?2:1,8).reduce((a,b)=>a+b,0);wx.push([x,'radiant']);txt+=` + Radiant Strikes ${x} radiant`}
+    if(shape()&&h.level>=14&&h.pools.lunar&&!c.lunarUsed){c.lunarUsed=true;const x=rollDice(crit?4:2,10).reduce((a,b)=>a+b,0);wx.push([x,'radiant']);txt+=` + Lunar Form ${x} radiant`}
     if(hasStyle('dueling',h)&&w.kind==='melee'&&!w.twoHanded&&!(resolveHand(activeSet(h).off)||{}).base?.match?.(/^(?!shield)/)){total2+=2;txt+=' + 2 Dueling'}
     if(hasStyle('thrown',h)&&['javelin','handaxe','throwdagger'].includes(wid)){total2+=2;txt+=' + 2 Thrown'}
-    if(h.conc==='huntersmark'&&c.markTarget!=null&&c.foes[c.markTarget]===t){const r=rollDice(crit?2:1,h.cls==='ranger'&&h.level>=20?10:6),x=r.reduce((a,b)=>a+b,0);total2+=x;txt+=` + Hunter’s Mark ${x}`;
+    if(h.conc==='huntersmark'&&c.markTarget!=null&&c.foes[c.markTarget]===t){const r=rollDice(crit?2:1,h.cls==='ranger'&&h.level>=20?10:6),x=r.reduce((a,b)=>a+b,0);wx.push([x,'force']);txt+=` + Hunter’s Mark ${x} force`;
       if(isSub('hunter',11,h)&&!c.preyUsed){const o2=liveFoes().find(f=>f!==t&&cheb(f,t)<=6);if(o2){c.preyUsed=true;const y=d(6);clog(`Superior Hunter’s Prey: ${y} force leaps to ${fn(o2)}.`,'good');hurt(o2,y,'force',false)}}}
     if(isSub('hunter',3,h)&&!c.colossusUsed&&t.hp<t.hpMax){const r=rollDice(crit?2:1,8),x=r.reduce((a,b)=>a+b,0);c.colossusUsed=true;total2+=x;txt+=` + Colossus Slayer ${x}`}
-    if(h.conc==='holyweapon'){const x=rollDice(crit?4:2,8).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Holy Weapon ${x}`;radiant=true}
-    if(h.conc==='crusadersmantle'){const x=rollDice(crit?2:1,4).reduce((a,b)=>a+b,0);total2+=x;txt+=` + Mantle ${x} radiant`}
+    if(h.conc==='holyweapon'){const x=rollDice(crit?4:2,8).reduce((a,b)=>a+b,0);wx.push([x,'radiant']);txt+=` + Holy Weapon ${x} radiant`}
+    if(h.conc==='crusadersmantle'){const x=rollDice(crit?2:1,4).reduce((a,b)=>a+b,0);wx.push([x,'radiant']);txt+=` + Mantle ${x} radiant`}
     if(c.smiteNext&&w.kind==='melee'&&c.bonus&&(h.pools.freesmite||(slotFor(1)&&!c.slotUsed))){
       let sl;if(h.pools.freesmite){h.pools.freesmite--;sl=1}else{sl=pickSlot(1,c.smiteLvl);useSlot(sl);c.slotUsed=true}c.smiteLvl=null;
       c.bonus=false;c.smiteNext=false;const nd=1+sl+(t.type==='undead'?1:0),r=rollDice(crit?nd*2:nd,8),x=r.reduce((a,b)=>a+b,0);total2+=x;radiant=true;txt+=` + Divine Smite [${r.join(', ')}]`;if(isSub('glory',3,h)&&h.pools.cd>0){h.pools.cd--;const tp=rollDice(2,8).reduce((a,b)=>a+b,0)+h.level;if(tp>h.temp)h.temp=tp;txt+=`, Inspiring Smite ${tp} temporary HP`}if(isSub('devotion',15,h)){const tp=Math.max(1,am('cha'));if(tp>h.temp)h.temp=tp}
     }
-    clog(`${head} ${crit?'Critical hit! ':'Hit. '}${total2} ${w.type} damage (${txt}).`,'good');
+    clog(`${head} ${crit?'Critical hit! ':'Hit. '}${total2} ${w.type}${wx.length?` + ${wx.map(e=>`${e[0]} ${e[1]}`).join(' + ')}`:''} damage (${txt}).`,'good');
     if(c.ensnareNext&&h.conc==='ensnaringstrike'&&t.hp>0){c.ensnareNext=false;const s2=d(20),tt=s2+t.mods.str;if(tt<spellDC()){t.restrained=true;clog(`Ensnaring Strike: STR save ${s2} ${sgn(t.mods.str)} = ${tt} vs DC ${spellDC()}. Thorny vines pin ${fn(t)} in place.`,'good')}else clog(`Ensnaring Strike: ${fn(t)} tears free of the vines (${tt} vs DC ${spellDC()}).`,'info')}
     let mtxt='';
     if(hasMastery(wid)){
       if(w.mastery==='vex'){t.vexed=c.round;mtxt='Vex: your next attack against it has advantage.'}
       if(w.mastery==='sap'){t.sapped=true;mtxt='Sap: its next attack has disadvantage.'}
       if(w.mastery==='slow'){t.slowed=true;mtxt='Slow: its speed drops by 10 ft.'}
+      if(w.mastery==='topple'&&t.hp-0>0){const dc=8+am(ab)+pb(),sv=d(20)+t.mods.con;if(sv<dc){t.prone=true;mtxt=`Topple: it fails a Constitution save (${sv} vs ${dc}) and falls prone.`}else mtxt=`Topple: it keeps its feet (${sv} vs ${dc}).`}
+      if(w.mastery==='push'){if(['giant','dragon'].includes(t.type)&&(t.hpMax||0)>=100)mtxt='Push: it’s too big to shove.';else{t.pushNext=true;mtxt='Push: you drive it back 10 ft.'}}
     }
     let dtype=radiant?'radiant':w.type;
-    if(h.gear.moon&&t.type==='undead'){const m=rollDice(crit?2:1,6),ms=m.reduce((a,b)=>a+b,0);total2+=ms;dtype='radiant';clog(`Moonsilver burns it for ${ms} radiant [${m.join(', ')}].`,'good')}
-    hurt(t,total2,dtype,crit);
+    if(wUp(wid,o.offhand).moon&&t.type==='undead'){const m=rollDice(crit?2:1,6),ms=m.reduce((a,b)=>a+b,0);total2+=ms;dtype='radiant';clog(`Moonsilver burns it for ${ms} radiant [${m.join(', ')}].`,'good')}
+    c.moonHit=!!wUp(wid,o.offhand).moon||!!(wi&&(wi.item||wi.wb>0))||w.fixedAtk!=null||(wid==='unarmed'&&h.cls==='monk'&&h.level>=6)||(h.cls==='warlock'&&hasInv('pactblade')&&w.kind==='melee')||!!(h.conds&&h.conds.magicwpn);hurt(t,total2,dtype,crit);c.moonHit=false;
+    for(const [n2,ty] of wx)if(t.hp>0&&n2>0)hurt(t,n2,ty,false);
     if(isSub('eldritchknight',10,h)&&t.hp>0)t.eStrike=true;
     if(mtxt&&t.hp>0)clog(mtxt,'info');
     if(hasFeat('gwm',h)&&TWOHAND.has(wid)&&w.kind==='melee'&&(crit||t.hp<=0)){c.hewReady=true}
@@ -3847,6 +4043,7 @@ function weaponAttack(wid,reroll,o={}){
         else{if(sv<dc){t.prone=true;clog(`You slam ${fn(t)} to the ground (save ${sv}).`,'good');if(hasGP('wreckingball')){const x=d(8)+am('str');hurt(t,x,'bludgeoning',false);clog(`Wrecking Ball: ${x}.`,'good')}}else clog(`${Fn(t)} keeps its feet (${sv}).`,'info')}}
       if(wid==='unarmed'&&hasG('forgefists')&&!c.fistPush&&t.hp>0){c.fistPush=true;pushAway(t,2)}
     }
+    if(t.pushNext){t.pushNext=false;if(t.hp>0)pushAway(t,2)}
     if(c.esmiteProne&&t.hp>0){c.esmiteProne=false;t.prone=true;clog('Eldritch Smite knocks it prone.','good')}
     if(c.manHit&&t.hp>0){const mv=c.manHit;c.manHit=null;const sv=mv==='menace'?'wis':'str',s2=d(20),tt=s2+t.mods[sv],ok=tt>=manDC();
       if(!ok){if(mv==='trip')t.prone=true;if(mv==='push')pushAway(t,3);if(mv==='menace')t.turned=true}clog(`${MANEUVERS[mv][0]}: ${ABIL_SHORT[sv]} save ${tt} vs DC ${manDC()}. ${ok?'It holds.':mv==='trip'?'Down it goes.':mv==='push'?'It’s shoved back.':'It flees in fear.'}`,ok?'info':'good')}
@@ -3885,7 +4082,7 @@ function hurt(f,n,type,crit){
   const BPS=['bludgeoning','piercing','slashing'];
   if(f.immune&&f.immune.includes(type)){clog(`${Fn(f)} is immune to ${type}.`,'info');n=0}
   else if(f.vuln&&f.vuln.includes(type)){n*=2;clog(`${Fn(f)} is vulnerable to ${type}: double damage (${n}).`,'good')}
-  else if(!f._irres&&((f.resist&&f.resist.includes(type))||(f.resistMundane&&BPS.includes(type)&&!S.hero.gear.moon&&!(S.hero.cls==='graftwright'&&S.hero.level>=11)))){n=Math.floor(n/2);clog(`${Fn(f)} resists ${type}: half damage (${n}).${f.resistMundane&&!S.hero.gear.moon?' Moonsilver would cut through.':''}`,'info')}
+  else if(!f._irres&&((f.resist&&f.resist.includes(type))||(f.resistMundane&&BPS.includes(type)&&!(S.run&&S.run.combat&&S.run.combat.moonHit)&&!(S.hero.cls==='graftwright'&&S.hero.level>=11)))){n=Math.floor(n/2);clog(`${Fn(f)} resists ${type}: half damage (${n}).${f.resistMundane?' A magic or moonsilver weapon would cut through.':''}`,'info')}
   if(f.regenStop&&f.regenStop.includes(type))f.noRegen=true;
   f.hp-=n;if(f.turned&&n>0){f.turned=false}if(f.charmed&&n>0)f.charmed=false;
   if(f.hp<=0&&f.fortitude&&type!=='radiant'&&!crit){
@@ -3929,7 +4126,7 @@ function spellIssue(id){
   if(sp.lvl>0&&c.slotUsed&&!c.freeCast&&!favored)return'one slot spell per turn';
   const asBonus=sp.cast==='bonus'||(sp.cast==='action'&&c.quicken);
   if(asBonus&&!c.bonus)return'bonus action used';
-  const warMagic=sp.lvl===0&&isSub('eldritchknight',7,h)&&c.actions<1&&c.attacksLeft>0;
+  const warMagic=sp.lvl===0&&(isSub('eldritchknight',7,h)||isSub('valor',6,h))&&c.actions<1&&c.attacksLeft>0;
   if(!asBonus&&sp.cast==='action'&&c.actions<1&&!warMagic&&!(c.wishAction&&sp.lvl>0))return'action used';
   if(sp.form==='utility'||sp.form==='restheal'||sp.form==='restbuff')return'outside combat';
   if(!sp.internal){const cc=castCheck(id,h);if(cc)return cc}
@@ -3962,7 +4159,7 @@ function castSpellInner(id,o={}){
   let lvl=0;
   if(!o.reroll){
     if(sp.lvl>0){const mastery=h.cls==='wizard'&&h.level>=18&&['magicmissile','scorchingray'].includes(id)&&!(o.slot>sp.lvl),sig=h.cls==='wizard'&&h.level>=20&&id==='fireball'&&h.pools.sig>0&&!(o.slot>3);if(mastery){lvl=sp.lvl;clog('Spell Mastery: no slot needed.','info')}else if(sig){h.pools.sig--;lvl=3;clog('Signature Spell: a free Fireball.','info')}else if(id==='wish'&&h.pools.gdi>0){h.pools.gdi--;lvl=9;clog('Greater Divine Intervention: a free Wish.','info')}else if(h.pools.recall>0&&sp.lvl<=4&&!slotFor(sp.lvl)){h.pools.recall--;lvl=sp.lvl;clog('Boon of Spell Recall: no slot needed.','info')}else if(id==='guidingbolt'&&isSub('stars',3,h)&&h.pools.starbolt>0){h.pools.starbolt--;lvl=1;clog('Star Map: a free Guiding Bolt.','info')}else if(id===miSpell(h)&&h.pools.mi>0&&!(CLASSES[h.cls].caster&&slotFor(sp.lvl)&&!c.slotUsed)){h.pools.mi--;lvl=1;clog(`Magic Initiate: a free ${sp.name}.`,'info')}else if(id==='huntersmark'&&h.pools.favored>0){h.pools.favored--;lvl=1;clog(`Favored Enemy: a free Hunter’s Mark (${h.pools.favored} left today).`,'info')}else if(c.freeCast){lvl=sp.lvl;c.freeCast=false}else{lvl=pickSlot(sp.lvl,o.slot);useSlot(lvl);c.slotUsed=true}}
-    if(c.wishAction&&sp.lvl>0&&!sp.internal&&id!=='wish'){c.wishAction=false;clog('Wish: no action needed.','info')}else if(sp.cast==='action'&&c.quicken){c.bonus=false;c.quicken=false;clog('Quickened Spell: cast as a bonus action.','info')}else if(sp.cast==='action'&&c.actions<1&&c.attacksLeft>0&&sp.lvl===0&&isSub('eldritchknight',7,h)){c.attacksLeft--;clog('War Magic: a cantrip in place of an attack.','info')}else if(sp.cast==='action')c.actions--;else if(sp.cast==='bonus')c.bonus=false;
+    if(c.wishAction&&sp.lvl>0&&!sp.internal&&id!=='wish'){c.wishAction=false;clog('Wish: no action needed.','info')}else if(sp.cast==='action'&&c.quicken){c.bonus=false;c.quicken=false;clog('Quickened Spell: cast as a bonus action.','info')}else if(sp.cast==='action'&&c.actions<1&&c.attacksLeft>0&&sp.lvl===0&&(isSub('eldritchknight',7,h)||isSub('valor',6,h))){c.attacksLeft--;clog(isSub('valor',6,h)?'Extra Attack: a cantrip in place of an attack.':'War Magic: a cantrip in place of an attack.','info')}else if(sp.cast==='action'&&sp.lvl===0&&isSub('valor',6,h)&&!c.attackedThisTurn){c.actions--;c.attacksLeft=1;c.attackedThisTurn=true;clog('Extra Attack: you cast a cantrip as part of the Attack action, and can still make one weapon attack.','info')}else if(sp.cast==='action')c.actions--;else if(sp.cast==='bonus')c.bonus=false;
   }
   {const cost=COSTLY[id];if(cost&&cost[1]&&cost[0]>0&&(h.mats||{})[id]>0){h.mats[id]--;clog(`The spell consumes ${cost[2]}.`,'info')}}
   c.ambushCast=isSub('arcanetrickster',9,h)&&c.hidden;
@@ -4377,7 +4574,7 @@ function feature(id,arg){
   if(id==='mantle'){if(!c.bonus||!h.pools.bi)return;h.pools.bi--;c.bonus=false;const x=d(biDie()),tp=2*x;if(tp>h.temp)h.temp=tp;c.disengaged=true;clog(`Mantle of Inspiration: ${tp} temporary HP, and you can slip away freely.`,'good');return}
   if(id==='majesty'){if(!c.bonus||!h.pools.majesty||c.majesty)return;h.pools.majesty--;c.bonus=false;c.majesty=true;clog('Mantle of Majesty: an unearthly glamour falls over you.','good');return}
   if(id==='command'){if(!c.bonus||!c.majesty)return;const t=curTarget();if(!t)return;c.bonus=false;const s2=d(20)+t.mods.wis;if(s2<spellDC()){t.prone=true;t.rooted=true;clog(`“Grovel.” ${Fn(t)} drops to the ground.`,'good')}else clog(`${Fn(t)} resists your command (WIS ${s2}).`,'info');return}
-  if(id==='valorstrike'){if(!h.pools.bi||c.valorNext)return;c.valorNext=true;clog('Combat Inspiration readied for your next hit.','info');return}
+  if(id==='valorstrike'){if(!h.pools.bi||c.valorNext||!c.bonus)return;c.bonus=false;c.valorNext=true;clog('Combat Inspiration (bonus action): your next hit adds your Bardic Inspiration die.','info');return}
   if(id==='battlemagic'){if(!c.bonus||!c.battleMagic)return;const m=heroWeapons().find(k=>WEAPONS[k]&&!rangeIssue(WEAPONS[k].kind,1,WEAPONS[k].long||WEAPONS[k].range));if(!m)return;c.bonus=false;c.battleMagic=false;clog('Battle Magic: a bonus attack.','info');weaponAttack(m,true);return}
   if(id==='detonate'){if(!c.bead)return;const b=c.bead;c.bead=null;if(h.conc==='delayedblast')h.conc=null;const r=roll(`${b.dice}d6`);clog(`The bead detonates: ${rtxt(r)} = ${r.total} fire.`,'good');for(const f of liveFoes().filter(f=>cheb(f,b)<=4)){const tt=foeD20(f)+f.mods.dex,sv=tt>=spellDC(),n=sv?Math.floor(r.total/2):r.total;clog(`${Fn(f)} DEX save ${tt}: ${n}.`,sv?'':'good');hurt(f,n,'fire',false)}if(cheb(c.hero,b)<=4&&!isSub('evoker',6,h)){const n=aoeHero(r.total,spellDC());if(n){clog(`You take ${n} fire.`,'bad');dealHero(n,'fire')}}checkWin();return}
   if(id==='eyebite'){const t=curTarget();if(c.actions<1||h.conc!=='eyebite'||!t||cheb(c.hero,t)>12)return;c.actions--;const tt=foeD20(t)+t.mods.wis;if(tt<spellDC()){t.disabled={by:'eyebite',save:'wis',stage:2};t.prone=true;clog(`Eyebite: ${fn(t)} falls asleep (WIS ${tt}).`,'good')}else clog(`${Fn(t)} resists your gaze (WIS ${tt}).`,'info');return}
@@ -4505,8 +4702,9 @@ function feature(id,arg){
   if(id==='medic'){if(c.actions<1||!h.pools.hd)return;h.pools.hd--;c.actions--;let x=d(CLASSES[h.cls].hd);if(x===1)x=d(CLASSES[h.cls].hd);const n=Math.max(1,x+am('con')+pb());h.hp=Math.min(h.hpMax,h.hp+n);clog(`Battle Medic: you patch yourself up for ${n} HP.`,'good');return}
   if(id==='landsaid'){if(c.actions<1||!h.pools.ws||!isSub('land',3,h))return;c.aim='landsaid';return}
   if(id==='sanctuary'){if(c.actions<1||!h.pools.ws||!isSub('land',14,h)||c.sanctuary)return;h.pools.ws--;c.actions--;c.sanctuary=true;clog('Nature’s Sanctuary: spectral trees rise around you.','good');return}
-  if(id==='offhand'){const st=activeSet(h),m=resolveHand(st.main),o2=resolveHand(st.off);if(!c.bonus||!m||!o2||!LIGHT.has(m.base)||!LIGHT.has(o2.base)||!c.attackedThisTurn)return;c.bonus=false;weaponAttack(o2.base,true,{offhand:true});return}
-  if(id==='swapset'){if(c.swapped||!h.loadouts||h.loadouts.length<2)return;c.swapped=true;h.activeSet=h.activeSet?0:1;clog(`You switch to weapon set ${h.activeSet+1}: ${[activeSet().main,activeSet().off].map(weaponLabel).join(' and ')}.`,'info');return}
+  if(id==='offhand'){const st=activeSet(h),m=resolveHand(st.main),o2=resolveHand(st.off);if(!m||!o2||!WEAPONS[o2.base]||!c.lightAtk||c.offUsed)return;const okOff=LIGHT.has(o2.base)||(hasFeat('dualwielder')&&WEAPONS[o2.base].kind==='melee'&&!TWOHAND.has(o2.base));if(!okOff)return;
+    const nick=hasMastery(o2.base)&&WEAPONS[o2.base].mastery==='nick'&&!c.nickUsed;if(!nick&&!c.bonus)return;if(nick){c.nickUsed=true;clog('Nick: the extra attack is part of your Attack action.','info')}else c.bonus=false;c.offUsed=true;weaponAttack(o2.base,true,{offhand:true});return}
+  if(id==='swapset'){if(c.swapped||!c.bonus||!h.loadouts||h.loadouts.length<2)return;c.bonus=false;c.swapped=true;h.activeSet=h.activeSet?0:1;clog(`You switch to weapon set ${h.activeSet+1}: ${[activeSet().main,activeSet().off].map(weaponLabel).join(' and ')}.`,'info');return}
   if(id==='flurrytog'){c.flurryOn=!c.flurryOn;return}
   if(id==='mastrike'){if(!c.bonus||h.cls!=='monk')return;c.bonus=false;if(c.flurryOn&&h.level>=2&&h.pools.focus>0){const n=h.level>=10?3:2,tg=multiTargets('flurry');if(tg.length>1){c.bonus=true;c.split={id:'flurry',slot:0,n,alloc:{[c.foes.indexOf(curTarget())]:n}};return}h.pools.focus--;clog('Flurry of Blows!','info');monkStrikes(n,true)}else monkStrikes(1,false);return}
   if(id==='freestrike'){if(!c.freeStrike)return;c.freeStrike=false;monkStrikes(1,false);return}
@@ -4555,7 +4753,7 @@ function combatAction(k){
   const h=S.hero;
   if(h.dying){if(k==='deathsave')deathSave();return}
   if(!k.startsWith('reroll'))c.lastMiss=null;
-  if(WEAPONS[k]&&!heroWeapons().includes(k)&&h.loadouts&&h.loadouts.length>1&&!c.swapped){const was=h.activeSet||0;h.activeSet=was?0:1;if(heroWeapons().includes(k)){c.swapped=true;clog(`You switch to weapon set ${h.activeSet+1}.`,'info')}else h.activeSet=was}
+  if(WEAPONS[k]&&!heroWeapons().includes(k)&&h.loadouts&&h.loadouts.length>1&&!c.swapped&&c.bonus){const was=h.activeSet||0;h.activeSet=was?0:1;if(heroWeapons().includes(k)){c.swapped=true;c.bonus=false;clog(`You switch to weapon set ${h.activeSet+1} (bonus action).`,'info')}else h.activeSet=was}
   if(WEAPONS[k])weaponAttack(k);
   else if(k.startsWith('up:')){const [,id,l]=k.split(':');c.pick=null;if(id==='smite'){c.smiteLvl=+l;c.smiteNext=true;clog(`Divine Smite readied with a level ${l} slot.`,'info')}else castSpell(id,{slot:+l})}
   else if(k==='cancelpick'){c.pick=null}
@@ -4566,7 +4764,7 @@ function combatAction(k){
     if(k==='splitgo'){const tot=Object.values(sp.alloc).reduce((a,b)=>a+b,0);if(tot!==sp.n)return;c.split=null;castSpell(sp.id,{slot:sp.slot,alloc:sp.alloc});checkWin();return}
     const [op,i]=k.slice(5).split(':'),tot=Object.values(sp.alloc).reduce((a,b)=>a+b,0);
     if(op==='+'&&tot<sp.n)sp.alloc[i]=(sp.alloc[i]||0)+1;if(op==='-'&&(sp.alloc[i]||0)>0)sp.alloc[i]--;return}
-  else if(SPELLS[k]){if(castCheck(k)&&!c.swapped&&h.loadouts&&h.loadouts.length>1){const was=h.activeSet||0;h.activeSet=was?0:1;if(!castCheck(k)&&!spellIssue(k)){c.swapped=true;clog(`You switch to weapon set ${h.activeSet+1} to cast ${SPELLS[k].name}.`,'info')}else h.activeSet=was}
+  else if(SPELLS[k]){if(castCheck(k)&&!c.swapped&&c.bonus&&SPELLS[k].cast!=='bonus'&&h.loadouts&&h.loadouts.length>1){const was=h.activeSet||0;h.activeSet=was?0:1;if(!castCheck(k)&&!spellIssue(k)){c.swapped=true;c.bonus=false;clog(`You switch to weapon set ${h.activeSet+1} (bonus action) to cast ${SPELLS[k].name}.`,'info')}else h.activeSet=was}
     if(spellIssue(k))return;
     if(MULTI[k]){const slot=plannedSlot(k)||0,n=multiCount(k,slot),tg=multiTargets(k);
       if(n>1&&tg.length>1){c.split={id:k,slot,n,alloc:{[c.foes.indexOf(curTarget())]:n}};return}}
@@ -4625,7 +4823,7 @@ function dealHero(n,type){
   if(c&&c.rage&&['bludgeoning','piercing','slashing'].includes(type)){n=Math.floor(n/2);clog('Your rage shrugs off half the damage.','info')}
   if(type==='fire'&&isSub('draconic',6,h)){n=Math.floor(n/2);clog('Your draconic blood resists the fire.','info')}
   if(type==='necrotic'&&isSub('fiend',10,h)){n=Math.floor(n/2);clog('Fiendish Resilience halves the necrotic damage.','info')}
-  if(type==='necrotic'&&h.gear.necro){n=Math.floor(n/2);clog('Your moonsilver armor halves the necrotic damage.','info')}
+  if(type==='necrotic'&&armorNecro(h)){n=Math.floor(n/2);clog('Your moonsilver armor halves the necrotic damage.','info')}
   if(h.conc==='resistance'&&c&&!c.resUsed&&n>0){c.resUsed=true;const x=d(4);n=Math.max(0,n-x);clog(`Resistance: ${x} less damage.`,'info')}
   const wasAbove=h.hp>h.hpMax/2;
   if(h.ward>0&&n>0){const a=Math.min(h.ward,n);h.ward-=a;n-=a;clog(`Your ward absorbs ${a}${h.ward?`, ${h.ward} left`:' and collapses'}.`,'info')}
@@ -4720,7 +4918,7 @@ function foeTurn(f){
   let dist=cheb(f,c.hero);
   if(f.burst&&f.burstReady!==false&&dist<=(f.burst.range||12)&&los(c,f,c.hero)){
     if(f.burst.charm){f.burstReady=false;const sv=heroSave('wis',f.burst.dc);if(!sv.pass&&!c.heroPara){c.heroPara=!(S.hero.conds.freedom||itemFlag('freedom'));c.paraEnding=false;clog(`${Fn(f)} meets your eyes. ${sv.txt}. You’re charmed and lose your next turn.`,'bad')}else clog(`${Fn(f)} tries to catch your eye. ${sv.txt}. You resist.`,'info');foeMelee(f);f.acted=true;endFoeTurn(f);return}
-    f.burstReady=false;const r=roll(f.burst.dmg),bt=f.burst.dtype||'fire';clog(`${Fn(f)} casts ${f.burst.name}: ${rtxt(r)} = ${r.total} ${bt}.`,'bad');
+    f.burstReady=false;const r=roll(f.burst.dmg),bt=f.burst.dtype||'fire';r.total=Math.max(1,Math.round(r.total*(f.dmgMul||1)));clog(`${Fn(f)} casts ${f.burst.name}: ${rtxt(r)} = ${r.total} ${bt}.`,'bad');
     let n=(h.conc==='globeofinvulnerability'||h.conc==='antimagicfield')?0:h.conc==='circleofpower'?(heroSave('dex',f.burst.dc,true).pass?0:r.total):aoeHero(r.total,f.burst.dc);if(n&&isSub('ancients',7,h)){n=Math.floor(n/2);clog('Aura of Warding: half damage.','info')}if(n){clog(`You take ${n} ${bt} damage.`,'bad');dealHero(n,bt)}else clog('You dive clear.','good');
     f.acted=true;endFoeTurn(f);return;
   }
@@ -4837,7 +5035,7 @@ function foeAttack(f,mode,atkObj){
   if(!hit){clog(`${head} Miss.`,'info');fxMiss('hero');
     if(mode==='melee'&&isSub('battlemaster',3,h)&&c.react&&h.pools.sup>0&&!h.dying&&f.hp>0){c.react=false;h.pools.sup--;const x=d(supDie()),sv=c.target;c.target=c.foes.indexOf(f);clog('Riposte!','info');const m=heroWeapons().find(k=>WEAPONS[k]&&WEAPONS[k].kind==='melee');if(m)weaponAttack(m,true,{extraDie:x});c.target=sv;checkWin()}
     return}
-  const dr=dmgRoll(r.dmg,crit,0);let n=dr.total,extra='';
+  const dr=dmgRoll(r.dmg,crit,0);let n=Math.max(1,Math.round(dr.total*(f.dmgMul||1))),extra='';
   if(f.martial&&!c.martialUsed&&liveFoes().some(o=>o!==f&&cheb(o,c.hero)<=1)){const m=roll('2d6');n+=m.total;extra+=` Martial Advantage adds ${m.total}.`}
   if(h.cls==='rogue'&&h.level>=5&&c.react){c.react=false;n=Math.floor(n/2);extra=' Uncanny Dodge halves it.'}
   if(isSub('hunter',15,h)&&c.react&&n>0){c.react=false;n=Math.floor(n/2);extra+=' Superior Hunter’s Defense halves it.'}
@@ -5283,7 +5481,7 @@ function renderPlotPanel(){
       if(k==='farmstead')html+=`<div class="actions">${btn('tab','Go to the farm','data-t="farm"','btn ghost small')}</div>`;
       if(k==='smithy')html+=`<p class="meta">${S.flags.forge?'The forge is lit and Dorrin can work moonsilver.':S.quests.delve?'Dorrin hasn’t lit the forge yet. Check the notice board for “Dorrin’s fire.”':'Dorrin can do ordinary work. Moonsilver lies deeper in the mine.'} You have ${S.res.moonsilver} moonsilver.</p>
         <ul class="ledger">${SMITHY_ITEMS.map(it=>{const own=S.hero.owned.includes(it.id),cost=smithyCost(it),ok=(!it.forge||S.flags.forge)&&(!it.master||lvl('smithy')>=2)&&(!it.foundry||lvl('smithy')>=3);
-          return `<li><div class="row"><span><b>${it.name}</b>. ${it.desc}</span>${own?'<span class="tag done">Owned</span>':btn('smith',`Buy for ${costText(cost)}`,`data-k="${it.id}" ${dis(!ok||!canAfford(cost))}`,'btn small')}</div>${!own&&!ok?`<p class="meta">${it.foundry?'Needs the Moonsilver foundry.':it.master?'Needs the Master forge upgrade.':'Needs Dorrin’s forge lit.'}</p>`:''}</li>`}).join('')}</ul>`;
+          return `<li><div class="row"><span><b>${it.name}</b>. ${it.desc}</span>${btn('smithpick',upPick===it.id?'Choose an item…':`Buy for ${costText(cost)}`,`data-k="${it.id}" ${dis(!ok||!canAfford(cost))}`,'btn small')}</div>${upPick===it.id?upPicker(it.id,cost,'smithto'):''}${!own&&!ok?`<p class="meta">${it.foundry?'Needs the Moonsilver foundry.':it.master?'Needs the Master forge upgrade.':'Needs Dorrin’s forge lit.'}</p>`:''}</li>`}).join('')}</ul>`;
       if(k==='chapel'&&lvl('chapel')>=3)html+=`<div class="row" style="margin-top:8px"><span>Superior healing potion: heals 8d4 + 8. ${weeklyStock().superior?'One available this week.':'Out until Monday.'}</span>${weeklyStock().superior?btn('buysup','150 gp',dis(S.res.gold<150),'btn small'):'<span class="tag">Sold out</span>'}</div>`;
       if(k==='chapel')html+=`<div class="row" style="margin-top:8px"><span>Greater healing potion: heals 4d4 + 4. You have ${S.inv.greater}. ${weeklyStock().chapel?`The sisters can spare ${weeklyStock().chapel} more this week.`:'The sisters are out until Monday.'}</span>${weeklyStock().chapel?btn('buygreater','50 gp',dis(S.res.gold<50),'btn small'):'<span class="tag">Sold out</span>'}</div>`;
       if(k==='market')html+=`<p class="meta">Traders pay ${lvl('market')>=3?25:15} gp for each lump of moonsilver. You have ${S.res.moonsilver}.</p><div class="actions">${btn('sellms','Sell 1 moonsilver',dis(!S.res.moonsilver),'btn ghost small')}${btn('tab','Visit Corwin’s stall','data-t="folk"','btn ghost small')}</div>`;
@@ -5402,10 +5600,9 @@ function renderQuests(){
   const act1=Object.keys(QUESTS).filter(k=>QUESTS[k].act===1),act2=Object.keys(QUESTS).filter(k=>QUESTS[k].act===2);
   return `${S.raid&&S.raid.arrive<=S.day?`<div class="raidbox"><p><b>Raid today: ${RAIDS[S.raid.type].name}.</b> Defending takes your Adventure time.</p><div class="actions">${btn('quest','Defend the town','data-q="raid" '+dis(S.used.day),'btn')}</div></div>`:''}<h2>Notice board</h2>
   <p class="meta">${S.used.day?'You’ve already spent today’s daytime. Quests will wait until tomorrow.':'A quest takes your Adventure time. You rest fully each night.'}</p>
-  ${S.flags.act3&&S.hero.level>=10&&!S.flags.sequel?`<div class="raidbox" style="border-color:var(--lantern)"><p><b>Sequel: The Seven Seals.</b> A campaign for levels 10 to 20. Your hero and your town carry over.</p><div class="actions">${btn('sequelintro','Read the Abbess’s letter','','btn')}</div></div>`:''}
-  ${S.flags.sequel?SEQUEL_CHAPTERS.filter(([a])=>a===4||S.quests[CHAPTER_PREV[a]]).map(([a,t])=>`<h2>${t}</h2><ul class="ledger">${Object.keys(QUESTS).filter(k=>QUESTS[k].act===a).map(questRow).join('')}</ul>`).join(''):''}
-  ${S.flags.act2?`<h2>Act 3: The Shut Eye</h2><p class="meta">Keys recovered: ${keyCount()} of 3.</p><ul class="ledger">${Object.keys(QUESTS).filter(k=>QUESTS[k].act===3).map(questRow).join('')}</ul>`:''}
-  ${S.flags.act1?`<h2>Act 2: The Hollow Below</h2><ul class="ledger">${act2.map(questRow).join('')}</ul>`:''}
+  ${renderTiers()}
+  ${S.flags.act2?`<h2>Intro, Act 3: The Shut Eye</h2><p class="meta">Keys recovered: ${keyCount()} of 3.</p><ul class="ledger">${Object.keys(QUESTS).filter(k=>QUESTS[k].act===3).map(questRow).join('')}</ul>`:''}
+  ${S.flags.act1?`<h2>Intro, Act 2: The Hollow Below</h2><ul class="ledger">${act2.map(questRow).join('')}</ul>`:''}
   <h2>${S.flags.act1?'Act 1: Restoration':'Act 1: Restoration'}</h2>
   <ul class="ledger">${act1.map(questRow).join('')}</ul>
   <h2>Bounties</h2>
@@ -5439,12 +5636,12 @@ function renderFolk(){
   <div class="actions">${btn('respec','Hear her offer',dis(!!S.run),'btn')}</div>`:''}
   <h2>Mirela’s wagon</h2>
   ${merchantHere()?`<p>A painted wagon full of strange goods. Mirela leaves after ${dateInfo(S.merchant.leave).season} ${dateInfo(S.merchant.leave).sday}.</p>
-  <ul class="ledger">${S.merchant.stock.map(id=>{const m=MAGIC[id],sold=S.merchant.sold.includes(id),left=(S.merchant.qty||{})[id];return `<li><div class="row"><span><b>${m.name}</b> <span class="meta">${m.rarity}${m.attune?', needs attunement':''}${!sold&&left>1?`, ${left} left`:''}</span></span>${sold?'<span class="tag done">Sold out</span>':btn('buymagic',`Buy for ${mPrice(id)} gp`,`data-k="${id}" ${dis(S.res.gold<mPrice(id))}`,'btn small')}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>
-  ${(S.hero.items||[]).length?`<h3 style="margin-top:14px">Sell to Mirela</h3><ul class="ledger">${S.hero.items.map((it,i)=>`<li class="row"><span>${MAGIC[it.id].name}</span>${btn('sellmagic',`Sell for ${Math.floor(MAGIC[it.id].price/2)} gp`,`data-i="${i}"`,'btn ghost small')}</li>`).join('')}</ul>`:''}`
+  <ul class="ledger">${S.merchant.stock.map(id=>{const m=MAGIC[id],sold=S.merchant.sold.includes(id),left=(S.merchant.qty||{})[id];return `<li><div class="row"><span><b>${m.name}</b> <span class="meta">${saleBase(id)} · ${m.rarity}${m.attune?', needs attunement':''}${!sold&&left>1?`, ${left} left`:''}</span></span>${sold?'<span class="tag done">Sold out</span>':btn('buymagic',`Buy for ${mPrice(id)} gp`,`data-k="${id}" ${dis(S.res.gold<mPrice(id))}`,'btn small')}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>
+  ${(S.hero.items||[]).length?`<h3 style="margin-top:14px">Sell to Mirela</h3><ul class="ledger">${S.hero.items.map((it,i)=>`<li class="row"><span>${MAGIC[it.id].name}</span>${btn('sellmagic',`Sell for ${Math.floor((MAGIC[it.id].price+(it.upv||0))/2)} gp`,`data-i="${i}"`,'btn ghost small')}</li>`).join('')}</ul>`:''}`
   :`<p class="meta">Mirela the Wanderer travels the valleys selling magic items. Her wagon is expected around ${dateInfo(S.merchant.arrive).season} ${dateInfo(S.merchant.arrive).sday}.</p>`}
   <h2>Corwin’s cart</h2>
-  ${ped?`<ul class="ledger">${ped.items.map(id=>{const g=PEDDLER_GOODS.find(x=>x.id===id),sold=ped.sold.includes(id),left=(ped.qty||{})[id];
-    return `<li><div class="row"><span><b>${g.name}</b>. ${g.desc}${!sold&&left>1?` ${left} left.`:''}</span>${sold?'<span class="tag done">Sold</span>':btn('peddle',`Buy for ${peddlePrice(g)} gp`,`data-k="${id}" ${dis(S.res.gold<peddlePrice(g))}`,'btn small')}</div></li>`}).join('')}</ul>`
+  ${ped?`<ul class="ledger">${ped.items.map(id=>{const g=peddlerGood(id);if(!g)return'';const sold=ped.sold.includes(id),left=(ped.qty||{})[id];
+    return `<li><div class="row"><span><b>${g.name}</b>. ${g.desc}${!sold&&left>1?` ${left} left.`:''}</span>${sold?'<span class="tag done">Sold</span>':UP_KIND[id]&&g.gear!=='check'?btn('smithpick',upPick===id?'Choose an item…':`Buy for ${peddlePrice(g)} gp`,`data-k="${id}" ${dis(S.res.gold<peddlePrice(g))}`,'btn small'):btn('peddle',`Buy for ${peddlePrice(g)} gp`,`data-k="${id}" ${dis(S.res.gold<peddlePrice(g))}`,'btn small')}</div>${upPick===id&&!sold?upPicker(id,peddlePrice(g),'peddleto'):''}</li>`}).join('')}</ul>`
    :`<p class="meta">Corwin comes on Saturdays. ${di.dow===5?'':`That’s ${(5-di.dow+7)%7} day${(5-di.dow+7)%7===1?'':'s'} from now.`}</p>`}`;
 }
 
@@ -5562,7 +5759,7 @@ function renderHeroRaw(){
   <h2>Attacks</h2>
   <ul class="ledger">${attackRows()}</ul>
   <p class="meta">Attacks come from the weapon set in your hands.</p>
-  ${renderCompanion()}${renderGraftwright()}${renderSpellbook()}
+  ${renderMasteries()}${renderCompanion()}${renderGraftwright()}${renderSpellbook()}
   <h2>Features</h2>
   <p class="meta">${h.sub?`Subclass: ${SUBNAME(h.sub)}${h.sub==='land'?` (${LANDS[h.land||'arid'][0]})`:''}.`:'Subclass at level 3.'}${h.style?` Fighting style: ${FIGHTING_STYLES[h.style][0]}.`:''}</p>
   <label class="toggle"><input type="checkbox" data-flag="hideFuture" ${S.flags.hideFuture?'checked':''}> Hide upcoming features</label>
@@ -5640,7 +5837,7 @@ function renderRun(){
 function condTags(f){const t=[];if(f.prone)t.push('prone');if(f.turned)t.push('turned');if(f.sapped)t.push('sapped');if(f.vexed)t.push('vexed');if(f.slowed)t.push('slowed');if(f.guided)t.push('guided');if(f.noReact)t.push('no reactions');return t}
 function renderCombat(st){
   const c=S.run.combat,h=S.hero,C=CLASSES[h.cls],t=curTarget(),myTurn=!c.over&&c.turn==='hero'&&!h.dying;
-  const reachMap=myTurn&&!c.aim&&c.move>0?heroReach():new Map(),aim=myTurn&&c.aim?aimCells():null;
+  const reachMap=myTurn&&!c.aim&&c.petSel&&c.pet?petReach():myTurn&&!c.aim&&c.move>0?heroReach():new Map(),aim=myTurn&&c.aim?aimCells():null;
   const sp=c.aim?SPELLS[c.aim]:null;
   let cells='';
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
@@ -5649,7 +5846,7 @@ function renderCombat(st){
     const gone=!f&&c.foes.find((g,gi)=>g.hp<=0&&DIED.has(gi)&&g.x===x&&g.y===y);
     let tokId='';
     if(me){inner=avatarHTML(h.avatar,h.name,`tok hero ${c.heroProne?'prone':''}`);label+=', you';tokId='hero'}
-    else if(c.pet&&c.pet.x===x&&c.pet.y===y){inner='<span class="tok pet">B</span>';label+=', your beast'}
+    else if(c.pet&&c.pet.x===x&&c.pet.y===y){inner=`<span class="tok pet${c.petSel?' sel':''}">B</span>`;label+=', your beast'}
     else if((c.summons||[]).some(a=>a.x===x&&a.y===y)){const a=c.summons.find(a=>a.x===x&&a.y===y);inner='<span class="tok pet">S</span>';label+=`, your ${a.name.toLowerCase()} ${a.hp}/${a.hpMax} HP`}
     else if(c.fam&&c.fam.hp>0&&c.fam.x===x&&c.fam.y===y){inner='<span class="tok pet fam">F</span>';label+=`, your ${c.fam.name.toLowerCase()}`}
     else if(f){inner=`<span class="tok enemy ${f===t&&!c.over?'target':''} ${f.prone?'prone':''} ${f.turned?'turned':''} ${c.acting===c.foes.indexOf(f)?'acting':''}" style="--hp:${pct(f.hp,f.hpMax)}%"><b>${f.label}</b></span>`;label+=`, ${f.name}, ${f.hp} HP`;tokId='f'+c.foes.indexOf(f)}
@@ -5678,7 +5875,7 @@ function renderCombat(st){
     const pickRow=c.pick?(()=>{const isSm=c.pick==='smite',lv=isSm?[1,2,3,4,5].filter(l=>h.pools['slot'+l]>0):upcastLevels(c.pick),nm=isSm?'Divine Smite':SPELLS[c.pick].name;
       return `<div class="pickrow"><p><b>${nm}:</b> which slot level? Higher slots make it stronger.</p><div class="actions">${lv.map(l=>btn('act',`Level ${l} (${h.pools['slot'+l]} left)`,`data-k="up:${c.pick}:${l}"`,'btn small')).join('')}${btn('act','Cancel','data-k="cancelpick"','btn ghost small')}</div></div>`})():'';
     const allyRows=allies(c).length?`<p class="meta">Your allies: ${allies(c).map(a=>`${esc(a.name)} ${Math.max(0,a.hp)}/${a.hpMax} HP, AC ${a.ac}`).join('; ')}.</p>`:'';
-    const spIssue=id=>{const i0=spellIssue(id);if(!i0||!castCheck(id)||c.swapped||!h.loadouts||h.loadouts.length<2)return i0;const was=h.activeSet||0;h.activeSet=was?0:1;const ok=!castCheck(id)&&!spellIssue(id);h.activeSet=was;return ok?null:i0};
+    const spIssue=id=>{const i0=spellIssue(id);if(!i0||!castCheck(id)||c.swapped||!c.bonus||SPELLS[id].cast==='bonus'||!h.loadouts||h.loadouts.length<2)return i0;const was=h.activeSet||0;h.activeSet=was?0:1;const ok=!castCheck(id)&&!spellIssue(id);h.activeSet=was;return ok?null:i0};
     const spBtns=shape()?'':knownSpells().filter(id=>!['shield','magearmor','hellishrebuke'].includes(id)&&SPELLS[id].form!=='utility'&&SPELLS[id].form!=='restheal'&&SPELLS[id].form!=='restbuff').map(id=>{const s=SPELLS[id],issue=spIssue(id),pl=!issue&&s.lvl?plannedSlot(id):0;
       return btn('act',`${s.name}${s.cast==='bonus'?' (bonus)':''}${pl&&pl>s.lvl?` at level ${pl}`:''}${issue&&!['action used','bonus action used'].includes(issue)?`: ${issue}`:''}`,`data-k="${id}" ${disab(issue)}`,pl&&pl>s.lvl?'btn small':'btn ghost small')}).join('');
     const mp=maxPools(h),lvls=isWarlock(h)?[]:[1,2,3,4,5,6,7,8,9].filter(l=>mp['slot'+l]);
@@ -5761,7 +5958,7 @@ function renderCombat(st){
     if(isSub('celestial',3,h))f.push(btn('act',`Healing Light (bonus), ${h.pools.hlight}d6`,`data-k="hlight" ${disab(!c.bonus||!h.pools.hlight||h.hp>=h.hpMax)}`,'btn ghost small'));
     if(isSub('greatoldone',6,h))f.push(btn('act',c.clairTarget!=null?'Clairvoyant Combatant active':'Clairvoyant Combatant',`data-k="clair" ${disab(!h.pools.clair||c.clairTarget!=null)}`,'btn ghost small'));
     if(isSub('glamour',3,h)){f.push(btn('act',`Mantle of Inspiration (bonus, ${h.pools.bi} BI)`,`data-k="mantle" ${disab(!c.bonus||!h.pools.bi)}`,'btn ghost small'));if(h.level>=6)f.push(btn('act',c.majesty?'Command: grovel (bonus)':'Mantle of Majesty (bonus)',`data-k="${c.majesty?'command':'majesty'}" ${disab(!c.bonus||(!c.majesty&&!h.pools.majesty))}`,'btn ghost small'))}
-    if(isSub('valor',3,h)){f.push(btn('act',c.valorNext?'Combat Inspiration: ready':`Combat Inspiration (${h.pools.bi} BI)`,`data-k="valorstrike" ${disab(!h.pools.bi||c.valorNext)}`,c.valorNext?'btn small':'btn ghost small'));if(c.battleMagic)f.push(btn('act','Battle Magic: bonus attack',`data-k="battlemagic" ${disab(!c.bonus)}`,'btn small'))}
+    if(isSub('valor',3,h)){f.push(btn('act',c.valorNext?'Combat Inspiration: ready':`Combat Inspiration (bonus, ${h.pools.bi} BI)`,`data-k="valorstrike" ${disab(!h.pools.bi||c.valorNext||!c.bonus)}`,c.valorNext?'btn small':'btn ghost small'));if(c.battleMagic)f.push(btn('act','Battle Magic: bonus attack',`data-k="battlemagic" ${disab(!c.bonus)}`,'btn small'))}
     if(c.lastMiss&&c.lastMiss.kind==='weapon'){if(hasFeat('boon_prowess'))f.push(btn('act','Boon of Combat Prowess: hit instead',`data-k="prowess" ${disab(c.prowessUsed)}`,'btn small'));if(h.pools.stroke)f.push(btn('act','Stroke of Luck: hit instead','data-k="stroke"','btn small'));if(hasFeat('boon_fate'))f.push(btn('act','Boon of Fate: +2d4',`data-k="fate" ${disab(c.fateUsed)}`,'btn small'))}
     if(hasFeat('boon_travel')&&c.attackedThisTurn)f.push(btn('act','Dimensional Travel: teleport',`data-k="btravel" ${disab(c.travelUsed)}`,'btn ghost small'));
     if(h.cls==='warlock'&&h.level>=20)f.push(btn('act','Eldritch Master (bonus)',`data-k="emaster" ${disab(!c.bonus||!h.pools.emaster)}`,'btn ghost small'));
@@ -5774,7 +5971,7 @@ function renderCombat(st){
     if(isSub('vengeance',3,h))f.push(btn('act',c.vowTarget!=null?`Vow of Enmity: ${fn(c.foes[c.vowTarget])}`:`Vow of Enmity (bonus, ${h.pools.cd} CD)`,`data-k="vow" ${disab(!c.bonus||!h.pools.cd||c.vowTarget!=null)}`,'btn ghost small'));
     if((c.summons||[]).length)['attack','help','dodge'].forEach(k=>f.push(btn('act',`Summons: ${k}`,`data-k="acmd:${k}"`,(c.allyCmd||'attack')===k?'btn small':'btn ghost small')));
     if(c.fam&&c.fam.hp>0&&c.fam.atk){if(hasInv('pactchain'))f.push(btn('act',`Familiar attacks (uses one of your attacks)`,`data-k="famattack" ${disab(!c.attackedThisTurn||c.attacksLeft<1)}`,'btn ghost small'));if(hasInv('chainmaster'))f.push(btn('act','Familiar attacks (bonus)',`data-k="famattackb" ${disab(!c.bonus)}`,'btn ghost small'))}
-    if(c.pet){f.push(btn('act',`${petName()}: Beast’s Strike (bonus)`,`data-k="petstrike" ${disab(!c.bonus||!t)}`,'btn ghost small'),btn('act','Beast’s Strike (uses one of your attacks)',`data-k="petstrikeA" ${disab(!c.attackedThisTurn||c.attacksLeft<1||!t)}`,'btn ghost small'));
+    if(c.pet){f.push(`<p class="meta" style="width:100%">${c.petSel?`Moving ${esc(petName())}: tap a highlighted square (${c.petMove*5} ft left), or tap it again to stop.`:`Tap ${esc(petName())} (B) on the map to move it: ${c.petMove*5} ft left this turn.`}</p>`);f.push(btn('act',`${petName()}: Beast’s Strike (bonus)`,`data-k="petstrike" ${disab(!c.bonus||!t)}`,'btn ghost small'),btn('act','Beast’s Strike (uses one of your attacks)',`data-k="petstrikeA" ${disab(!c.attackedThisTurn||c.attacksLeft<1||!t)}`,'btn ghost small'));
       if(isSub('beastmaster',7,h))['dash','disengage','dodge','help'].forEach(k=>f.push(btn('act',`Beast: ${k} (bonus)`,`data-k="petx:${k}" ${disab(!c.bonus)}`,'btn ghost small')));
       f.push(btn('act',h.petMode==='harry'?'Beast follows your target':'Beast guards you',`data-k="petmode"`,'btn ghost small'))}
     else if(isSub('beastmaster',3,h)&&h.petHp===0&&!h.petRevive)f.push(btn('act','Revive your companion (spell slot)',`data-k="petrevive" ${disab(c.actions<1)}`,'btn ghost small'));
@@ -5792,8 +5989,8 @@ function renderCombat(st){
     if(isSub('mercy',3,h)){f.push(btn('act',c.harmNext?'Hand of Harm: ready':'Ready Hand of Harm (1)',`data-k="mharm" ${disab(c.harmUsed||(!h.pools.focus&&!isSub('mercy',11,h)))}`,c.harmNext?'btn small':'btn ghost small'),btn('act','Hand of Healing (1)',`data-k="mheal" ${disab(c.actions<1||!h.pools.focus)}`,'btn ghost small'))}
     if(isSub('shadow',3,h)){f.push(btn('act',h.conc==='shadowdark'?'Shadow Arts active':'Shadow Arts: darkness (1)',`data-k="sdark" ${disab(c.actions<1||!h.pools.focus||h.conc==='shadowdark')}`,'btn ghost small'));if(h.level>=6)f.push(btn('act','Shadow Step (bonus)',`data-k="sstep" ${disab(!c.bonus)}`,'btn ghost small'));if(c.freeStrike)f.push(btn('act','Free unarmed strike',`data-k="freestrike"`,'btn small'))}
     if(isSub('elements',3,h)){f.push(btn('act',c.elemental?'Attuned to the elements':'Elemental Attunement (1)',`data-k="elemental" ${disab(c.elemental||!h.pools.focus)}`,c.elemental?'btn small':'btn ghost small'));if(h.level>=6)f.push(btn('act','Elemental Burst (2)',`data-k="eburst" ${disab(c.actions<1||(h.pools.focus||0)<2)}`,'btn ghost small'))}
-    if(h.loadouts&&h.loadouts.length>1&&!shape())f.push(btn('act',`Switch to weapon set ${(h.activeSet||0)?1:2}`,`data-k="swapset" ${disab(c.swapped)}`,'btn ghost small'));
-    {const st=h.loadouts?activeSet(h):{},m=resolveHand(st.main),o2=resolveHand(st.off);if(m&&o2&&LIGHT.has(m.base)&&LIGHT.has(o2.base)&&!shape())f.push(btn('act',`Off-hand ${WEAPONS[o2.base].name} (bonus)`,`data-k="offhand" ${disab(!c.bonus||!c.attackedThisTurn||rangeIssue(WEAPONS[o2.base].kind,1,WEAPONS[o2.base].long||WEAPONS[o2.base].range))}`,'btn ghost small'))}
+    if(h.loadouts&&h.loadouts.length>1&&!shape())f.push(btn('act',`Switch to weapon set ${(h.activeSet||0)?1:2}`,`data-k="swapset" ${disab(c.swapped||!c.bonus)}`,'btn ghost small'));
+    {const st=h.loadouts?activeSet(h):{},m=resolveHand(st.main),o2=resolveHand(st.off);if(m&&o2&&WEAPONS[m.base]&&WEAPONS[o2.base]&&(LIGHT.has(o2.base)||(hasFeat('dualwielder')&&!TWOHAND.has(o2.base)&&WEAPONS[o2.base].kind==='melee'))&&!shape()){const nick=hasMastery(o2.base)&&WEAPONS[o2.base].mastery==='nick'&&!c.nickUsed;f.push(btn('act',`Off-hand ${WEAPONS[o2.base].name} (${nick?'Nick: no bonus action':'bonus'})`,`data-k="offhand" ${disab((!nick&&!c.bonus)||!c.lightAtk||c.offUsed||rangeIssue(WEAPONS[o2.base].kind,WEAPONS[o2.base].reach||1,WEAPONS[o2.base].long||WEAPONS[o2.base].range))}`,'btn ghost small'))}}
     if(isSub('openhand',17,h)){f.push(btn('act',c.palmNext?'Quivering Palm: ready':'Ready Quivering Palm (3)',`data-k="palm" ${disab(c.palmNext||h.pools.focus<3)}`,c.palmNext?'btn small':'btn ghost small'));if(liveFoes().some(x=>x.palm))f.push(btn('act','End the vibrations',`data-k="endpalm" ${disab(c.actions<1&&c.attacksLeft<1)}`,'btn small'))}
     if(h.conc==='swiftquiver')f.push(btn('act','Swift Quiver: two arrows (bonus)',`data-k="quiver" ${disab(!c.bonus)}`,'btn small'));
     if(isSub('evoker',14,h))f.push(btn('act',c.overchannel?'Overchannel: ready':`Overchannel, ${h.pools.overchannel}`,`data-k="overchannel" ${disab(c.overchannel||!h.pools.overchannel)}`,c.overchannel?'btn small':'btn ghost small'));
@@ -5911,6 +6108,7 @@ const A={
     else if(kind==='2'){if(h.abil[v]>=20)return;h.abil[v]=Math.min(20,h.abil[v]+2)}else if(!chooseFeat(h,v))return;
     h.pendingAsi--;const om=h.hpMax;h.hpMax=maxHP(h);h.hp+=Math.max(0,h.hpMax-om);h.pools=Object.assign(maxPools(h),h.pools);if(kind!=='1')addLog(kind==='2'?`+2 ${ABIL_NAME[v]}.`:`New feat: ${FEATS[v][0]}.`,'good');commit()},
   avatar(){const n=$('#hname');if(n&&draft)draft.name=n.value;$('#avatarfile').click()},
+  weararmor(ds){const h=S.hero;if(S.run)return;ensureArmor(h);if(ds.k&&(!(h.ownedA||[]).includes(ds.k)||!armorProf(h).includes(ARMORS[ds.k][1])))return;h.armor=ds.k||null;equipPick=null;commit()},
   acinfo(){acOpen=!acOpen;render()},
   avatarclear(){if(draft&&(!S||S.flags.rebuild||S.flags.fallen)){draft.avatar=null;render()}else{S.hero.avatar=null;commit()}},
   plot(ds){if(placing)return;selPlot=selPlot===ds.k?null:ds.k;render()},
@@ -5978,7 +6176,7 @@ const A={
   endrest(){if(S.run){S.run.resting=false;S.run.restNote=null}commit()},
   target(ds){const c=S.run&&S.run.combat;if(c&&!c.aim&&c.foes[+ds.i]&&c.foes[+ds.i].hp>0){c.target=+ds.i;commit()}},
   act(ds){const snap=S.run&&S.run.combat?snapshot():null;combatAction(ds.k);diffFX(snap);commit()},
-  cell(ds){const cg=S.run&&S.run.combat;if(cg&&cg.grab!=null&&cg.foes[cg.grab]&&!cg.aim){}const snap=S.run&&S.run.combat?snapshot():null;const prevH=S.run&&S.run.combat?{...S.run.combat.hero}:null;moveHero(+ds.x,+ds.y);if(prevH&&S.run&&S.run.combat&&!S.run.combat.aim&&(S.run.combat.hero.x!==prevH.x||S.run.combat.hero.y!==prevH.y)){heroMovedAuras(prevH);const cc=S.run.combat;if(cc.grab!=null&&cc.foes[cc.grab]&&cc.foes[cc.grab].hp>0){const g=cc.foes[cc.grab],sp2=freeSpotNear(cc,cc.hero);if(sp2){g.x=sp2.x;g.y=sp2.y}}}diffFX(snap);const c=S.run&&S.run.combat;if(c)checkWin();commit()},
+  cell(ds){const cg=S.run&&S.run.combat;if(cg&&cg.pet&&!cg.aim&&cg.turn==='hero'&&!cg.over){const x=+ds.x,y=+ds.y;if(cg.pet.x===x&&cg.pet.y===y){cg.petSel=!cg.petSel;render();return}if(cg.petSel){if(movePet(x,y)){cg.petSel=cg.petMove>0;render()}else{cg.petSel=false;render()}return}}if(cg&&cg.grab!=null&&cg.foes[cg.grab]&&!cg.aim){}const snap=S.run&&S.run.combat?snapshot():null;const prevH=S.run&&S.run.combat?{...S.run.combat.hero}:null;moveHero(+ds.x,+ds.y);if(prevH&&S.run&&S.run.combat&&!S.run.combat.aim&&(S.run.combat.hero.x!==prevH.x||S.run.combat.hero.y!==prevH.y)){heroMovedAuras(prevH);const cc=S.run.combat;if(cc.grab!=null&&cc.foes[cc.grab]&&cc.foes[cc.grab].hp>0){const g=cc.foes[cc.grab],sp2=freeSpotNear(cc,cc.hero);if(sp2){g.x=sp2.x;g.y=sp2.y}}}diffFX(snap);const c=S.run&&S.run.combat;if(c)checkWin();commit()},
   endrun(){const dead=S.run&&S.run.result&&S.run.result.dead;S.run=null;if(dead){S.flags.fallen=true;draft=null}window.scrollTo(0,0);commit()},
   closeact(){S.flags.actModal=false;commit()},
   closeact2(){S.flags.act2Modal=false;commit()},
@@ -5989,13 +6187,21 @@ const A={
   closech2(){S.flags.ch2Modal=false;checkLevel();commit()},
   closech4(){S.flags.ch4Modal=false;checkLevel();commit()},
   closefinal(){S.flags.finalModal=false;commit()},
-  smith(ds){buySmithy(ds.k)},
+  smith(ds){},
+  smithpick(ds){upPick=upPick===ds.k?null:ds.k;render()},
+  smithto(ds){const [id,key]=ds.k.split('|');buySmithy(id,key)},
+  upcancel(){upPick=null;render()},
+  peddleto(ds){const [id,key]=ds.k.split('|');const st=peddlerStock(),g=peddlerGood(id);if(!st||!g||st.sold.includes(id)||S.res.gold<peddlePrice(g))return;if(!applyUp(id,key,peddlePrice(g)))return;S.res.gold-=peddlePrice(g);st.sold.push(id);upPick=null;addLog(`Corwin fits ${g.name.toLowerCase()} to your ${(upTargets(UP_KIND[id]).find(x=>x[0]===key)||[0,'gear'])[1].toLowerCase()}.`);commit()},
   buypouch(){const h=S.hero;if(S.run||h.pouch||S.res.gold<25)return;S.res.gold-=25;h.pouch=true;addLog('You buy a component pouch.');commit()},
   buymat(ds){const h=S.hero,c2=COSTLY[ds.k];if(S.run||!c2||S.res.gold<c2[0])return;S.res.gold-=c2[0];h.mats=h.mats||{};h.mats[ds.k]=(h.mats[ds.k]||0)+1;addLog(`You buy ${c2[2]}.`);commit()},
+  tmastery(ds){const h=S.hero;if(S.run||!WEAPONS[ds.k]||!WEAPONS[ds.k].mastery)return;ensureMasteries(h);const i=h.masteries.indexOf(ds.k);if(i>=0)h.masteries.splice(i,1);else{if(h.masteries.length>=masteryCount(h))return;h.masteries.push(ds.k)}h.mFree=true;commit()},
   pettype(ds){const h=S.hero;if(S.run||!PET_TYPES[ds.k])return;h.petType=ds.k;h.petHp=null;commit()},
   petdmg(ds){const h=S.hero;if(S.run)return;h.petDmgType=ds.k;commit()},
   petforce(){const h=S.hero;h.petForce=!h.petForce;commit()},
   petrevivetown(){const h=S.hero;if(S.run||h.petHp!==0)return;const l=[1,2,3,4,5].find(x=>h.pools['slot'+x]>0);if(!l)return;h.pools['slot'+l]--;h.petHp=null;addLog('You revive your companion with a spell slot.','good');commit()},
+  arcpick(ds){arcPick=ds.k;render()},
+  arcno(){arcPick=null;render()},
+  arcok(ds){const [t,id]=ds.k.split(':');if(S.flags['arc'+t]||!tierOpen(+t))return;S.flags['arc'+t]=id;arcPick=null;S.flags.sequel=true;addLog(`You choose your path: ${ARCS[t].list.find(a=>a[0]===id)[1]}.`,'good');commit()},
   tcant(ds){const h=S.hero;if(S.run)return;ensurePrepared(h);const i=h.cantrips.indexOf(ds.k),free=canFreeEdit(h);
     if(i>=0){if(!free){if(!(h.cswaps>0))return;h.cswaps--}h.cantrips.splice(i,1)}else{if(h.cantrips.length>=cantripCount(h)||!classList(h,0).includes(ds.k))return;h.cantrips.push(ds.k)}commit()},
   tprep(ds){const h=S.hero;if(S.run)return;ensurePrepared(h);const i=h.prepared.indexOf(ds.k),free=canFreeEdit(h)||FREE_SWAP.includes(h.cls);
