@@ -124,6 +124,8 @@ legend{font-family:var(--sans);font-weight:700;margin-bottom:8px}
 .cls em{display:block;font-style:normal;color:var(--muted)}
 
 /* battle map */
+.board.hasbg .cell:not(.rock){background:rgba(0,0,0,.08)}
+.board.hasbg .cell.rock{background:rgba(40,30,20,.55)}
 .board{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:100%;max-width:440px;margin:22px auto 12px;background:var(--line);border:2px solid var(--line);border-radius:6px}
 .cell{aspect-ratio:1;background:var(--surface);border:0;padding:0;display:grid;place-items:center;min-width:0}
 .cell.reach{background:var(--lantern-soft);cursor:pointer}
@@ -2252,18 +2254,18 @@ function renderEquipment(){
   const h=S.hero,inCombat=!!(S.run&&S.run.combat),lockAtt=!!S.run;
   const setCard=(l,i)=>{const act=(h.activeSet||0)===i;
     const row=(hand,label)=>{const key=`h:${i}:${hand}`,two=hand==='off'&&l.main&&TWOHAND.has(resolveHand(l.main)?.base);
-      return `<li><div class="row"><span><span class="meta">${label}</span><br><b>${two?'(two-handed weapon)':weaponLabel(l[hand])}</b></span>${two?'':btn('epick',equipPick===key?'Close':'Change',`data-k="${key}" ${disab(inCombat)}`,'btn ghost small')}</div>
+      return `<li><div class="row"><span><span class="meta">${label}</span><br><b>${two?'(two-handed weapon)':itemKeyForHand(l[hand])?btn('iteminfo',weaponLabel(l[hand]),`data-k="${itemKeyForHand(l[hand])}"`,'linkbtn'):weaponLabel(l[hand])}</b></span>${two?'':btn('epick',equipPick===key?'Close':'Change',`data-k="${key}" ${disab(inCombat)}`,'btn ghost small')}</div>
       ${equipPick===key?`<div class="actions">${handOptions(i,hand).map(([v,n])=>btn('sethand',n,`data-set="${i}" data-hand="${hand}" data-v="${v}"`,l[hand]===v?'btn small':'btn ghost small')).join('')}${btn('sethand','Empty hand',`data-set="${i}" data-hand="${hand}" data-v=""`,'btn ghost small')}</div>`:''}</li>`};
     return `<div class="setcard ${act?'on':''}"><div class="row"><h3>Weapon set ${i+1}</h3>${act?'<span class="tag done">In hand</span>':btn('useset','Switch to this set',`data-i="${i}"`,'btn small')}</div><ul class="ledger">${row('main','Right hand (main)')}${row('off','Left hand (off)')}</ul></div>`};
   const gearRow=([k,label])=>{const it=h.equip[k]?instByUid(h.equip[k]):null,m=it&&MAGIC[it.id],key='g:'+k;
     const cands=(h.items||[]).filter(i=>usable(i.id)&&itemSlot(i.id)===slotKind(k)&&!isEquippedAnywhere(uidOf(i)));
-    return `<li><div class="row"><span><span class="meta">${label}</span><br><b>${m?m.name:k==='armor'?'No magic armor':'Empty'}</b>${m&&m.attune?' <span class="tag">attuned</span>':''}</span>${btn('epick',equipPick===key?'Close':'Change',`data-k="${key}" ${disab(lockAtt||(!m&&!cands.length))}`,'btn ghost small')}</div>
+    return `<li><div class="row"><span><span class="meta">${label}</span><br><b>${m&&it?btn('iteminfo',m.name,`data-k="i:${uidOf(it)}"`,'linkbtn'):m?m.name:k==='armor'?'No magic armor':'Empty'}</b>${m&&m.attune?' <span class="tag">attuned</span>':''}</span>${btn('epick',equipPick===key?'Close':'Change',`data-k="${key}" ${disab(lockAtt||(!m&&!cands.length))}`,'btn ghost small')}</div>
       ${m?`<p class="meta">${m.desc}${m.charges?` ${it.charges} charges left.`:''}</p>`:''}
       ${equipPick===key?`<div class="actions">${cands.map(i=>btn('setslot',MAGIC[i.id].name,`data-k="${k}" data-u="${i.uid}"`,'btn ghost small')).join('')}${m?btn('setslot','Take it off',`data-k="${k}" data-u=""`,'btn ghost small'):''}</div>`:''}</li>`};
   const pack=(h.items||[]).filter(i=>!isEquippedAnywhere(uidOf(i)));
   return `<h2>Equipment</h2>
   <p class="meta">Attuned: ${attunedCount()} of ${attuneMax()}. Items that need attunement attune when you equip them, and only in town. A shield only protects you in the left (off) hand of the set you’re holding. ${inCombat?'Switching weapon sets in a fight takes your bonus action.':''}</p>
-  ${(()=>{ensureArmor(h);const A=ARMORS[h.armor];return `<div class="raidbox"><div class="row"><span><span class="meta">Armor worn</span><br><b>${A?A[0]:'No armor'}</b> <span class="meta">${A?`AC ${A[2]}${A[3]==='full'?' + Dex':A[3]?' + Dex (max 2)':''}${A[4]&&h.abil.str<A[4]?`. Strength ${A[4]} needed: −10 ft speed`:''}${A[5]?'. Disadvantage on Stealth':''}`:'Unarmored'}</span></span>${btn('epick',equipPick==='armorworn'?'Close':'Change',`data-k="armorworn" ${disab(!!S.run)}`,'btn ghost small')}</div>${equipPick==='armorworn'?`<div class="actions">${(h.ownedA||[]).filter(a=>armorProf(h).includes(ARMORS[a][1])).map(a=>btn('weararmor',ARMORS[a][0],`data-k="${a}"`,h.armor===a?'btn small':'btn ghost small')).join('')}${btn('weararmor','No armor','data-k=""',!h.armor?'btn small':'btn ghost small')}</div><p class="meta">Buy more armor from Corwin.</p>`:''}</div>`})()}
+  ${(()=>{ensureArmor(h);const A=ARMORS[h.armor];return `<div class="raidbox"><div class="row"><span><span class="meta">Armor worn</span><br><b>${A?btn('iteminfo',A[0],`data-k="a:${h.armor}"`,'linkbtn'):'No armor'}</b> <span class="meta">${A?`AC ${A[2]}${A[3]==='full'?' + Dex':A[3]?' + Dex (max 2)':''}${A[4]&&h.abil.str<A[4]?`. Strength ${A[4]} needed: −10 ft speed`:''}${A[5]?'. Disadvantage on Stealth':''}`:'Unarmored'}</span></span>${btn('epick',equipPick==='armorworn'?'Close':'Change',`data-k="armorworn" ${disab(!!S.run)}`,'btn ghost small')}</div>${equipPick==='armorworn'?`<div class="actions">${(h.ownedA||[]).filter(a=>armorProf(h).includes(ARMORS[a][1])).map(a=>btn('weararmor',ARMORS[a][0],`data-k="${a}"`,h.armor===a?'btn small':'btn ghost small')).join('')}${btn('weararmor','No armor','data-k=""',!h.armor?'btn small':'btn ghost small')}</div><p class="meta">Buy more armor from Corwin.</p>`:''}</div>`})()}
   ${h.loadouts.map(setCard).join('')}
   <ul class="ledger" style="margin-top:12px">${GEAR_SLOTS.map(gearRow).join('')}</ul>
   ${pack.length?`<h3 style="margin-top:16px">In your pack</h3><ul class="ledger">${pack.map(i=>{const m=MAGIC[i.id],ok=usable(i.id);return `<li><div class="row"><span><b>${m.name}${i.base?` (${WEAPONS[i.base].name})`:''}</b> <span class="meta">${m.rarity}${m.attune?', attunement':''}</span></span>${m.tome?btn('readtome','Read it',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):ok?btn('quickequip','Equip',`data-u="${uidOf(i)}" ${disab(lockAtt)}`,'btn small'):'<span class="tag lock">Not for your class</span>'}</div><p class="meta">${m.desc}</p></li>`}).join('')}</ul>`:''}`;
@@ -2930,7 +2932,7 @@ function allies(c=S.run.combat){const out=[...(c.summons||[])];if(c.pet)out.push
 const allyAt=(c,x,y)=>allies(c).some(a=>a.x===x&&a.y===y);
 function freeSpotNear(c,p){return[[1,0],[-1,0],[0,-1],[0,1],[1,-1],[-1,-1],[1,1],[-1,1],[2,0],[-2,0],[0,-2],[0,2]].map(([dx,dy])=>({x:p.x+dx,y:p.y+dy})).find(q=>inBounds(q.x,q.y)&&!isRock(c,q.x,q.y)&&!foeAt(c,q.x,q.y)&&!(q.x===c.hero.x&&q.y===c.hero.y)&&!allyAt(c,q.x,q.y))}
 function allyMoveToward(a,t,steps){const c=S.run.combat;for(let i=0;i<steps&&cheb(a,t)>1;i++){const o=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].map(([dx,dy])=>({x:a.x+dx,y:a.y+dy})).filter(p=>inBounds(p.x,p.y)&&!isRock(c,p.x,p.y)&&!foeAt(c,p.x,p.y)&&!(p.x===c.hero.x&&p.y===c.hero.y)&&!allyAt(c,p.x,p.y)).sort((p,q)=>cheb(p,t)-cheb(q,t));if(!o.length||cheb(o[0],t)>=cheb(a,t))break;a.x=o[0].x;a.y=o[0].y}}
-function allyStrike(a,t,atk,dmg,type,extra,etype){const r=d(20),tot=r+atk,hit=r===20||(r!==1&&tot>=t.ac);let x=0;if(hit){x=roll(r===20?dmg.replace(/^(\d+)d/,(q,n)=>(2*n)+'d'):dmg).total;if(extra)x+=roll(extra).total}
+function allyStrike(a,t,atk,dmg,type,extra,etype){const r=d(20),tot=r+atk,hit=r===20||(r!==1&&tot>=t.ac);let x=0;if(hit){x=roll(r===20?dmg.replace(/^(\d+)d/,(q,n)=>(2*n)+'d'):dmg).total;if(extra)x+=roll(extra).total;if(hasGP('spotter')&&t.gwStudied)x+=d(4)}
   clog(`Your ${a.name.toLowerCase()} attacks ${fn(t)}: d20 [${r}] ${sgn(atk)} = ${tot}. ${hit?`${x} ${type}${extra?` and ${etype}`:''}.`:'Miss.'}`,hit?'good':'');if(hit)hurt(t,x,type,r===20)}
 function summonAct(){const c=S.run.combat,h=S.hero;if(c.over)return;
   c.summons=(c.summons||[]).filter(sm=>{if(sm.conc&&h.conc!==sm.conc){clog(`Your ${sm.name.toLowerCase()} fades away.`,'info');return false}return sm.hp>0});
@@ -3033,7 +3035,7 @@ const GRAFTS={
   mithral:['Mithral Lacing','bones',1,1,'+1 HP per level.'],
   adamarrow:['Adamantine Marrow','bones',5,1,'Melee critical hits roll one more damage die.'],
   dwarvenframe:['Dwarven Frame','bones',7,2,'Advantage on saves against being moved or knocked prone.'],
-  hastefil:['Haste Filament','nerves',1,1,'When an attack misses you, you can slip 10 ft away (flavor in this game).'],
+  hastefil:['Haste Filament','nerves',1,1,'When a melee attack misses you, your reaction slips you 10 ft away from it.'],
   wardglyph:['Warding Glyph','nerves',5,1,'Advantage on saves against stun and paralysis.'],
   scaleweave:['Scaleweave Skin','skin',1,1,'+1 AC.'],
   elemsigil:['Elemental Sigil','skin',5,1,'Resistance to fire.'],
@@ -3043,7 +3045,7 @@ const GRAFTS={
   elixirpump:['Elixir Pump','heart',7,2,'Bonus action, 1 Charge: regain 2d8 + Con HP.'],
   blades:['Retracting Blades','arms',1,2,'Built-in blades: 1d8 slashing, finesse, light, Vex.'],
   forgefists:['Forge Fists','arms',1,2,'Unarmed strikes deal 1d8 and push the target 10 ft once per turn.'],
-  lash:['Weavewire Lash','arms',1,2,'1d6 slashing, finesse, 15-ft reach.'],
+  lash:['Weavewire Lash','arms',1,2,'1d6 slashing, finesse, 15-ft reach. Once per turn, a hit can grapple the target.'],
   girallon:['Girallon Arms','arms',5,2,'Unarmed strikes deal 1d10, heavy, Strength.'],
   cannon:['Smokepowder Cannon','arms',5,2,'Action, 1 Charge: a 15-ft blast within 60 ft, Dex save, 4d6 fire (+1d6 per 2 levels above 5).'],
   springheel:['Springheel Graft','legs',1,1,'Triple jumps: advantage on Athletics and Acrobatics.'],
@@ -3064,7 +3066,7 @@ const PERKS={
   fieldpatch:['Artifice',2,'Field Patch','Bonus action, 2 Charge: heal 2d8 + level and 2 Humanity.'],seekingshots:['Artifice',3,'Seeking Shots','Ranged attacks ignore cover and long-range disadvantage.'],
   optimized:['Artifice',3,'Optimized Frame','Your highest-Strain graft has Strain 0.'],prototype:['Artifice',4,'Prototype Graft','+2 Intelligence (max 22). Total Strain −2.'],
   wardedpsyche:['Mind',1,'Warded Psyche','+2 Humanity maximum.'],patternrec:['Mind',1,'Pattern Recognition','+2 to your first attack each turn against a Studied creature.'],
-  foresight:['Mind',1,'Clockwork Foresight','Add Intelligence to initiative.'],spotter:['Mind',2,'Spotter’s Sigil','Your summons add 1d4 to hits on Studied creatures (no allies otherwise).'],
+  foresight:['Mind',1,'Clockwork Foresight','Add Intelligence to initiative.'],spotter:['Mind',2,'Spotter’s Sigil','Your summons, familiar and beast deal +1d4 to Studied creatures.'],
   deepreservoir:['Mind',2,'Deep Reservoir','+proficiency bonus Charge.'],mindward:['Mind',2,'Mind Ward','Advantage on Wisdom saves.'],
   coldcalculus:['Mind',3,'Cold Calculus','Once per turn, 1 Charge: reroll a missed attack.'],weaveascendant:['Mind',4,'Weave Ascendant','+2 Intelligence or Wisdom (max 22). Immune to charm.'],
   guildrepute:['Nerve',1,'Guild Repute','Expertise in Intimidation.'],coldblooded:['Nerve',1,'Cold Blooded','Temporary HP equal to your proficiency bonus when you hit.'],
@@ -3209,10 +3211,9 @@ function castCheck(id,h=S.hero){
 /* ---- Beast Master: Primal Companion (2024) ---- */
 const PET_TYPES={
   land:{name:'Beast of the Land',hp:L=>5+5*L,speed:8,dmg:'1d8',bonus:2,desc:'Speed 40 ft. Charge: after moving 20 ft toward a target, a hit deals +1d6 and it makes a Strength save or falls prone.'},
-  sea:{name:'Beast of the Sea',hp:L=>5+5*L,speed:1,dmg:'1d6',bonus:2,dtype:'bludgeoning',desc:'Speed 5 ft on land (it swims 60 ft, but these maps are dry). Binding Strike: a hit grapples the target until it escapes.'},
   sky:{name:'Beast of the Sky',hp:L=>4+4*L,speed:12,dmg:'1d4',bonus:3,dtype:'slashing',desc:'Flies 60 ft. Flyby: it never provokes opportunity attacks.'}
 };
-function petType(h=S.hero){return PET_TYPES[h.petType||'land']}
+function petType(h=S.hero){if(h.petType==='sea')h.petType='land';return PET_TYPES[h.petType||'land']}
 function petHpMax(h=S.hero){return petType(h).hp(h.level)}
 function petName(h=S.hero){return h.petName||petType(h).name}
 function petDmgType(h=S.hero){if(isSub('beastmaster',7,h)&&h.petForce)return'force';return petType(h).dtype||h.petDmgType||'piercing'}
@@ -3222,7 +3223,7 @@ function petStepToward(goal,steps){const c=S.run.combat,p=c.pet;let moved=0,stra
   return{moved,straight}}
 function petStrikeOnce(t,charge){const c=S.run.combat,h=S.hero,T=petType(h),r=d(20),tot=r+spellAtk(),hit=r===20||(r!==1&&tot>=t.ac);
   if(!hit){clog(`${petName()} attacks ${fn(t)}: d20 [${r}] ${sgn(spellAtk())} = ${tot}. Miss.`,'info');return}
-  let x=roll(r===20?T.dmg.replace(/^1d/,'2d'):T.dmg).total+T.bonus+am('wis');let extra='';
+  let x=roll(r===20?T.dmg.replace(/^1d/,'2d'):T.dmg).total+T.bonus+am('wis');let extra='';if(hasGP('spotter')&&t.gwStudied){const y=d(4);x+=y;extra+=` Spotter’s Sigil +${y}.`}
   if(charge&&(h.petType||'land')==='land'){const y=d(6);x+=y;extra+=` Charge +${y}.`}
   if(isSub('beastmaster',11,h)&&h.conc==='huntersmark'&&c.markTarget!=null&&c.foes[c.markTarget]===t&&!c.petMarkUsed){c.petMarkUsed=true;const y=d(h.level>=20?10:6);x+=y;extra+=` Bestial Fury +${y}.`}
   clog(`${petName()} hits ${fn(t)}: d20 [${r}] ${sgn(spellAtk())} = ${tot}. ${x} ${petDmgType()}.${extra}`,'good');hurt(t,x,petDmgType(),r===20);
@@ -3240,7 +3241,7 @@ function petAuto(){const c=S.run.combat,h=S.hero;if(!c.pet||c.over)return;
   const goal=(h.petMode==='harry'&&curTarget())||c.hero;petStepToward(goal,petType(h).speed);c.petDodge=true;clog(`${petName()} ${h.petMode==='harry'?'circles your target':'stays at your side'} and takes the Dodge action.`,'info')}
 function renderCompanion(){const h=S.hero;if(!isSub('beastmaster',3,h))return'';const T=petType(h),inQ=!!S.run,hp=h.petHp==null?petHpMax(h):h.petHp;
   return `<h2>Primal Companion</h2><p class="meta">${esc(petName(h))}: ${T.name}, AC ${13+am('wis',h)}, ${hp}/${petHpMax(h)} HP. Beast’s Strike: +${spellAtk(h)} to hit, ${T.dmg} + ${T.bonus+am('wis',h)} ${petDmgType(h)}. ${T.desc}</p>
-  <p class="meta">It moves and makes opportunity attacks on its own, but only Dodges unless you command it: a bonus action, or one of your attacks. If you’re down, it fights on its own.${hp===0?' It has fallen. Spend a spell slot to revive it, or it returns after a long rest.':''}</p>
+  <p class="meta">Primal Bond: it adds your proficiency bonus to its saves. It moves and makes opportunity attacks on its own, but only Dodges unless you command it: a bonus action, or one of your attacks. If you’re down, it fights on its own.${hp===0?' It has fallen. Spend a spell slot to revive it, or it returns after a long rest.':''}</p>
   <div class="actions">${Object.entries(PET_TYPES).map(([k,v])=>btn('pettype',v.name,`data-k="${k}" ${disab(inQ)}`,(h.petType||'land')===k?'btn small':'btn ghost small')).join('')}</div>
   ${(h.petType||'land')==='land'?`<div class="actions">${['piercing','bludgeoning','slashing'].map(k=>btn('petdmg',k,`data-k="${k}" ${disab(inQ)}`,(h.petDmgType||'piercing')===k?'btn small':'btn ghost small')).join('')}${isSub('beastmaster',7,h)?btn('petforce',h.petForce?'Force damage: on':'Force damage: off','','btn ghost small'):''}</div>`:isSub('beastmaster',7,h)?`<div class="actions">${btn('petforce',h.petForce?'Force damage: on':'Force damage: off','','btn ghost small')}</div>`:''}
   <label class="field">Name<input data-petname value="${esc(h.petName||'')}" placeholder="${T.name}" maxlength="20" ${inQ?'disabled':''}></label>
@@ -3313,7 +3314,7 @@ function upTargets(kind,h=S.hero){ensureArmor(h);const it=(h.items||[]);
   if(kind==='weapon')return[...ownedBases(h).filter(b=>WEAPONS[b]&&b!=='unarmed').map(b=>['w:'+b,WEAPONS[b].name]),...it.filter(i=>MAGIC[i.id].kind==='weapon').map(i=>['i:'+i.uid,`${MAGIC[i.id].name} (${WEAPONS[i.base]?WEAPONS[i.base].name:'weapon'})`])];
   if(kind==='armor')return[...(h.ownedA||[]).map(a=>['a:'+a,ARMORS[a][0]]),...it.filter(i=>MAGIC[i.id].slot==='armor').map(i=>['i:'+i.uid,MAGIC[i.id].name])];
   return[['s:shield','Shield'],...it.filter(i=>MAGIC[i.id].kind==='shield').map(i=>['i:'+i.uid,MAGIC[i.id].name])]}
-function applyUp(id,key,gold,h=S.hero){h.ups=h.ups||{};const u=h.ups[key]=h.ups[key]||{};u.has=u.has||[];if(u.has.includes(id))return false;u.has.push(id);for(const [k,v] of Object.entries(UP_FX[id]||{}))u[k]=(u[k]||0)+v;u.gold=(u.gold||0)+gold;
+function applyUp(id,key,gold,h=S.hero){h.ups=h.ups||{};const u=h.ups[key]=h.ups[key]||{};u.has=u.has||[];if(u.has.includes(id)||u.has.length>=upSlots(key,h))return false;u.has.push(id);for(const [k,v] of Object.entries(UP_FX[id]||{}))u[k]=(u[k]||0)+v;u.gold=(u.gold||0)+gold;
   if(key.startsWith('i:')){const inst=(h.items||[]).find(i=>'i:'+i.uid===key);if(inst)inst.upv=(inst.upv||0)+gold}return true}
 function weaponUpKey(wid,off,h=S.hero){if(!h.loadouts)return'w:'+wid;const st=activeSet(h),v=off?st.off:st.main;const r=v&&resolveHand(v,h);if(v&&v.startsWith('i:')&&r&&r.base===wid)return v;const v2=off?st.main:st.off,r2=v2&&resolveHand(v2,h);if(v2&&v2.startsWith('i:')&&r2&&r2.base===wid&&!(r&&r.base===wid))return v2;return'w:'+wid}
 const wUp=(wid,off,h=S.hero)=>upOf(weaponUpKey(wid,off,h),h);
@@ -3324,7 +3325,129 @@ function migrateGear(h){if(h.gearV)return;h.gearV=1;ensureArmor(h);const own=h.o
   for(const id of own){if(!UP_FX[id])continue;const kind=UP_KIND[id];const key=kind==='weapon'?wk:kind==='armor'?(h.armor?'a:'+h.armor:null):'s:shield';if(key)applyUp(id,key,0,h)}
   if(h.gear){h.gear.atk=0;h.gear.dmg=0;h.gear.ac=0;h.gear.moon=false;h.gear.necro=false}}
 let upPick=null;
-function upPicker(id,price,act){const kind=UP_KIND[id];const ts=upTargets(kind);return `<div class="actions">${ts.length?ts.map(([k,n])=>btn(act,n+((upOf(k).has||[]).includes(id)?' (has it)':''),`data-k="${id}|${k}" ${disab((upOf(k).has||[]).includes(id))}`,'btn ghost small')).join(''):'<span class="meta">Nothing to upgrade.</span>'}${btn('upcancel','Cancel','','btn ghost small')}</div>`}
+function upPicker(id,price,act){const kind=UP_KIND[id];const ts=upTargets(kind);return `<div class="actions">${ts.length?ts.map(([k,n])=>btn(act,`${n} (${(upOf(k).has||[]).length}/${upSlots(k)})`+((upOf(k).has||[]).includes(id)?' has it':''),`data-k="${id}|${k}" ${disab((upOf(k).has||[]).includes(id)||(upOf(k).has||[]).length>=upSlots(k))}`,'btn ghost small')).join(''):'<span class="meta">Nothing to upgrade.</span>'}${btn('upcancel','Cancel','','btn ghost small')}</div>`}
+
+/* ---- quest battle maps: sizes, shapes, backgrounds ---- */
+const MAPS={
+  winter_road:[12,14,'forest','A snowy pine road north of Hollowmere. Drifts, fallen trees and a frozen cart.'],
+  white_pass:[7,20,'tunnel','A narrow mountain pass between sheer cliffs. Wind-scoured snow and loose scree.'],
+  giant_camp:[14,14,'open','A frost giant camp on a high plateau. Hide tents, a bonfire, scattered boulders.'],
+  ice_stair:[6,18,'tunnel','A stair carved down into the glacier. Blue ice walls, icicles, a steep drop.'],
+  frozen_hall:[12,14,'hall','A pillared hall of ice. Frozen warriors stand between the columns.'],
+  glacier_shrine:[14,16,'cave','The shrine at the glacier’s heart. Crevasses, ice spires and the glowing seal.'],
+  abbey_shallows:[12,14,'ruins','A flooded abbey courtyard. Broken walls stand in knee-deep black water.'],
+  drowned_cloister:[10,16,'hall','A drowned cloister walk. Columns, a sunken garden, water to the waist.'],
+  black_marsh:[14,16,'forest','A black marsh. Reeds, dead trees and the young dragon’s muddy wallow.'],
+  abbey_nave:[10,20,'hall','The abbey’s long drowned nave. Rows of rotten pews and fallen statues.'],
+  seal_crypt:[12,12,'cave','The sunken crypt beneath the altar, where Morvath coils around the seal.'],
+  cinder_road:[12,16,'ruins','The burned outskirts of Cinderhold. Charred houses and smoking rubble.'],
+  cinderhold_gate:[10,14,'street','Cinderhold’s main gate and the street beyond. Barricades and a gatehouse.'],
+  salamander_road:[6,22,'tunnel','The Salamander Road: a lava-lit cut through an obsidian canyon.'],
+  giant_forge:[14,14,'hall','A fire giant’s forge. Anvils, slag pits and a roaring furnace.'],
+  court_steps:[10,14,'open','The broad steps up to the Burning Court, lined with brazier pillars.'],
+  throne_of_ash:[12,16,'hall','The throne room of the Burning Court. Ash drifts, burning banners, the seal behind the throne.'],
+  gibbet_road:[12,16,'forest','The road to Greyhallow, lined with gibbets and bare black trees.'],
+  inn_cellar:[8,10,'hall','The cellar of the last inn before the city. Barrels, coffins and a trapdoor.'],
+  varne_manor:[12,14,'hall','The great hall of House Varne. Portraits, long tables and a grand stair.'],
+  manor_gardens:[14,14,'forest','House Varne’s night garden. Hedges, statues and a dry fountain.'],
+  varne_crypts:[6,20,'tunnel','The Varne family crypts. A long, narrow passage of niches and sarcophagi.'],
+  night_court:[14,16,'hall','The Night Court ballroom. Marble floor, black pillars, the seal under the dais.'],
+  withered_wood:[14,16,'forest','The grey, withering edge of the Wolfwood. Brittle trees and thorn thickets.'],
+  court_glade:[14,14,'open','The Thorn Queen’s revel glade. A ring of standing stones and dancing lights.'],
+  rose_garden:[12,14,'forest','The Queen’s rose garden. Hedges of thorns as tall as a house.'],
+  thorn_throne:[14,16,'cave','The throne of roots. Huge roots wall the chamber; the seal pulses beneath the throne.'],
+  silent_foundry:[12,14,'hall','The silent dwarven foundry. Anvils, chains and cold forges in rows.'],
+  chain_gate:[8,18,'tunnel','The chain-lift gatehouse. A tall shaft with platforms and hanging chains.'],
+  deep_road:[6,22,'tunnel','The deep road. A long dwarven tunnel with support arches and mine-cart rails.'],
+  iron_nave:[10,18,'hall','The nave of the iron cathedral. Brass pillars and ranks of frozen soldiers.'],
+  iron_cathedral:[14,16,'hall','The iron cathedral’s heart. Gears in the walls, the Abbot’s brass throne.'],
+  old_road:[7,20,'tunnel','The buried road beyond the White Pass. Snow, rockfall and the Order’s waymarkers.'],
+  bone_chapel:[10,16,'hall','The monastery chapel. Pews of bone and the choir loft above.'],
+  chapter_house:[12,12,'hall','The chapter house. A round room with a cracked mosaic floor.'],
+  ice_cavern:[14,16,'cave','The blue ice cavern. The phylactery frozen in a pillar at the center.'],
+  mere_shore:[14,14,'open','The shore of the Mirrormere at night. Reeds, a jetty and glowing water.'],
+  sunken_city:[12,18,'ruins','The city under the lake. Drowned streets and leaning towers.'],
+  star_approach:[8,18,'tunnel','A spiral ramp down toward the star, lined with strange script.'],
+  star_chamber:[14,16,'cave','The star’s chamber. Crystal growths and a vast pulsing eye.'],
+  moon_road:[6,22,'tunnel','The Dream Road: a path of moonlight across a sea of sleeping minds.'],
+  dream_halls:[10,20,'hall','The halls of the dreaming. Doors everywhere, and corridors that bend wrong.'],
+  nightmare_garden:[12,14,'forest','A garden made of memories. Dead trees and a childhood house.'],
+  vaelor_dream:[14,14,'open','Vaelor’s dream: the Order’s cloister as it was, bright and new.'],
+  river_crossing:[12,16,'open','The flooded river crossing south of Hollowmere. The bridge is down.'],
+  last_ridge:[8,18,'tunnel','The last ridge before home. A narrow track along the crest.'],
+  gallery_nine:[8,16,'tunnel','Gallery Nine in the old mine, where it all began. Rails and timber props.'],
+  seventh_seal:[14,16,'cave','The seventh seal beneath Hollowmere. Grey roots, a skull-shaped cavern.'],
+  unwaking:[14,16,'open','The Unwaking Dream: an open void of drifting grey memories.']
+};
+Object.assign(MAPS,{
+  well_bottom:[8,10,'cave','The bottom of the town well. Slick stone, ankle-deep water, rat nests in the cracks.'],
+  cistern_tunnel:[6,14,'tunnel','An old cistern tunnel running off the well shaft, choked with filth.'],
+  fern_hollow:[12,12,'forest','A fern-choked hollow at the edge of the Wolfwood.'],
+  wolf_den:[10,12,'cave','The wolf den: a rocky overhang strewn with bones, grey rot on the walls.'],
+  quarry_pit:[12,12,'open','The old quarry pit. Cut blocks, rubble piles and a rickety crane.'],
+  hill_road:[9,16,'forest','The hill road above the mine, lined with crooked pines.'],
+  seal_door:[10,12,'hall','The cracked stone door of the first seal, in a pillared antechamber.'],
+  old_mine:[6,18,'tunnel','The old Hollowmere mine. Timber props, rails, and darkness.'],
+  side_gallery:[10,12,'cave','A side gallery of the mine, half collapsed.'],
+  warren_tunnels:[6,16,'tunnel','Kobold tunnels: low, twisting, full of traps and junk.'],
+  spider_hall:[12,12,'cave','A wide cavern webbed from floor to ceiling.'],
+  claim_road:[10,14,'open','The road up to the Varne claim. A gate, carts and a guard shack.'],
+  claim_camp:[12,12,'ruins','The Varne work camp. Tents, crates and a half-built winch house.'],
+  gallery_mouth:[10,12,'ruins','The mouth of Gallery Nine. Scaffolding and Varne equipment.'],
+  gallery_tunnel:[7,16,'tunnel','The upper workings of Gallery Nine, where the dead walk.'],
+  seal_door2:[10,12,'hall','The second seal’s door, deep in Gallery Nine.'],
+  chapel_crypt:[8,14,'hall','The crypt under the Chapel of the Dawn. Alcoves of bones.'],
+  founder_tomb:[10,10,'hall','The founder’s tomb. A stone sarcophagus and a captain who never rested.'],
+  shrine_path:[12,14,'forest','The overgrown path to the Wolfwood shrine. Blights in the undergrowth.'],
+  wolfwood_shrine:[12,12,'open','The ancient Wolfwood shrine: a ring of mossy stones around a great tree.'],
+  barrow_door:[12,12,'open','The river barrow’s mound and door, by the water’s edge.'],
+  barrow_hall:[8,16,'hall','Inside the barrow. A long burial hall with a raised bier.'],
+  hollowmere_walls:[14,12,'street','Hollowmere at night under siege. Houses, the square and the palisade.'],
+  mine_depths:[7,18,'tunnel','The deepest mine shaft, where the Sleeper’s dead climb up.'],
+  sleeper_stair:[10,14,'cave','A root-choked stair down to the Sleeper.'],
+  dream_cavern:[14,14,'cave','The Sleeper’s dream given shape: a cavern of grey roots and memory.'],
+  sleeper_heart:[12,12,'cave','The Heart of the Sleeper, pulsing in a cavern of roots.']
+});
+const QUEST_MAPS={well:['well_bottom','cistern_tunnel'],wolves:['fern_hollow','wolf_den'],kobolds:['quarry_pit'],seal:['hill_road','seal_door'],delve:['old_mine','side_gallery'],warren:['warren_tunnels','spider_hall'],claim:['claim_road','claim_camp'],seal2:['gallery_mouth','gallery_tunnel','seal_door2'],crypt:['chapel_crypt','founder_tomb'],shrine:['shrine_path','wolfwood_shrine'],barrow:['barrow_door','barrow_hall'],siege:['hollowmere_walls'],descent:['mine_depths','sleeper_stair','dream_cavern','sleeper_heart'],
+  s1a:['winter_road'],s1b:['white_pass','giant_camp'],s1c:['ice_stair','frozen_hall','glacier_shrine'],
+  s2a:['abbey_shallows','drowned_cloister'],s2b:['black_marsh'],s2c:['abbey_nave','seal_crypt'],
+  s3a:['cinder_road','cinderhold_gate'],s3b:['salamander_road','giant_forge'],s3c:['court_steps','throne_of_ash','throne_of_ash'],
+  s4a:['gibbet_road','inn_cellar'],s4b:['varne_manor','manor_gardens'],s4c:['varne_crypts','night_court'],
+  t3a:['withered_wood'],t3b:['court_glade'],t3c:['rose_garden','thorn_throne'],t3d:['silent_foundry'],t3e:['chain_gate','deep_road'],t3f:['iron_nave','iron_cathedral'],
+  s5a:['old_road'],s5b:['bone_chapel','chapter_house'],s5c:['ice_cavern'],
+  t4a:['mere_shore'],t4b:['sunken_city'],t4c:['star_approach','star_chamber'],t4d:['moon_road'],t4e:['dream_halls'],t4f:['nightmare_garden','vaelor_dream'],
+  s6a:['river_crossing','last_ridge'],s6c:['gallery_nine','seventh_seal','unwaking']};
+function mapForRun(){const r=S.run;if(!r)return null;const list=QUEST_MAPS[r.qid];if(!list)return null;const q=r.q||QUESTS[r.qid];let fi=0;for(let i=0;i<r.stage&&q&&q.stages&&q.stages[i];i++)if(q.stages[i].t==='fight')fi++;const key=list[Math.min(fi,list.length-1)];const m=MAPS[key];return m?{key,w:m[0],h:m[1],type:m[2]}:null}
+function setDims(c){if(c&&c.map){GW=c.map.w;GH=c.map.h}else{GW=10;GH=12}}
+function genRocks(type,used){const rocks=[],add=(x,y)=>{const k=ck(x,y);if(x>=0&&y>=0&&x<GW&&y<GH&&!used.has(k)){rocks.push(k);used.add(k)}},A=GW*GH;
+  if(type==='tunnel'){for(let y=1;y<GH-1;y++){if(Math.random()<.45)add(0,y);if(Math.random()<.45)add(GW-1,y);if(GW>6&&Math.random()<.15)add(1,y);if(GW>6&&Math.random()<.15)add(GW-2,y)}for(let i=0;i<Math.round(GH/5);i++)add(1+d(GW-2)-1,2+d(GH-4))}
+  else if(type==='hall'){for(let y=2;y<GH-2;y+=3)for(let x=1;x<GW-1;x+=3)if(Math.random()<.85)add(x,y)}
+  else if(type==='ruins'||type==='street'){const nb=Math.max(2,Math.round(A/45));for(let i=0;i<nb;i++){const bw=1+d(2),bh=1+d(type==='street'?3:2),x0=d(GW)-1,y0=1+d(GH-4);for(let x=x0;x<x0+bw;x++)for(let y=y0;y<y0+bh;y++)if(Math.random()<.85)add(x,y)}}
+  else if(type==='cave'){const n=Math.round(A*.14);for(let i=0;i<n;i++){let x=d(GW)-1,y=1+d(GH-3);add(x,y);if(Math.random()<.6)add(x+(d(3)-2),y+(d(3)-2))}}
+  else if(type==='forest'){const n=Math.round(A*.11);for(let i=0;i<n;i++)add(d(GW)-1,1+d(GH-3))}
+  else{const n=Math.round(A*.05);for(let i=0;i<n;i++)add(d(GW)-1,1+d(GH-3))}
+  return rocks}
+let mapImg={};
+function loadMapImg(key){if(!key||mapImg[key]!==undefined||typeof Image==='undefined')return;mapImg[key]=false;const im=new Image();im.onload=()=>{mapImg[key]=true;if(S&&S.run&&S.run.combat)render()};im.src=`maps/${key}.jpg`}
+
+/* ---- item cards, upgrade slots ---- */
+const UP2=new Set(['w:longsword','w:greatsword','w:warhammer','w:battleaxe','w:rapier','w:longbow','w:glaive','w:heavycrossbow','a:plate','a:breastplate','a:halfplate','a:chainmail','weapon1','weapon2','armor1','shield1','flametongue','defender','holyavenger','sunblade','frostbrand','dragonscale','staffofpower','moonsickle2']);
+function upSlots(key,h=S.hero){if(UP2.has(key))return 2;if(key.startsWith('i:')){const it=(h.items||[]).find(i=>'i:'+i.uid===key);if(it&&UP2.has(it.id))return 2}return 1}
+const UP_NAME={edge:'Dwarven honing (+1 to hit)',wardenblade:'Warden’s engraving (+1 to hit and damage)',moonblade:'Moonsilver inlay (+1 damage, +1d6 radiant vs undead)',blade:'Whetted edge (+1 damage)',armor:'Reinforced plates (+1 AC)',moonarmor:'Moonsilver lining (+1 AC, necrotic resistance)',shield:'Iron rim (+1 AC)'};
+let infoKey=null;
+function itemCard(key){const h=S.hero;let name='',sub='',desc='',extra='';
+  if(key.startsWith('i:')){const it=(h.items||[]).find(i=>'i:'+uidOf(i)===key);if(!it)return'';const m=MAGIC[it.id];name=m.name;sub=`${saleBase(it.id)} · ${m.rarity}${m.attune?(it.attuned?', attuned':', needs attunement'):''}`;desc=m.desc;
+    if(m.kind==='weapon'&&WEAPONS[it.base]){const w=WEAPONS[it.base];extra=`<p class="meta">${w.name}: ${w.dmg} ${w.type}${LIGHT.has(it.base)?', light':''}${TWOHAND.has(it.base)?', two-handed':''}${w.reach?', reach':''}. Mastery: ${w.mastery||'none'}.</p>`}
+    extra+=`<p class="meta">Mirela would pay ${Math.floor((m.price+(it.upv||0))/2)} gp for it.</p>`}
+  else if(key.startsWith('w:')){const b=key.slice(2),w=WEAPONS[b];if(!w)return'';name=w.name;sub=`${w.kind} weapon`;desc=`${w.dmg} ${w.type}${LIGHT.has(b)?', light':''}${TWOHAND.has(b)?', two-handed':''}${w.reach?', reach':''}${w.range?`, range ${w.range*5}/${w.long*5} ft`:''}.`;extra=w.mastery?`<p class="meta">${MASTERY[w.mastery]}${hasMastery(b)?' You have mastered it.':' Not mastered.'}</p>`:''}
+  else if(key.startsWith('a:')){const A=ARMORS[key.slice(2)];if(!A)return'';name=A[0];sub=`${A[1]} armor`;desc=`AC ${A[2]}${A[3]==='full'?' + Dex':A[3]?' + Dex (max 2)':''}${A[4]?`. Needs Strength ${A[4]}`:''}${A[5]?'. Disadvantage on Stealth':''}.`}
+  else if(key==='s:shield'){name='Shield';sub='shield';desc='+2 AC while held in your off hand.'}
+  const u=upOf(key),has=u.has||[],n=upSlots(key);
+  const ups=`<p class="meta"><b>Upgrades (${has.length} of ${n}):</b> ${has.length?has.map(id=>UP_NAME[id]||id).join('; '):'none yet'}${n===2?'. Fine work: it can take two upgrades.':''}</p>`;
+  return `<div class="adv" role="dialog" aria-modal="true" aria-label="${esc(name)}"><div class="adv-inner"><p class="meta">${esc(sub)}</p><h1>${esc(name)}</h1><p class="prose">${desc}</p>${extra}${key.startsWith('i:')||key.startsWith('w:')||key.startsWith('a:')||key==='s:shield'?ups:''}<div class="actions">${btn('infoclose','Close','','btn big')}</div></div></div>`}
+function itemKeyForHand(v){if(!v)return null;if(v.startsWith('i:'))return v;if(v==='shield')return's:shield';if(WEAPONS[v])return'w:'+v;return null}
+function petBurst(f,total,type){const c=S.run.combat,h=S.hero;if(!c.pet||c.pet.hp<=0||cheb(c.pet,c.hero)>2)return;const sv=d(20)+2+pb(),saved=sv>=f.burst.dc,n=saved?Math.floor(total/2):total;c.pet.hp-=n;clog(`${petName()} is caught too (DEX save ${sv} with Primal Bond): ${n} ${type}.`,saved?'info':'bad');if(c.pet.hp<=0){clog(`${petName()} falls.`,'bad');h.petHp=0;c.pet=null}else h.petHp=c.pet.hp}
+function heroSlip(f){const c=S.run.combat;const o=[];for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++){const x=c.hero.x+dx,y=c.hero.y+dy;if(inBounds(x,y)&&!isRock(c,x,y)&&!foeAt(c,x,y)&&!allyAt(c,x,y))o.push({x,y})}o.sort((a,b)=>cheb(b,f)-cheb(a,f));if(o[0]&&cheb(o[0],f)>cheb(c.hero,f)){c.hero={x:o[0].x,y:o[0].y};return true}return false}
 
 /* ---- hero rules ---- */
 const mod=s=>Math.floor((s-10)/2);
@@ -3482,6 +3605,7 @@ function levelFeatures(h,l,silent){
   if(!silent&&h.cls==='graftwright'){h.gswaps=(h.gswaps||0)+1}
   if(!silent&&CLASSES[h.cls].caster){h.swaps=(h.swaps||0)+1;h.cswaps=(h.cswaps||0)+1;if(h.cls==='wizard')h.bookPicks=(h.bookPicks||0)+2}
   if(STYLE_AT[h.cls]===l&&!h.style){if(silent)h.style=defaultStyle(h.cls);else h.pendingStyle=true}
+  if(!silent&&h.style&&ASI_AT(h.cls).includes(l))h.styleSwap=true;
   if(l===20&&h.cls==='barbarian'&&!h.champ20){h.champ20=true;h.abil.str=Math.min(25,h.abil.str+4);h.abil.con=Math.min(25,h.abil.con+4)}
   if(l===20&&h.cls==='monk'&&!h.champ20){h.champ20=true;h.abil.dex=Math.min(25,h.abil.dex+4);h.abil.wis=Math.min(25,h.abil.wis+4)}
   if(l===3&&!h.sub){if(silent)h.sub=DEFAULT_SUB[h.cls];else h.pendingSub=true}
@@ -3628,7 +3752,7 @@ function shortRest(){
 }
 function spendHitDie(){
   const r=S.run,h=S.hero;if(!r||!r.resting||!h.pools.hd||h.hp>=h.hpMax)return;
-  h.pools.hd--;const x=d(CLASSES[h.cls].hd),n=Math.max(1,x+am('con'))*(activeItems().some(m=>m.name==='Periapt of Wound Closure')?2:1);h.hp=Math.min(h.hpMax,h.hp+n);
+  h.pools.hd--;const x=d(CLASSES[h.cls].hd),n=Math.max(1,x+am('con')*(hasGP('painkiller')?2:1))*(activeItems().some(m=>m.name==='Periapt of Wound Closure')?2:1);h.hp=Math.min(h.hpMax,h.hp+n);
   r.restNote=`Hit Die: d${CLASSES[h.cls].hd} [${x}] ${sgn(am('con'))} = ${n} HP.`;
 }
 
@@ -3683,7 +3807,7 @@ function checkLevel(){
 }
 
 /* ---- combat on the grid ---- */
-const GW=10,GH=12;
+let GW=10,GH=12;
 const ck=(x,y)=>x+','+y;
 const cheb=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
 const ft=n=>n*5;
@@ -3714,11 +3838,11 @@ function reach(c,from,budget,blocked){
 function pathTo(map,x,y){const path=[];let k=ck(x,y);while(k&&map.get(k).prev){const n=map.get(k);path.unshift({x:n.x,y:n.y});k=n.prev}return path}
 function heroReach(){const c=S.run.combat,half=S.hero.species==='halfling';return reach(c,c.hero,c.grappledBy!=null?0:c.move,(x,y)=>foeAt(c,x,y)?(half||(c.dilated&&isSub('quicksilver',3))?'pass':'no'):allyAt(c,x,y)?'pass':false)}
 const adjFoes=()=>liveFoes().filter(f=>cheb(f,S.run.combat.hero)<=1&&!f.turned);
-function makeBoard(n){
+function makeBoard(n,type){
   for(let tries=0;tries<60;tries++){
-    const rocks=[],used=new Set(),hero={x:Math.floor(GW/2)-2+d(2),y:GH-1};used.add(ck(hero.x,hero.y));
-    const nr=7+d(6);
-    while(rocks.length<nr){const x=d(GW)-1,y=1+d(GH-3),k=ck(x,y);if(!used.has(k)){rocks.push(k);used.add(k)}}
+    const rocks=[],used=new Set(),hero={x:Math.max(0,Math.min(GW-1,Math.floor(GW/2)-2+d(2))),y:GH-1};used.add(ck(hero.x,hero.y));
+    if(type)rocks.push(...genRocks(type,used));else{const nr=7+d(6);
+    while(rocks.length<nr){const x=d(GW)-1,y=1+d(GH-3),k=ck(x,y);if(!used.has(k)){rocks.push(k);used.add(k)}}}
     const spots=[];
     while(spots.length<n){const x=d(GW)-1,y=d(3)-1,k=ck(x,y);if(!used.has(k)){spots.push({x,y});used.add(k)}}
     const r=reach({rocks},hero,99,()=>false);
@@ -3730,11 +3854,12 @@ function retarget(){const c=S.run.combat;let best=-1,bd=99;c.foes.forEach((f,i)=
 const TOKEN={rat:'R',blightrat:'R',wolf:'W',madwolf:'W',kobold:'K',bandit:'B',blightspawn:'S',warden:'W',ghoul:'G',spider:'X',blightkobold:'K',thug:'T',captain:'H',arcanist:'A',skeleton:'K',wight:'W',ogrezombie:'O',needleblight:'N',vineblight:'V',thornwarden:'T',ysolde:'Y',dream:'D',heart:'H',goblin:'Go',hobgoblin:'Hb',worg:'Wg',ogre:'O',troll:'Tr',hillgiant:'Gi',frostgiant:'FG',winterwolf:'WW',yeti:'Ye',jarl:'Ja',ghast:'Gh',wraith:'Wr',youngblack:'YD',morvath:'M',hellhound:'HH',salamander:'Sa',firegiant:'Fi',calder:'C',ashgar:'As',vampspawn:'VS',ysoldevamp:'Y',aldric:'AV',stonegolem:'SG',boneknight:'BK',isenvyr:'Is',vaelor:'Vl',unwakingdream:'UD',redcap:'RC',dryadthrall:'Dr',thornqueen:'TQ',clocksoldier:'CS',ironabbot:'IA',starspawn:'SS',mindhusk:'MH',watcherbelow:'WB',nightmareshade:'NS',dreamvaelor:'DV'};
 function startCombat(keys){
   if(S.run.thin&&keys.length>1){keys=keys.slice(0,-1);S.run.thin=false}
-  const b=makeBoard(keys.length),counts={},h=S.hero,ambush=S.run.ambush;S.run.ambush=false;
+  const mp=mapForRun();setDims({map:mp});if(mp)loadMapImg(mp.key);
+  const b=makeBoard(keys.length,mp&&mp.type),counts={},h=S.hero,ambush=S.run.ambush;S.run.ambush=false;
   const foes=keys.map((k,i)=>{const e=ENEMIES[k],hp=Math.max(1,roll(e.hp).total);counts[k]=(counts[k]||0)+1;
     return{...e,key:k,hp,hpMax:hp,x:b.spots[i].x,y:b.spots[i].y,label:TOKEN[k]+(keys.filter(z=>z===k).length>1?counts[k]:'')}});
   scaleFoes(foes);
-  const c={board:2,cid:Math.random().toString(36).slice(2),rocks:b.rocks,hero:b.hero,foes,target:0,log:[],over:null,round:1,order:[],ti:0,turn:'start',
+  const c={map:mp,board:2,cid:Math.random().toString(36).slice(2),rocks:b.rocks,hero:b.hero,foes,target:0,log:[],over:null,round:1,order:[],ti:0,turn:'start',
     move:0,actions:0,attacksLeft:0,bonus:false,react:true,downNoted:false};
   S.run.combat=c;retarget();
   c.ambient=questAmbient();c.lights=[];c.mdark=[];
@@ -3822,7 +3947,7 @@ function heroTurnStart(){
     if(c.dilated&&c.round>c.dilateEnd){c.dilated=false;clog('Dilation ends. The world speeds back up.','info')}if(c.dilated)c.dilAtk=true;if(c.zero&&c.round>c.zeroEnd){c.zero=false;h.exh=Math.min(6,(h.exh||0)+1);clog('Zero Point ends. You gain a level of Exhaustion.','bad')}
     if(c.grab!=null&&(!c.foes[c.grab]||c.foes[c.grab].hp<=0))c.grab=null}
   if(h.conc==='heroism'){const tp=Math.max(1,spellMod());if(tp>h.temp)h.temp=tp}
-  Object.assign(c,{petMove:c.pet?petType(h).speed:0,petMoved:false,petSel:false,lightAtk:false,offUsed:false,nickUsed:false,petDodge:false,petReacted:false,petMarkUsed:false,petDash:false,redlined:false,calcUsed:false,pistonUsed:false,arcUsed:false,ffUsed:false,fistPush:false,blurUsed:false,prUsed:false,flowUsed:false,killUsed:false,frozenRound:false,esmiteUsed:false,travelUsed:false,apoUsed:false,prowessUsed:false,resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
+  Object.assign(c,{petMove:c.pet?petType(h).speed:0,petMoved:false,petSel:false,lightAtk:false,offUsed:false,nickUsed:false,petDodge:false,petReacted:false,petMarkUsed:false,petDash:false,lashUsed:false,redlined:false,calcUsed:false,pistonUsed:false,arcUsed:false,ffUsed:false,fistPush:false,blurUsed:false,prUsed:false,flowUsed:false,killUsed:false,frozenRound:false,esmiteUsed:false,travelUsed:false,apoUsed:false,prowessUsed:false,resUsed:false,radSoulUsed:false,battleMagic:false,feyUsed:false,dreadUsed:false,flurryUsed:false,petCmd:false,seaUsed:false,starUsed:false,psiUsed:false,furyUsed:false,harmUsed:false,epitomeUsed:false,zealous:false,revealUsed:false,brawlUsed:false,swapped:false,attackedThisTurn:false,lunarUsed:false,preyUsed:false,stunUsed:false,colossusUsed:false,cleaveUsed:false,frenzyUsed:false,reckless:false,brutalNext:false,acting:null,turn:'hero',move:heroSpeed(),actions:1,attacksLeft:0,bonus:true,moved:false,disengaged:false,aim:null,savageUsed:false,sneakUsed:false,slotUsed:false,lastMiss:null});
   clog(`Round ${c.round}: your turn`,'head');c.head='h'+c.round;c.tk='h:'+c.round;
   if(c.speedPot)c.hasteAtk=true;
   c.moveBudget=c.move;
@@ -4041,6 +4166,7 @@ function weaponAttack(wid,reroll,o={}){const wx=[];
       if(wid==='unarmed'&&isSub('forgefist',3,h)&&!c.ffUsed&&c.ffMode&&c.ffMode!=='none'){c.ffUsed=true;const sv=d(20)+Math.max(t.mods.str,t.mods.dex),dc=spellDC();
         if(c.ffMode==='grapple'){if(sv<dc){c.grab=c.foes.indexOf(t);clog(`You seize ${fn(t)} (save ${sv} vs ${dc}). It’s grappled.`,'good')}else clog(`${Fn(t)} twists free of your grip (${sv}).`,'info')}
         else{if(sv<dc){t.prone=true;clog(`You slam ${fn(t)} to the ground (save ${sv}).`,'good');if(hasGP('wreckingball')){const x=d(8)+am('str');hurt(t,x,'bludgeoning',false);clog(`Wrecking Ball: ${x}.`,'good')}}else clog(`${Fn(t)} keeps its feet (${sv}).`,'info')}}
+      if(wid==='weavelash'&&!c.lashUsed&&c.grab==null&&t.hp>0){c.lashUsed=true;const sv=d(20)+Math.max(t.mods.str,t.mods.dex);if(sv<spellDC()){c.grab=c.foes.indexOf(t);c.grabReach=3;clog(`The weavewire lash wraps ${fn(t)}: it’s grappled (save ${sv}).`,'good')}}
       if(wid==='unarmed'&&hasG('forgefists')&&!c.fistPush&&t.hp>0){c.fistPush=true;pushAway(t,2)}
     }
     if(t.pushNext){t.pushNext=false;if(t.hp>0)pushAway(t,2)}
@@ -4866,6 +4992,7 @@ function deathSave(){
 /* ---- monsters ---- */
 const inGuardians=f=>S.hero.conc==='spiritguardians'&&cheb(f,S.run.combat.hero)<=3;
 function foeTurn(f){
+  setDims(S.run.combat);
   const c=S.run.combat,h=S.hero;c.tk='f'+c.foes.indexOf(f)+':'+c.round;
   f.reacted=false;f.noReact=false;
   if(c.rage&&isSub('worldtree',6,h)&&c.react&&!h.dying&&f.hp>0&&cheb(f,c.hero)>1&&cheb(f,c.hero)<=6){const spot=[[0,-1],[1,0],[-1,0],[0,1],[1,-1],[-1,-1],[1,1],[-1,1]].map(([dx,dy])=>({x:c.hero.x+dx,y:c.hero.y+dy})).find(p=>inBounds(p.x,p.y)&&!isRock(c,p.x,p.y)&&!foeAt(c,p.x,p.y));const s2=d(20),tt=s2+f.mods.str,dc=8+pb()+am('str');if(spot&&tt<dc){c.react=false;f.x=spot.x;f.y=spot.y;f.rooted=true;clog(`Branches of the Tree: spectral roots drag ${fn(f)} to you.`,'good')}}
@@ -4879,7 +5006,7 @@ function foeTurn(f){
   if(f.confused&&h.conc!=='confusion')f.confused=false;
   if(f.confused){const k=d(10),sv=d(20)+f.mods.wis;if(sv>=spellDC())f.confusedEnd=true;if(k<=6){clog(`${Fn(f)} ${k===1?'wanders aimlessly':'stares blankly'}, confused.`,'good');if(f.confusedEnd){f.confused=false;f.confusedEnd=false;clog(`${Fn(f)} shakes off its confusion.`,'info')}f.acted=true;endFoeTurn(f);return}if(k<=8){f.crowned=true;f.domTurn=true}if(f.confusedEnd){f.confused=false;f.confusedEnd=false}}
   if(c.mdark&&c.mdark.length)c.mdark=c.mdark.filter(z=>h.conc===z.spell);
-  if(c.grab!=null&&c.foes[c.grab]===f){f.rooted=true;if(cheb(f,c.hero)>1)c.grab=null;else{const tt=d(20)+Math.max(f.mods.str,f.mods.dex);if(tt>=spellDC()+5){c.grab=null;clog(`${Fn(f)} wrenches free of your grip.`,'info')}}}
+  if(c.grab!=null&&c.foes[c.grab]===f){f.rooted=true;if(cheb(f,c.hero)>(c.grabReach||1)){c.grab=null;c.grabReach=null}else{const tt=d(20)+Math.max(f.mods.str,f.mods.dex);if(tt>=spellDC()+5){c.grab=null;clog(`${Fn(f)} wrenches free of your grip.`,'info')}}}
   if(f.petGrab){if(!c.pet||cheb(f,c.pet)>1)f.petGrab=false;else{const tt=d(20)+Math.max(f.mods.str,f.mods.dex);if(tt>=spellDC()){f.petGrab=false;clog(`${Fn(f)} breaks free of ${petName()}.`,'info')}else f.rooted=true}}
   if(f.dominated==='fury'){const tt=d(20)+f.mods.wis;if(tt>=(f.furyDC||spellDC())){f.dominated=null;f.crowned=false;clog(`${Fn(f)}’s fury fades.`,'info')}}
   if(f.slowS&&S.hero.conc!=='slow'){f.slowS=false;f.ac+=2}
@@ -4918,7 +5045,7 @@ function foeTurn(f){
   let dist=cheb(f,c.hero);
   if(f.burst&&f.burstReady!==false&&dist<=(f.burst.range||12)&&los(c,f,c.hero)){
     if(f.burst.charm){f.burstReady=false;const sv=heroSave('wis',f.burst.dc);if(!sv.pass&&!c.heroPara){c.heroPara=!(S.hero.conds.freedom||itemFlag('freedom'));c.paraEnding=false;clog(`${Fn(f)} meets your eyes. ${sv.txt}. You’re charmed and lose your next turn.`,'bad')}else clog(`${Fn(f)} tries to catch your eye. ${sv.txt}. You resist.`,'info');foeMelee(f);f.acted=true;endFoeTurn(f);return}
-    f.burstReady=false;const r=roll(f.burst.dmg),bt=f.burst.dtype||'fire';r.total=Math.max(1,Math.round(r.total*(f.dmgMul||1)));clog(`${Fn(f)} casts ${f.burst.name}: ${rtxt(r)} = ${r.total} ${bt}.`,'bad');
+    f.burstReady=false;const r=roll(f.burst.dmg),bt=f.burst.dtype||'fire';r.total=Math.max(1,Math.round(r.total*(f.dmgMul||1)));if(c.pet)petBurst(f,r.total,bt);clog(`${Fn(f)} casts ${f.burst.name}: ${rtxt(r)} = ${r.total} ${bt}.`,'bad');
     let n=(h.conc==='globeofinvulnerability'||h.conc==='antimagicfield')?0:h.conc==='circleofpower'?(heroSave('dex',f.burst.dc,true).pass?0:r.total):aoeHero(r.total,f.burst.dc);if(n&&isSub('ancients',7,h)){n=Math.floor(n/2);clog('Aura of Warding: half damage.','info')}if(n){clog(`You take ${n} ${bt} damage.`,'bad');dealHero(n,bt)}else clog('You dive clear.','good');
     f.acted=true;endFoeTurn(f);return;
   }
@@ -5033,6 +5160,7 @@ function foeAttack(f,mode,atkObj){
   }
   if(hit&&!crit&&isSub('lore',3,h)&&c.react&&h.pools.bi&&S.flags.autoCutting!==false&&total-biDie()<ac){c.react=false;h.pools.bi--;const x=d(biDie());if(total-x<ac){clog(`${head} Cutting Words: your jeer throws it off by ${x}. It misses.`,'good');fxMiss('hero','block');return}clog(`Cutting Words: you subtract ${x}, but it still hits.`,'info')}
   if(!hit){clog(`${head} Miss.`,'info');fxMiss('hero');
+    if(hasG('hastefil')&&c.react&&!c.burnout&&mode==='melee'&&heroSlip(f)){c.react=false;clog('Haste Filament: you blur 10 ft away.','info')}
     if(mode==='melee'&&isSub('battlemaster',3,h)&&c.react&&h.pools.sup>0&&!h.dying&&f.hp>0){c.react=false;h.pools.sup--;const x=d(supDie()),sv=c.target;c.target=c.foes.indexOf(f);clog('Riposte!','info');const m=heroWeapons().find(k=>WEAPONS[k]&&WEAPONS[k].kind==='melee');if(m)weaponAttack(m,true,{extraDie:x});c.target=sv;checkWin()}
     return}
   const dr=dmgRoll(r.dmg,crit,0);let n=Math.max(1,Math.round(dr.total*(f.dmgMul||1))),extra='';
@@ -5065,8 +5193,8 @@ function foeAttack(f,mode,atkObj){
     clog(`Venom: ${sv.txt}. ${m} ${r.rider.dtype} damage.`,'bad');dealHero(m,r.rider.dtype)}
   if(!c.over&&!h.dying&&r.paralyze&&!c.heroPara){
     if(h.species==='elf')clog('Your elven blood shrugs off the ghoul’s paralysis.','info');
-    else{const sv=heroSave('con',r.paralyze);if(!sv.pass){c.heroPara=!(S.hero.conds.freedom||itemFlag('freedom'));c.paraEnding=false;clog(`Your muscles lock. ${sv.txt}. You’re paralyzed until the end of your next turn.`,'bad')}else clog(`You fight off the numbness. ${sv.txt}.`,'info')}}
-  if(!c.over&&!h.dying&&mode==='melee'&&f.knock&&!c.heroProne){const sv=heroSave('str',f.knock);
+    else{const sv=heroSave('con',r.paralyze,hasG('wardglyph'));if(!sv.pass){c.heroPara=!(S.hero.conds.freedom||itemFlag('freedom'));c.paraEnding=false;clog(`Your muscles lock. ${sv.txt}. You’re paralyzed until the end of your next turn.`,'bad')}else clog(`You fight off the numbness. ${sv.txt}.`,'info')}}
+  if(!c.over&&!h.dying&&mode==='melee'&&f.knock&&!c.heroProne){if(hasGP('unbreakable')){clog('Unbreakable Body: you can’t be knocked prone.','info');return}const sv=heroSave('str',f.knock,hasG('dwarvenframe'));
     if(!sv.pass){c.heroProne=true;clog(`It drags you down. ${sv.txt}. You’re prone.`,'bad')}else clog(`You keep your footing. ${sv.txt}.`,'info')}
 }
 function dmgRoll(expr,crit,extra){
@@ -5102,7 +5230,7 @@ function renderInner(app){
   const body={town:renderTown,farm:renderFarm,quests:renderQuests,folk:renderFolk,hero:renderHero,journal:renderJournal}[S.tab]||renderTown;
   app.innerHTML=`<div class="wrap">${renderHeader()}${S.flags.note?`<div class="note" role="status">${S.flags.note.split('\n\n').map(p=>`<p>${esc(p)}</p>`).join('')}<div class="actions">${btn('note','Got it','','btn ghost small')}</div></div>`:''}<main>${body()}</main></div>
   <nav class="tabs" aria-label="Sections">${tabs.map(([k,l])=>`<button data-a="tab" data-t="${k}" aria-current="${S.tab===k}">${l}</button>`).join('')}</nav>
-  ${S.run?renderRun():''}${S.flags.actModal?renderActModal():''}${S.flags.act2Modal?renderAct2Modal():''}${S.flags.endModal&&!S.run?renderEndModal():''}${S.flags.sequelModal?renderSequelModal('start'):''}${S.flags.ch2Modal&&!S.run?renderSequelModal('ch2'):''}${S.flags.ch4Modal&&!S.run?renderSequelModal('ch4'):''}${S.flags.finalModal&&!S.run?renderSequelModal('final'):''}`;
+  ${S.run?renderRun():''}${S.flags.actModal?renderActModal():''}${S.flags.act2Modal?renderAct2Modal():''}${S.flags.endModal&&!S.run?renderEndModal():''}${S.flags.sequelModal?renderSequelModal('start'):''}${S.flags.ch2Modal&&!S.run?renderSequelModal('ch2'):''}${S.flags.ch4Modal&&!S.run?renderSequelModal('ch4'):''}${S.flags.finalModal&&!S.run?renderSequelModal('final'):''}${infoKey?itemCard(infoKey):''}`;
 }
 function playFX(){
   const board=document.querySelector('.board'),c=S&&S.run&&S.run.combat;
@@ -5591,7 +5719,7 @@ function renderFarm(){
 }
 
 function questRow(id){
-  const q=QUESTS[id],done=S.quests[id],avail=questAvailable(id);
+  const q=QUESTS[id],done=S.quests[id],avail=questAvailable(id);if(done)return'';
   return `<li><div class="row"><h3>${q.name}</h3>${done?'<span class="tag done">Done</span>':avail?`<span class="tag">Level ${q.lvl}+</span>`:'<span class="tag lock">Not yet</span>'}</div>
     <p>${avail||done?q.blurb:questLockText(id)}</p>
     ${avail?`<div class="actions">${btn('quest','Set out',`data-q="${id}" ${dis(S.used.day)}`,'btn small')}</div>`:''}</li>`;
@@ -5646,7 +5774,9 @@ function renderFolk(){
 }
 
 function renderJournal(){
-  return `<h2>How to play</h2>
+  const doneQ=Object.keys(QUESTS).filter(k=>S.quests[k]);
+  return `<h2>Completed quests (${doneQ.length})</h2>${doneQ.length?`<ul class="ledger">${doneQ.map(k=>{const q=QUESTS[k];return `<li><b>${q.name}</b><p class="meta">${esc(q.done||'')}</p></li>`}).join('')}</ul>`:'<p class="meta">Nothing yet. Your finished quests will be listed here.</p>'}
+  <h2>How to play</h2>
   <p>Each day you get one morning chore and one daytime task. Chores gather timber and stone or push a building along. The daytime goes to a quest, a patrol or a full day of labor.</p>
   <p>Evenings are free: start buildings, plant and water, hire workers and talk to the townsfolk. When you’re done, sleep. Overnight your workers build, crops grow, and you heal fully.</p>
   <p>Fights use the 5.5e rules on a grid: initiative order, movement, opportunity attacks, cover from rocks, weapon mastery, conditions, concentration and death saves. Each quest allows one short rest between scenes, where you can spend Hit Dice.</p>
@@ -5759,6 +5889,7 @@ function renderHeroRaw(){
   <h2>Attacks</h2>
   <ul class="ledger">${attackRows()}</ul>
   <p class="meta">Attacks come from the weapon set in your hands.</p>
+  ${h.style&&FIGHTING_STYLES[h.style]?`<h2>Fighting Style</h2><p class="meta"><b>${FIGHTING_STYLES[h.style][0]}</b>: ${FIGHTING_STYLES[h.style][1]}${h.styleSwap?' You reached an Ability Score Improvement level, so you can retrain it once.':' You can retrain it whenever you reach an Ability Score Improvement level.'}</p>${h.styleSwap&&!S.run?`<div class="actions">${Object.entries(FIGHTING_STYLES).filter(([k])=>k!==h.style).map(([k,v])=>btn('restyle',v[0],`data-k="${k}"`,'btn ghost small')).join('')}</div>`:''}`:''}
   ${renderMasteries()}${renderCompanion()}${renderGraftwright()}${renderSpellbook()}
   <h2>Features</h2>
   <p class="meta">${h.sub?`Subclass: ${SUBNAME(h.sub)}${h.sub==='land'?` (${LANDS[h.land||'arid'][0]})`:''}.`:'Subclass at level 3.'}${h.style?` Fighting style: ${FIGHTING_STYLES[h.style][0]}.`:''}</p>
@@ -5836,6 +5967,7 @@ function renderRun(){
 
 function condTags(f){const t=[];if(f.prone)t.push('prone');if(f.turned)t.push('turned');if(f.sapped)t.push('sapped');if(f.vexed)t.push('vexed');if(f.slowed)t.push('slowed');if(f.guided)t.push('guided');if(f.noReact)t.push('no reactions');return t}
 function renderCombat(st){
+  setDims(S.run.combat);if(S.run.combat.map)loadMapImg(S.run.combat.map.key);
   const c=S.run.combat,h=S.hero,C=CLASSES[h.cls],t=curTarget(),myTurn=!c.over&&c.turn==='hero'&&!h.dying;
   const reachMap=myTurn&&!c.aim&&c.petSel&&c.pet?petReach():myTurn&&!c.aim&&c.move>0?heroReach():new Map(),aim=myTurn&&c.aim?aimCells():null;
   const sp=c.aim?SPELLS[c.aim]:null;
@@ -6052,7 +6184,7 @@ function renderCombat(st){
   for(const l of c.log.slice(-30)){if(l.kind==='head')groups.push({head:l,items:[]});else{if(!groups.length)groups.push({head:null,items:[]});groups[groups.length-1].items.push(l)}}
   const logHTML=groups.reverse().map(g=>(g.head?`<li class="head">${g.head.text}</li>`:'')+g.items.slice().reverse().map(l=>`<li class="${l.kind}">${l.text}</li>`).join('')).join('');
   return `${st.text?`<p class="prose">${st.text}</p>`:''}${order}
-  <div class="board" role="grid" aria-label="Battle map, 5 ft squares">${cells}</div>
+  <div class="board${c.map&&mapImg[c.map.key]?' hasbg':''}" role="grid" aria-label="Battle map, ${GW} by ${GH} squares of 5 ft" style="grid-template-columns:repeat(${GW},1fr);max-width:${Math.min(560,GW*44)}px;${c.map&&mapImg[c.map.key]?`background-image:url(maps/${c.map.key}.jpg);background-size:100% 100%;`:''}">${cells}</div>
   <div class="foelist">${c.foes.map((f,i)=>{const tags=condTags(f);return `<button class="foe ${f.hp<=0?'dead':''} ${t===f&&!c.over?'target':''}" data-a="target" data-i="${i}" ${disab(f.hp<=0||c.over)}>
     <span><b>${f.label}</b> ${f.name} <span class="meta">AC ${f.ac}, speed ${ft(f.speed)} ft, ${f.type}${f.ranged?`, ${f.ranged.name}`:''}${tags.length?`, ${tags.join(', ')}`:''}</span></span><span class="meta">${f.hp<=0?'Down':`${f.hp}/${f.hpMax} HP`}</span>
     <span class="bar foehp"><i style="width:${pct(f.hp,f.hpMax)}%"></i></span></button>`}).join('')}</div>
@@ -6109,6 +6241,9 @@ const A={
     h.pendingAsi--;const om=h.hpMax;h.hpMax=maxHP(h);h.hp+=Math.max(0,h.hpMax-om);h.pools=Object.assign(maxPools(h),h.pools);if(kind!=='1')addLog(kind==='2'?`+2 ${ABIL_NAME[v]}.`:`New feat: ${FEATS[v][0]}.`,'good');commit()},
   avatar(){const n=$('#hname');if(n&&draft)draft.name=n.value;$('#avatarfile').click()},
   weararmor(ds){const h=S.hero;if(S.run)return;ensureArmor(h);if(ds.k&&(!(h.ownedA||[]).includes(ds.k)||!armorProf(h).includes(ARMORS[ds.k][1])))return;h.armor=ds.k||null;equipPick=null;commit()},
+  iteminfo(ds){infoKey=ds.k;render()},
+  infoclose(){infoKey=null;render()},
+  restyle(ds){const h=S.hero;if(S.run||!h.styleSwap||!FIGHTING_STYLES[ds.k])return;h.style=ds.k;h.styleSwap=false;addLog(`You retrain: ${FIGHTING_STYLES[ds.k][0]}.`,'good');commit()},
   acinfo(){acOpen=!acOpen;render()},
   avatarclear(){if(draft&&(!S||S.flags.rebuild||S.flags.fallen)){draft.avatar=null;render()}else{S.hero.avatar=null;commit()}},
   plot(ds){if(placing)return;selPlot=selPlot===ds.k?null:ds.k;render()},
